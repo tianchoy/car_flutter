@@ -8,7 +8,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: '中导物联',
+      title: '车联网',
       theme: ThemeData(
         primaryColor: const Color(0xFF007AFF),
         scaffoldBackgroundColor: Colors.white,
