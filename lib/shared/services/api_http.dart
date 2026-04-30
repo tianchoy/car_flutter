@@ -43,8 +43,7 @@ class HttpService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // 添加认证头，例如 JWT Token
-          options.headers['Authorization'] = 'Bearer your_token_here';
+          // options.headers['token'] = await _getToken();
           return handler.next(options);
         },
         onResponse: (response, handler) {

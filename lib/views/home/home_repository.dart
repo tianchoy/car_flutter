@@ -1,33 +1,48 @@
-import 'package:logger/logger.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:coordtransform/coordtransform.dart';
 import '../../shared/services/api_service.dart';
+import '../../utils/Logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeRepository {
   final ApiService _apiService = ApiService();
-  final Logger _logger = Logger();
   final MapController mapController = MapController();
 
-  final latitude = 0.0.obs;
-  final longitude = 0.0.obs;
+  final latitude = 39.9042.obs;
+  final longitude = 116.4074.obs;
 
   final isLoading = false.obs;
   final errorMessage = ''.obs;
+  final isLoggedIn = false.obs;
 
-  Future<dynamic> fetchHomeData() async {
+  // Future<dynamic> fetchHomeData() async {
+  //   try {
+  //     final response = await _apiService.fetchHomeData();
+  //     if (response.statusCode == 200) {
+  //       return response.data.json();
+  //     } else {
+  //       throw Exception('Failed to load data: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     Logger().d(e);
+  //     rethrow;
+  //   }
+  // }
+
+  Future<bool> checkToken() async {
     try {
-      final response = await _apiService.fetchHomeData();
-      if (response.statusCode == 200) {
-        return response.data.json();
-      } else {
-        throw Exception('Failed to load data: ${response.statusCode}');
-      }
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      isLoggedIn.value = token != null && token.isNotEmpty;
+      Log.i('token: ${isLoggedIn.value}');
+      return isLoggedIn.value;
     } catch (e) {
-      Logger().d(e);
-      rethrow;
+      Log.e('检查 token 失败', error: e);
+      isLoggedIn.value = false;
+      return false;
     }
   }
 
@@ -40,7 +55,7 @@ class HomeRepository {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         errorMessage.value = '请开启定位服务';
-        _logger.w('定位服务未开启');
+        Log.w('定位服务未开启');
         return false;
       }
 
@@ -50,14 +65,14 @@ class HomeRepository {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           errorMessage.value = '需要位置权限';
-          _logger.w('位置权限被拒绝');
+          Log.w('位置权限被拒绝');
           return false;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         errorMessage.value = '请在系统设置中开启位置权限';
-        _logger.w('位置权限被永久拒绝');
+        Log.w('位置权限被永久拒绝');
         return false;
       }
 
@@ -82,7 +97,7 @@ class HomeRepository {
       return true;
     } catch (e) {
       errorMessage.value = '获取位置失败: ${e.toString()}';
-      _logger.e('获取位置失败', error: e);
+      Log.e('获取位置失败', error: e);
       return false;
     } finally {
       isLoading.value = false;

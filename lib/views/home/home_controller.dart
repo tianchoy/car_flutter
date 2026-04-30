@@ -8,10 +8,12 @@ class HomeController extends GetxController {
   double get longitude => repository.longitude.value;
   bool get isLoading => repository.isLoading.value;
   String get errorMessage => repository.errorMessage.value;
+  bool get isLoggedIn => repository.isLoggedIn.value;
 
   @override
   void onInit() {
     super.onInit();
+    repository.checkToken();
     repository.getCurrentLocation();
   }
 }

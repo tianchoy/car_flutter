@@ -1,36 +1,61 @@
+// login_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'login_respository.dart';
 
 class LoginController extends GetxController {
+  final LoginRepository loginRepository = LoginRepository();
+
+  // TextEditingController 用于控制输入框
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  RxString username = ''.obs;
-  RxString password = ''.obs;
+  // Rx 变量用于响应式监听
+  final RxString username = ''.obs;
+  final RxString password = ''.obs;
+
+  final RxBool isLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+    usernameController.addListener(() {
+      username.value = usernameController.text;
+    });
+    passwordController.addListener(() {
+      password.value = passwordController.text;
+    });
   }
 
-  @override
-  void Login() {
-    // Get.toNamed(Routes.home);
-    print('username: $username');
-    print('password: $password');
+  void login() async {
     if (username.value.isEmpty) {
-      Get.snackbar('title', '请输入用户名');
+      Get.snackbar('提示', '请输入用户名');
       return;
     }
+
     if (password.value.isEmpty) {
-      Get.snackbar('title', '请输入密码');
+      Get.snackbar('提示', '请输入密码');
       return;
     }
-    if (username.value == 'admin' && password.value == '123456') {
-      Get.back(result: true);
-    } else {
-      Get.snackbar('title', '用户名或密码错误');
+
+    isLoading.value = true;
+    try {
+      await loginRepository.login(username.value, password.value);
+    } catch (e) {
+      Get.snackbar('错误', '登录失败：$e');
+    } finally {
+      isLoading.value = false;
     }
+  }
+
+  void clearUsername() {
+    usernameController.clear();
+    username.value = '';
+  }
+
+  void clearPassword() {
+    passwordController.clear();
+    password.value = '';
   }
 
   @override

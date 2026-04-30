@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import 'home_controller.dart';
+import '../../shared/services/url.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -27,7 +28,7 @@ class HomeView extends StatelessWidget {
                       controller.latitude,
                       controller.longitude,
                     ),
-                    initialZoom: 5.0,
+                    initialZoom: 4.5,
                     minZoom: 3.0,
                     maxZoom: 18.0,
                     interactionOptions: const InteractionOptions(
@@ -39,15 +40,12 @@ class HomeView extends StatelessWidget {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7',
+                      urlTemplate: mapUrl,
                       subdomains: const ['1', '2', '3', '4'],
-                      userAgentPackageName: 'com.example.app', // 添加包名避免被限制
+                      userAgentPackageName: 'com.example.app',
                     ),
-                    // 加载指示器
                     if (controller.isLoading)
                       const Center(child: CircularProgressIndicator()),
-                    // 错误提示
                     if (controller.errorMessage.isNotEmpty)
                       Positioned(
                         top: 20,
@@ -77,7 +75,29 @@ class HomeView extends StatelessWidget {
                               Get.snackbar(
                                 '当前位置',
                                 '经度: ${controller.longitude.toStringAsFixed(6)}, 纬度: ${controller.latitude.toStringAsFixed(6)}',
-                                snackPosition: SnackPosition.BOTTOM,
+                                snackPosition: SnackPosition.TOP,
+                              );
+                            },
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                        Marker(
+                          point: LatLng(
+                            39.9042,
+                            116.4074, // 北京市中心坐标
+                          ),
+                          width: 40,
+                          height: 40,
+                          child: GestureDetector(
+                            onTap: () {
+                              Get.snackbar(
+                                '当前位置',
+                                '经度: ${controller.longitude.toStringAsFixed(6)}, 纬度: ${controller.latitude.toStringAsFixed(6)}',
+                                snackPosition: SnackPosition.TOP,
                               );
                             },
                             child: const Icon(
@@ -91,6 +111,19 @@ class HomeView extends StatelessWidget {
                     ),
                   ],
                 ),
+                controller.isLoggedIn
+                    ? const SizedBox.shrink()
+                    : Positioned(
+                        bottom: 20,
+                        left: 16,
+                        right: 16,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Get.toNamed('/login');
+                          },
+                          child: const Text('请登录以获取更多功能'),
+                        ),
+                      ),
               ],
             ),
           ),

@@ -1,9 +1,7 @@
+// login_view.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../components/widget/buildBody.dart';
-import '../../components/widget/buildContainer.dart';
-import '../../shared/widgets/main_scaffold.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -11,67 +9,58 @@ class LoginView extends GetView<LoginController> {
 
   @override
   Widget build(BuildContext context) {
-    return MainScaffold(
-      title: '登陆',
-      showBackButton: true,
-      showBottomNavBar: false,
-      actions: [
-        TextButton(
-          onPressed: () {
-            Get.snackbar('title', 'message');
-          },
-          child: Text('注册'),
-        ),
-      ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('登录')),
       body: _buildBody(context),
     );
   }
 
   Widget _buildBody(BuildContext context) {
-    return BuildBody(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          BuildContainer(
+          Container(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Obx(
-                  () => CupertinoTextField(
-                    // 将可观察变量的值赋给 controller
-                    controller: TextEditingController(
-                      text: controller.username.value,
-                    ),
-                    placeholder: '请输入用户名',
-                    prefix: Icon(Icons.person),
-                    suffix: IconButton(
-                      icon: Icon(Icons.clear),
-                      onPressed: () {
-                        controller.usernameController.clear();
-                        controller.username.value = '';
-                      },
-                    ),
-                    // 当用户输入时，更新可观察变量的值
-                    onChanged: (value) => controller.username.value = value,
+                CupertinoTextField(
+                  controller: controller.usernameController,
+                  placeholder: '请输入用户名',
+                  prefix: const Icon(Icons.person),
+                  suffix: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: controller.clearUsername,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Obx(
-                  () => CupertinoTextField(
-                    controller: TextEditingController(
-                      text: controller.password.value,
-                    ),
-                    placeholder: '请输入密码',
-                    prefix: Icon(Icons.lock),
-                    onChanged: (value) => controller.password.value = value,
+                CupertinoTextField(
+                  controller: controller.passwordController,
+                  placeholder: '请输入密码',
+                  obscureText: true,
+                  prefix: const Icon(Icons.lock),
+                  suffix: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: controller.clearPassword,
                   ),
                 ),
               ],
             ),
           ),
-          CupertinoButton(
-            onPressed: () {
-              controller.Login();
-            },
-            child: Text('登录'),
+          const SizedBox(height: 20),
+          Obx(
+            () => CupertinoButton(
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () {
+                      FocusScope.of(context).unfocus();
+                      controller.login();
+                    },
+              color: Colors.blue,
+              child: controller.isLoading.value
+                  ? const CircularProgressIndicator()
+                  : const Text('登录'),
+            ),
           ),
         ],
       ),
