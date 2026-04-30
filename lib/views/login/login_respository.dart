@@ -1,14 +1,12 @@
 import '../../shared/services/api_service.dart';
 import '../../utils/Logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../utils/session.dart';
 import 'dart:convert';
 
 class LoginRepository {
   final ApiService _apiService = ApiService();
 
   Future<Map<String, dynamic>> login(String username, String password) async {
-    final prefs = await SharedPreferences.getInstance();
-
     try {
       final response = await _apiService.login(username, password);
 
@@ -27,12 +25,12 @@ class LoginRepository {
       if (responseData['code'] == 200) {
         Log.i('Login Success: $responseData');
         if (responseData.containsKey('token')) {
-          await prefs.setString('token', responseData['token']);
+          await setSession('token', responseData['token']);
         } else if (responseData.containsKey('data') &&
             responseData['data'] is Map) {
           String? token = responseData['data']['token'];
           if (token != null) {
-            await prefs.setString('token', token);
+            await setSession('token', token);
           }
         }
 

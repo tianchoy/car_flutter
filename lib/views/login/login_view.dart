@@ -20,46 +20,72 @@ class LoginView extends GetView<LoginController> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                CupertinoTextField(
+          Column(
+            children: [
+              Obx(
+                () => CupertinoTextField(
                   controller: controller.usernameController,
                   placeholder: '请输入用户名',
                   prefix: const Icon(Icons.person),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: controller.clearUsername,
-                  ),
+                  suffix: controller.username.value.isNotEmpty
+                      ? GestureDetector(
+                          onTap: controller.clearUsername,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.clear, size: 20),
+                          ),
+                        )
+                      : null,
                 ),
-                const SizedBox(height: 20),
-                CupertinoTextField(
+              ),
+              const SizedBox(height: 20),
+              Obx(
+                () => CupertinoTextField(
                   controller: controller.passwordController,
                   placeholder: '请输入密码',
                   obscureText: true,
                   prefix: const Icon(Icons.lock),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: controller.clearPassword,
-                  ),
+                  suffix: controller.password.value.isNotEmpty
+                      ? GestureDetector(
+                          onTap: controller.clearPassword,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(Icons.clear, size: 20),
+                          ),
+                        )
+                      : null,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Obx(
             () => CupertinoButton(
-              onPressed: controller.isLoading.value
-                  ? null
-                  : () {
+              onPressed:
+                  (controller.username.value.isNotEmpty &&
+                      controller.password.value.isNotEmpty &&
+                      !controller.isLoading.value)
+                  ? () {
                       FocusScope.of(context).unfocus();
                       controller.login();
-                    },
+                    }
+                  : null,
               color: Colors.blue,
-              child: controller.isLoading.value
-                  ? const CircularProgressIndicator()
-                  : const Text('登录'),
+              borderRadius: BorderRadius.circular(8),
+              minimumSize: const Size(50, 50),
+              disabledColor: Colors.blue.withOpacity(0.6),
+              child: SizedBox(
+                width: double.infinity,
+                child: Center(
+                  child: controller.isLoading.value
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        )
+                      : const Text('登录', style: TextStyle(color: Colors.white)),
+                ),
+              ),
             ),
           ),
         ],

@@ -10,4 +10,9 @@ class ApiService {
     final data = {'email': email, 'password': password};
     return await _httpService.post(loginUrl, data: data);
   }
+
+  // 获取消息列表API
+  Future<Response> getMessagesList() async {
+    return await _httpService.get(messagesListUrl);
+  }
 }

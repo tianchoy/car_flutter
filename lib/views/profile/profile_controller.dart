@@ -9,18 +9,15 @@ class ProfileController extends GetxController
   final profile = <String, dynamic>{}.obs;
 
   late TabController tabController;
-  final List<String> tabs = ['Profile', 'Settings', 'Stats', 'Activity'];
 
   @override
   void onInit() {
     super.onInit();
-    tabController = TabController(length: tabs.length, vsync: this);
     // loadProfile();
   }
 
   @override
   void onClose() {
-    tabController.dispose();
     super.onClose();
   }
 

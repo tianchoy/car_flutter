@@ -8,9 +8,10 @@ class MessagesView extends GetView<MessagesController> {
 
   @override
   Widget build(BuildContext context) {
+    Get.put(MessagesController());
     return MainScaffold(
       title: '消息',
-      body: Column(children: [Text('Message')]),
+      body: Column(children: [Text('Message1111')]),
     );
   }
 }

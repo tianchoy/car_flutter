@@ -8,6 +8,7 @@ class ProfileView extends GetView<ProfileController> {
 
   @override
   Widget build(BuildContext context) {
+    Get.put(ProfileController());
     return MainScaffold(
       title: '个人中心',
       body: Column(children: [Text('Profile')]),
