@@ -1,13 +1,11 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:coordtransform/coordtransform.dart';
-import '../../shared/services/api_service.dart';
 import '../../utils/Logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:latlong2/latlong.dart';
 
-class HomeRepository {
-  final ApiService _apiService = ApiService();
+import '../../utils/session.dart';
 
+class HomeRepository {
   // 只返回原始数据，不持有状态
   Future<Position?> getCurrentLocation() async {
     try {
@@ -55,12 +53,9 @@ class HomeRepository {
   // 检查 token
   Future<bool> checkToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-      Log.i('检查 token: $token');
+      final token = await getSession('token');
       return token != null && token.isNotEmpty;
     } catch (e) {
-      Log.e('检查 token 失败', error: e);
       return false;
     }
   }

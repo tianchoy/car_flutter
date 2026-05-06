@@ -7,6 +7,7 @@ class ProfileController extends GetxController
   final ProfileRepository _repository = ProfileRepository();
   final isLoading = true.obs;
   final profile = <String, dynamic>{}.obs;
+  final isLoggedIn = false.obs;
 
   late TabController tabController;
 
@@ -21,7 +22,11 @@ class ProfileController extends GetxController
     super.onClose();
   }
 
-  // Future<void> loadProfile() async {
+  Future<void> logout() async {
+    await _repository.logout();
+    Get.offAllNamed('/');
+  }
+
   //   try {
   //     isLoading.value = true;
   //     profile.value = await _repository.fetchProfile();
@@ -31,6 +36,14 @@ class ProfileController extends GetxController
   //     isLoading.value = false;
   //   }
   // }
+
+  Future<void> isLogin() async {
+    isLoggedIn.value = await checkToken();
+  }
+
+  Future<bool> checkToken() async {
+    return await _repository.checkToken();
+  }
 
   void refreshProfile() {
     // loadProfile();

@@ -51,7 +51,6 @@ class HomeController extends GetxController {
           position.latitude,
         );
         currentPosition.value = gcjPosition;
-
         // 移动地图到当前位置
         await _moveToCurrentLocation();
       } else {

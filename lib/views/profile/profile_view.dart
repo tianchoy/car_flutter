@@ -11,7 +11,17 @@ class ProfileView extends GetView<ProfileController> {
     Get.put(ProfileController());
     return MainScaffold(
       title: '个人中心',
-      body: Column(children: [Text('Profile')]),
+      body: Column(
+        children: [
+          Text('Profile'),
+          controller.isLoggedIn.value
+              ? ElevatedButton(
+                  onPressed: controller.logout,
+                  child: Text('退出登录'),
+                )
+              : Container(),
+        ],
+      ),
     );
   }
 }

@@ -15,4 +15,9 @@ class ApiService {
   Future<Response> getMessagesList() async {
     return await _httpService.get(messagesListUrl);
   }
+
+  // 退出登录API
+  Future<Response> logout() async {
+    return await _httpService.post(logoutUrl);
+  }
 }

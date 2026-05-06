@@ -27,7 +27,6 @@ class MessageModel {
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
-    // 安全的类型转换辅助函数
     String toString(dynamic value) => value?.toString() ?? '';
     int toInt(dynamic value) => value as int;
 

@@ -2,14 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'login_controller.dart';
+import '../../shared/widgets/main_scaffold.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('登录'), centerTitle: true, elevation: 2),
+    return MainScaffold(
+      title: '登录',
+      showBackButton: false,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
@@ -182,15 +184,9 @@ class LoginView extends GetView<LoginController> {
       children: [
         TextButton(
           onPressed: () {
-            Get.snackbar('提示', '忘记密码功能开发中');
+            Get.offAllNamed('/');
           },
-          child: const Text('忘记密码？'),
-        ),
-        TextButton(
-          onPressed: () {
-            Get.snackbar('提示', '注册功能开发中');
-          },
-          child: const Text('注册账号'),
+          child: const Text('暂不登录'),
         ),
       ],
     );
