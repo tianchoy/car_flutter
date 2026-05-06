@@ -20,10 +20,10 @@ class LoginController extends GetxController {
   void onInit() {
     super.onInit();
     usernameController.addListener(() {
-      username.value = usernameController.text;
+      username.value = usernameController.text.trim();
     });
     passwordController.addListener(() {
-      password.value = passwordController.text;
+      password.value = passwordController.text.trim();
     });
   }
 

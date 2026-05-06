@@ -28,19 +28,19 @@ class MessageModel {
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     // 安全的类型转换辅助函数
-    String _toString(dynamic value) => value?.toString() ?? '';
-    int _toInt(dynamic value) => value as int;
+    String toString(dynamic value) => value?.toString() ?? '';
+    int toInt(dynamic value) => value as int;
 
     return MessageModel(
-      messageId: _toString(json['messageId']),
-      content: _toString(json['content']),
-      messageType: _toInt(json['messageType']),
-      status: _toInt(json['status']),
-      createTime: _toString(json['createTime']),
+      messageId: toString(json['messageId']),
+      content: toString(json['content']),
+      messageType: toInt(json['messageType']),
+      status: toInt(json['status']),
+      createTime: toString(json['createTime']),
       readTime: json['readTime']?.toString(),
-      deleted: _toInt(json['deleted']),
-      userId: _toString(json['userId']),
-      transactionId: _toString(json['transactionId']),
+      deleted: toInt(json['deleted']),
+      userId: toString(json['userId']),
+      transactionId: toString(json['transactionId']),
     );
   }
 }

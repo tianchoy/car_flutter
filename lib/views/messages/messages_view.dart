@@ -56,7 +56,7 @@ class MessagesView extends GetView<MessagesController> {
 
   Widget _getStatusIcon(int status) {
     switch (status) {
-      case 1:
+      case 0:
         return Icon(Icons.check_circle, color: Colors.green);
       default:
         return Icon(Icons.access_time, color: Colors.orange);

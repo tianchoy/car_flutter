@@ -73,7 +73,7 @@ class LoginView extends GetView<LoginController> {
               color: Colors.blue,
               borderRadius: BorderRadius.circular(8),
               minimumSize: const Size(50, 50),
-              disabledColor: Colors.blue.withOpacity(0.6),
+              disabledColor: Colors.grey.withAlpha(120),
               child: SizedBox(
                 width: double.infinity,
                 child: Center(
