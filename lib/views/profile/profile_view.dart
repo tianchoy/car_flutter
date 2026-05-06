@@ -8,19 +8,20 @@ class ProfileView extends GetView<ProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(ProfileController());
     return MainScaffold(
       title: '个人中心',
-      body: Column(
-        children: [
-          Text('Profile'),
-          controller.isLoggedIn.value
-              ? ElevatedButton(
-                  onPressed: controller.logout,
-                  child: Text('退出登录'),
-                )
-              : Container(),
-        ],
+      body: Obx(
+        () => Column(
+          children: [
+            Text('Profile:'),
+            controller.isLoggedIn.value
+                ? ElevatedButton(
+                    onPressed: controller.logout,
+                    child: Text('退出登录'),
+                  )
+                : Container(),
+          ],
+        ),
       ),
     );
   }

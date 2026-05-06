@@ -6,14 +6,11 @@ import '../../shared/widgets/main_scaffold.dart';
 import 'home_controller.dart';
 import '../../shared/services/url.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 使用 Get.put 确保 Controller 被创建和绑定
-    final controller = Get.put(HomeController());
-
     return MainScaffold(
       title: '首页',
       showBackButton: false,

@@ -48,7 +48,7 @@ class CustomBottomNavBar extends StatelessWidget {
     return const [
       BottomNavigationBarItem(icon: Icon(CupertinoIcons.home), label: '首页'),
       BottomNavigationBarItem(icon: Icon(CupertinoIcons.mail), label: '消息'),
-      BottomNavigationBarItem(icon: Icon(CupertinoIcons.person), label: '我'),
+      BottomNavigationBarItem(icon: Icon(CupertinoIcons.person), label: '我的'),
     ];
   }
 }

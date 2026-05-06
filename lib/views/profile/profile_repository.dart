@@ -1,5 +1,6 @@
 import '../../shared/services/api_service.dart';
 import '../../utils/session.dart';
+import '../../utils/Logger.dart';
 
 class ProfileRepository {
   final ApiService _apiService = ApiService();
@@ -16,8 +17,10 @@ class ProfileRepository {
   Future<bool> checkToken() async {
     try {
       final token = await getSession('token');
+      Log.i('检查 token: $token');
       return token != null && token.isNotEmpty;
     } catch (e) {
+      Log.e('检查 token 失败', error: e);
       return false;
     }
   }
