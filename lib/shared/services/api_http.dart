@@ -46,8 +46,7 @@ class HttpService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           String? token = await getSession('token');
-          options.headers['token'] =
-              'eyJ0eXAiOiJKV1QiLCJsb2dUeXAiOiJVc2VyIiwiZnJvbVR5cCI6InBob25lIiwidG9rZW5JZCI6MjA0NTQzMjY5NzkyMDI3MDMzOCwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiIxOTY1MjIzMjgxNTQ4MTY1MTIxIiwiaWF0IjoxNzc3NTM3ODE5LCJleHAiOjE3OTMwODk4MTl9.oif6qWi8vENFcZPQqQWCay-9Dfmig93sJIe7IAycXLe-jKjp9XKRI2AO2m43NI-z6aTk3q5OjAk5UQsSVsjP-A';
+          options.headers['token'] = token;
           return handler.next(options);
         },
         onResponse: (response, handler) {

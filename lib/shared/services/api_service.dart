@@ -6,8 +6,8 @@ class ApiService {
   final HttpService _httpService = HttpService(baseUrl: baseUrl);
 
   // 登录API
-  Future<Response> login(String email, String password) async {
-    final data = {'email': email, 'password': password};
+  Future<Response> login(String username, String password) async {
+    final data = {'username': username, 'password': password};
     return await _httpService.post(loginUrl, data: data);
   }
 

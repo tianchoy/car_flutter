@@ -57,6 +57,7 @@ class HomeRepository {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+      Log.i('检查 token: $token');
       return token != null && token.isNotEmpty;
     } catch (e) {
       Log.e('检查 token 失败', error: e);
