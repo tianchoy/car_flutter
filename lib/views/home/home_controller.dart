@@ -80,4 +80,10 @@ class HomeController extends GetxController {
       mapController.move(currentPosition.value, mapController.camera.zoom);
     }
   }
+
+  @override
+  void onClose() {
+    mapController.dispose();
+    super.onClose();
+  }
 }
