@@ -31,6 +31,7 @@ class HomeView extends GetView<HomeController> {
                   snackPosition: SnackPosition.TOP,
                 );
               },
+
               markers: [
                   Marker(
                     point: LatLng(controller.latitude, controller.longitude),
