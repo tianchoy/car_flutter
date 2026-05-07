@@ -3,4 +3,5 @@ class Routes {
   static const messages = '/messages';
   static const profile = '/profile';
   static const login = '/login';
+  static const detail = '/detail';
 }

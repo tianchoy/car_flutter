@@ -7,6 +7,8 @@ import '../views/messages/messages_binding.dart';
 import '../views/messages/messages_view.dart';
 import '../views/profile/profile_binding.dart';
 import '../views/profile/profile_view.dart';
+import '../views/detail/detail_view.dart';
+import '../views/detail/detail_binding.dart';
 import 'router_instance.dart';
 
 class AppRouter {
@@ -30,6 +32,12 @@ class AppRouter {
       name: Routes.login,
       page: () => LoginView(),
       binding: LoginBindings(),
+      transition: Transition.cupertino,
+    ),
+    GetPage(
+      name: Routes.detail,
+      page: () => DetailView(),
+      binding: DetailBinding(),
       transition: Transition.cupertino,
     ),
   ];
