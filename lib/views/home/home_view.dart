@@ -24,6 +24,13 @@ class HomeView extends GetView<HomeController> {
               longitude: 116.4074,
               initialZoom: 4.5,
               mapController: controller.mapController,
+              onMapTap: (point) {
+                Get.snackbar(
+                  '点击地图',
+                  '经度: ${point.longitude.toStringAsFixed(6)}, 纬度: ${point.latitude.toStringAsFixed(6)}',
+                  snackPosition: SnackPosition.TOP,
+                );
+              },
               markers: [
                   Marker(
                     point: LatLng(controller.latitude, controller.longitude),
