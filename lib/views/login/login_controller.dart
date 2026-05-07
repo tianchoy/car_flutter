@@ -46,6 +46,7 @@ class LoginController extends GetxController {
         '请输入用户名',
         snackPosition: SnackPosition.TOP,
         colorText: Colors.black,
+        duration: const Duration(seconds: 1),
       );
       return;
     }
@@ -56,6 +57,7 @@ class LoginController extends GetxController {
         '请输入密码',
         snackPosition: SnackPosition.TOP,
         colorText: Colors.black,
+        duration: const Duration(seconds: 1),
       );
       return;
     }
@@ -66,6 +68,7 @@ class LoginController extends GetxController {
         '密码长度不能少于6位',
         snackPosition: SnackPosition.TOP,
         colorText: Colors.black,
+        duration: const Duration(seconds: 1),
       );
       return;
     }
@@ -82,6 +85,7 @@ class LoginController extends GetxController {
         '登录成功',
         snackPosition: SnackPosition.TOP,
         colorText: Colors.black,
+        duration: const Duration(seconds: 1),
       );
       // 跳转到主页
       Get.offAllNamed('/');
@@ -91,6 +95,7 @@ class LoginController extends GetxController {
         '登录失败：$e',
         snackPosition: SnackPosition.TOP,
         colorText: Colors.black,
+        duration: const Duration(seconds: 1),
       );
     } finally {
       isLoading.value = false;

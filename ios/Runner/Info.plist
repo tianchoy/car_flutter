@@ -27,10 +27,6 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>应用需要获取您的位置以提供附近服务</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>应用需要在后台获取您的位置</string>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
@@ -51,6 +47,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>应用需要获取您的位置以提供附近服务</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>应用需要在后台获取您的位置</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

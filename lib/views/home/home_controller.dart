@@ -1,7 +1,8 @@
 import 'package:car/utils/Logger.dart';
-import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'home_repository.dart';
 
 class HomeController extends GetxController {
@@ -19,6 +20,7 @@ class HomeController extends GetxController {
   final currentPosition = const LatLng(39.9042, 116.4074).obs;
 
   double get latitude => currentPosition.value.latitude;
+
   double get longitude => currentPosition.value.longitude;
 
   @override
@@ -34,7 +36,6 @@ class HomeController extends GetxController {
 
   Future<void> _checkLoginStatus() async {
     isLoggedIn.value = await _repository.checkToken();
-    Log.i('登录状态: ${isLoggedIn.value}');
   }
 
   Future<void> _loadCurrentLocation() async {
@@ -70,11 +71,6 @@ class HomeController extends GetxController {
     mapController.move(currentPosition.value, mapController.camera.zoom);
   }
 
-  // 供 UI 调用的公开方法
-  Future<void> refreshLocation() async {
-    await _loadCurrentLocation();
-  }
-
   void moveToMyLocation() {
     if (currentPosition.value != null) {
       mapController.move(currentPosition.value, mapController.camera.zoom);
@@ -83,7 +79,6 @@ class HomeController extends GetxController {
 
   @override
   void onClose() {
-    mapController.dispose();
     super.onClose();
   }
 }

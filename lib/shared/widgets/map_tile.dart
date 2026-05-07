@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
 import '../../shared/services/url.dart';
 
 class MapTile extends StatelessWidget {
@@ -40,11 +41,13 @@ class MapTile extends StatelessWidget {
             maxZoom: 18.0,
             interactionOptions: const InteractionOptions(
               flags:
-              InteractiveFlag.drag |
-              InteractiveFlag.pinchZoom |
-              InteractiveFlag.doubleTapZoom,
+                  InteractiveFlag.drag |
+                  InteractiveFlag.pinchZoom |
+                  InteractiveFlag.doubleTapZoom,
             ),
-            onTap: onMapTap != null ? (_, point) => onMapTap!(point) : null, //点击地图回调
+            onTap: onMapTap != null
+                ? (_, point) => onMapTap!(point)
+                : null, //点击地图回调
           ),
           children: [
             TileLayer(
@@ -57,14 +60,14 @@ class MapTile extends StatelessWidget {
           ],
         ),
         if (isLoading)
-          const Center(
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: const CircularProgressIndicator(color: Colors.white),
             ),
           ),
         if (errMsg.isNotEmpty)

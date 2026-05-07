@@ -1,9 +1,11 @@
+import 'package:car/shared/widgets/is_login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
+
 import '../../shared/widgets/main_scaffold.dart';
-import '../../shared/widgets/mapTile.dart';
+import '../../shared/widgets/map_tile.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -22,50 +24,40 @@ class HomeView extends GetView<HomeController> {
               errMsg: controller.errorMessage.value,
               latitude: 39.9042,
               longitude: 116.4074,
-              initialZoom: 4.5,
               mapController: controller.mapController,
               onMapTap: (point) {
                 Get.snackbar(
                   '点击地图',
                   '经度: ${point.longitude.toStringAsFixed(6)}, 纬度: ${point.latitude.toStringAsFixed(6)}',
                   snackPosition: SnackPosition.TOP,
+                  duration: const Duration(seconds: 1),
                 );
               },
               markers: [
-                  Marker(
-                    point: LatLng(controller.latitude, controller.longitude),
-                    width: 40,
-                    height: 40,
-                    child: GestureDetector(
-                      onTap: () {
-                        Get.snackbar(
-                          '当前位置',
-                          '经度: ${controller.longitude.toStringAsFixed(6)}, 纬度: ${controller.latitude.toStringAsFixed(6)}',
-                          snackPosition: SnackPosition.TOP,
-                        );
-                        Get.toNamed('/detail');
-                      },
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 40,
-                      ),
+                Marker(
+                  point: LatLng(controller.latitude, controller.longitude),
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () {
+                      Get.snackbar(
+                        '当前位置',
+                        '经度: ${controller.longitude.toStringAsFixed(6)}, 纬度: ${controller.latitude.toStringAsFixed(6)}',
+                        snackPosition: SnackPosition.TOP,
+                        duration: const Duration(seconds: 1),
+                      );
+                      Get.toNamed('/detail');
+                    },
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
                     ),
                   ),
-                ],
-            ),
-            if (!controller.isLoggedIn.value)
-              Positioned(
-                bottom: 20,
-                left: 16,
-                right: 16,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Get.toNamed('/login');
-                  },
-                  child: const Text('请登录以获取更多功能'),
                 ),
-              ),
+              ],
+            ),
+            if (!controller.isLoggedIn.value) IsLogin(),
           ],
         ),
       ),
