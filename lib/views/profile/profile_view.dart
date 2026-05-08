@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import '../../shared/widgets/app_diago.dart';
+import '../../components/widget/app_diago.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import 'profile_controller.dart';
 

@@ -1,6 +1,7 @@
 // login_controller.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'login_respository.dart';
 
 class LoginController extends GetxController {
@@ -34,6 +35,7 @@ class LoginController extends GetxController {
     });
   }
 
+  // 切换密码可见性
   void togglePasswordVisibility() {
     obscurePassword.value = !obscurePassword.value;
   }
@@ -102,11 +104,13 @@ class LoginController extends GetxController {
     }
   }
 
+  // 清除用户名
   void clearUsername() {
     usernameController.clear();
     username.value = '';
   }
 
+  // 清除密码
   void clearPassword() {
     passwordController.clear();
     password.value = '';

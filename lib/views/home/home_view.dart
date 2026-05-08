@@ -1,11 +1,11 @@
-import 'package:car/shared/widgets/is_login.dart';
+import 'package:car/components/widget/is_login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../components/widget/map_tile.dart';
 import '../../shared/widgets/main_scaffold.dart';
-import '../../shared/widgets/map_tile.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
