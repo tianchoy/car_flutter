@@ -1,13 +1,13 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
 class AppDialog extends StatelessWidget {
-  final String title;
-  final String content;
-  final String confirmText;
-  final String cancelText;
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
+  final String title; // 弹窗标题
+  final String content; // 弹窗内容
+  final String confirmText; // 确认按钮文本
+  final String cancelText; // 取消按钮文本
+  final VoidCallback onConfirm; // 确认按钮点击事件
+  final VoidCallback onCancel; // 取消按钮点击事件
+  final bool isShowCancel; // 是否显示取消按钮
 
   const AppDialog({
     super.key,
@@ -17,7 +17,45 @@ class AppDialog extends StatelessWidget {
     this.cancelText = '取消',
     required this.onConfirm,
     required this.onCancel,
+    this.isShowCancel = true,
   });
+
+  /// 对外统一调用的方法
+  static Future<void> show(
+    BuildContext context, {
+    required String title,
+    required String content,
+    String confirmText = '确定',
+    String cancelText = '取消',
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+    bool isShowCancel = true,
+  }) {
+    return showCupertinoDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: title,
+          content: content,
+          confirmText: confirmText,
+          cancelText: cancelText,
+          isShowCancel: isShowCancel,
+          onConfirm: () {
+            Navigator.pop(context);
+            if (onConfirm != null) {
+              onConfirm();
+            }
+          },
+          onCancel: () {
+            Navigator.pop(context);
+            if (onCancel != null) {
+              onCancel();
+            }
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,18 +63,9 @@ class AppDialog extends StatelessWidget {
       title: Text(title),
       content: Text(content),
       actions: [
-        TextButton(
-          onPressed: () {
-            onCancel();
-          },
-          child: Text(cancelText),
-        ),
-        TextButton(
-          onPressed: () {
-            onConfirm();
-          },
-          child: Text(confirmText),
-        ),
+        if (isShowCancel)
+          CupertinoDialogAction(onPressed: onCancel, child: Text(cancelText)),
+        CupertinoDialogAction(onPressed: onConfirm, child: Text(confirmText)),
       ],
     );
   }

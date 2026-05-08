@@ -19,7 +19,9 @@ class ProfileView extends GetView<ProfileController> {
             controller.isLoggedIn.value
                 ? CupertinoButton(
                     color: CupertinoColors.activeBlue,
-                    onPressed: () => _showDiago(context),
+                    onPressed: () {
+                      _showDiago(context);
+                    },
                     child: Text(
                       '退出登录',
                       style: TextStyle(
@@ -36,11 +38,16 @@ class ProfileView extends GetView<ProfileController> {
   }
 
   void _showDiago(BuildContext context) {
-    AppDialog(
-      title: '确认退出登录吗？',
-      content: '退出登录后将无法访问任何功能',
-      onConfirm: controller.logout,
-      onCancel: () {},
+    AppDialog.show(
+      context,
+      title: '提示',
+      content: '确定退出登录吗?',
+      onConfirm: () {
+        controller.logout();
+      },
+      onCancel: () {
+        print('点击取消');
+      },
     );
   }
 }
