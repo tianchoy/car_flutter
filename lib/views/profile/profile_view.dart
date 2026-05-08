@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 import '../../components/widget/app_dialog.dart';
-import '../../components/widget/app_popup.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import 'profile_controller.dart';
 
@@ -21,8 +20,8 @@ class ProfileView extends GetView<ProfileController> {
                 ? CupertinoButton(
                     color: CupertinoColors.activeBlue,
                     onPressed: () {
-                      // _showDiago(context);
-                      _showPopup(context);
+                      _showDiago(context);
+                      // _showPopup(context);
                     },
                     child: Text(
                       '退出登录',
@@ -50,17 +49,6 @@ class ProfileView extends GetView<ProfileController> {
       onCancel: () {
         print('点击取消');
       },
-    );
-  }
-
-  void _showPopup(BuildContext context) {
-    AppPopup.show(
-      context: context,
-      options: ['编辑', '删除', '分享'],
-      displayText: (option) => option,
-      isShowTitle: false,
-      isShowMessage: false,
-      cancelText: '关闭',
     );
   }
 }
