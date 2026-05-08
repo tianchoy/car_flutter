@@ -1,5 +1,5 @@
-import 'package:car/utils/Logger.dart';
 import 'package:get/get.dart';
+
 import 'profile_repository.dart';
 
 class ProfileController extends GetxController
@@ -25,6 +25,5 @@ class ProfileController extends GetxController
 
   Future<void> isLogin() async {
     isLoggedIn.value = await _repository.checkToken();
-    Log.i('isLoggedIn: ${isLoggedIn.value}');
   }
 }

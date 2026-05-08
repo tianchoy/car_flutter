@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart' hide Response;
 
 import '../../utils/session.dart';
 
@@ -77,6 +78,7 @@ class HttpService {
         if (statusCode == 401) {
           message = '未授权，请重新登录';
           // 处理未授权，例如跳转到登录页
+          clearToken();
         } else if (statusCode == 404) {
           message = '请求资源不存在';
         } else if (statusCode >= 500) {
@@ -108,6 +110,13 @@ class HttpService {
           error: '发生未知错误，请稍后重试',
         );
     }
+  }
+
+  Future<void> clearToken() async {
+    // 清除本地存储的 token
+    await deleteSession('token');
+    // 跳转到登录页
+    Get.toNamed('/login');
   }
 
   Future<Response<T>> get<T>(
