@@ -64,8 +64,20 @@ class AppDialog extends StatelessWidget {
       content: Text(content),
       actions: [
         if (isShowCancel)
-          CupertinoDialogAction(onPressed: onCancel, child: Text(cancelText)),
-        CupertinoDialogAction(onPressed: onConfirm, child: Text(confirmText)),
+          CupertinoDialogAction(
+            onPressed: onCancel,
+            child: Text(
+              cancelText,
+              style: TextStyle(color: CupertinoColors.black, fontSize: 16),
+            ),
+          ),
+        CupertinoDialogAction(
+          onPressed: onConfirm,
+          child: Text(
+            confirmText,
+            style: TextStyle(color: CupertinoColors.black, fontSize: 16),
+          ),
+        ),
       ],
     );
   }
