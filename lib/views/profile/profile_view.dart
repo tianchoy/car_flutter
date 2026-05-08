@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+
+import '../../shared/widgets/app_diago.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import 'profile_controller.dart';
 
@@ -15,14 +17,30 @@ class ProfileView extends GetView<ProfileController> {
           children: [
             Text('Profile:'),
             controller.isLoggedIn.value
-                ? ElevatedButton(
-                    onPressed: controller.logout,
-                    child: Text('退出登录'),
+                ? CupertinoButton(
+                    color: CupertinoColors.activeBlue,
+                    onPressed: () => _showDiago(context),
+                    child: Text(
+                      '退出登录',
+                      style: TextStyle(
+                        color: CupertinoColors.white,
+                        fontSize: 14,
+                      ),
+                    ),
                   )
                 : Container(),
           ],
         ),
       ),
+    );
+  }
+
+  void _showDiago(BuildContext context) {
+    AppDialog(
+      title: '确认退出登录吗？',
+      content: '退出登录后将无法访问任何功能',
+      onConfirm: controller.logout,
+      onCancel: () {},
     );
   }
 }
