@@ -7,12 +7,13 @@ class ProfileController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final ProfileRepository _repository = ProfileRepository();
   final isLoggedIn = false.obs;
-  final profile = <String, dynamic>{}.obs;
+  late final profile = <String, dynamic>{}.obs;
 
   @override
   void onInit() {
     super.onInit();
     isLogin();
+    fetchProfile();
   }
 
   @override
