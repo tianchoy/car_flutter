@@ -23,8 +23,8 @@ class HomeView extends GetView<HomeController> {
             MapTile(
               isLoading: controller.isLoading.value,
               errMsg: controller.errorMessage.value,
-              latitude: 39.9042,
-              longitude: 116.4074,
+              latitude: controller.latitude,
+              longitude: controller.longitude,
               mapController: controller.mapController,
               onMapTap: (point) {
                 Get.snackbar(
@@ -36,12 +36,8 @@ class HomeView extends GetView<HomeController> {
               },
               markers: controller.deviceList
                   .map((device) {
-                    final latitude = device.latitude?.toString() ?? '';
-                    final longitude = device.longitude?.toString() ?? '';
-
-                    if (latitude == null || longitude == null) {
-                      return null;
-                    }
+                    final latitude = device.latitude.toString();
+                    final longitude = device.longitude.toString();
                     return createNamedMarker(
                       point: LatLng(
                         double.parse(latitude),
@@ -53,9 +49,9 @@ class HomeView extends GetView<HomeController> {
                           '设备信息',
                           '设备名称: ${device.deviceName}',
                           snackPosition: SnackPosition.TOP,
-                          duration: const Duration(seconds: 2),
+                          duration: const Duration(seconds: 1),
                         );
-                        Get.toNamed('/detail');
+                        Get.toNamed('/detail', arguments: device);
                       },
                     );
                   })

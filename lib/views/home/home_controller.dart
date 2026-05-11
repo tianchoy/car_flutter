@@ -86,6 +86,7 @@ class HomeController extends GetxController {
       final data = response.data['data'];
       if (data != null) {
         final List<dynamic> list = data['list'] ?? [];
+        // 转换坐标并创建设备模型
         final convertedList = list.map((json) {
           final gcjLocation = _repository.transformToGCJ02(
             json['longitude'],
@@ -97,6 +98,7 @@ class HomeController extends GetxController {
           return DeviceModel.fromJson(json);
         }).toList();
 
+        // 更新设备列表
         deviceList.value = convertedList;
       }
     } else {

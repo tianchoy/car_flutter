@@ -10,9 +10,17 @@ class DetailView extends GetView<DetailController> {
   @override
   Widget build(BuildContext context) {
     return MainScaffold(
-      title: '详情',
+      title: controller.device?.deviceName ?? '详情',
       showBackButton: true,
-      body: Container(child: Text('详情')),
+      body: Container(
+        child: Column(
+          children: [
+            Text('设备名称: ${controller.device?.deviceName ?? '未知设备'}'),
+            Text('经度: ${controller.device?.longitude ?? '未知经度'}'),
+            Text('纬度: ${controller.device?.latitude ?? '未知纬度'}'),
+          ],
+        ),
+      ),
     );
   }
 }
