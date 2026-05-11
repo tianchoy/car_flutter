@@ -23,8 +23,8 @@ class ApiService {
   }
 
   // 获取用户设备列表API
-  Future<Response> getUserDeviceList() async {
-    return await _httpService.get(userDeviceList);
+  Future<Response> getUserDeviceList(data) async {
+    return await _httpService.post(userDeviceList, data: data);
   }
 
   // 获取消息列表API

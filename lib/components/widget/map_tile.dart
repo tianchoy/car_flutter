@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../shared/services/url.dart';
@@ -45,9 +46,7 @@ class MapTile extends StatelessWidget {
                   InteractiveFlag.pinchZoom |
                   InteractiveFlag.doubleTapZoom,
             ),
-            onTap: onMapTap != null
-                ? (_, point) => onMapTap!(point)
-                : null, //点击地图回调
+            onTap: onMapTap != null ? (_, point) => onMapTap!(point) : null,
           ),
           children: [
             TileLayer(
@@ -55,7 +54,42 @@ class MapTile extends StatelessWidget {
               subdomains: const ['1', '2', '3', '4'],
               userAgentPackageName: 'com.example.app',
             ),
-            MarkerLayer(markers: markers),
+            MarkerClusterLayerWidget(
+              options: MarkerClusterLayerOptions(
+                size: const Size(40, 40),
+                markers: markers,
+                maxClusterRadius: 120,
+                disableClusteringAtZoom: 18,
+                // 自定义聚合点样式
+                builder: (context, markers) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.blue,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(1, 2),
+                        ),
+                      ],
+                    ),
+                    width: 40,
+                    height: 40,
+                    child: Center(
+                      child: Text(
+                        markers.length.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
             PolygonLayer(polygons: polygons),
           ],
         ),

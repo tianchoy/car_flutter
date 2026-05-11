@@ -68,7 +68,7 @@ class HomeRepository {
   }
 
   // 获取用户设备列表
-  Future<Response> getUserDeviceList() async {
-    return await _apiService.getUserDeviceList();
+  Future<Response> getUserDeviceList(Map<String, dynamic> data) async {
+    return await _apiService.getUserDeviceList(data);
   }
 }

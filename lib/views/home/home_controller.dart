@@ -82,8 +82,7 @@ class HomeController extends GetxController {
 
   // 获取用户设备列表
   Future<void> _getUserDeviceList() async {
-    final response = await _repository.getUserDeviceList();
-    Log.w('获取用户设备列表响应: $response');
+    final response = await _repository.getUserDeviceList({'pageSize': 1000});
     if (response.data != null && response.data['code'] == 0) {
       final data = response.data['data'];
       if (data != null) {
@@ -94,6 +93,8 @@ class HomeController extends GetxController {
             .map((json) => DeviceModel.fromJson(json))
             .toList();
       }
+    } else {
+      errorMessage.value = '获取设备列表失败: ${response.data['msg'] ?? '未知错误'}';
     }
   }
 
