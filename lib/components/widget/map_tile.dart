@@ -14,6 +14,7 @@ class MapTile extends StatelessWidget {
   final MapController? mapController;
   final List<Marker> markers;
   final List<Polygon> polygons;
+  final List<Polyline> polylines;
   final void Function(LatLng)? onMapTap;
 
   const MapTile({
@@ -26,6 +27,7 @@ class MapTile extends StatelessWidget {
     this.mapController,
     this.markers = const [],
     this.polygons = const [],
+    this.polylines = const [],
     this.onMapTap,
   });
 
@@ -62,37 +64,15 @@ class MapTile extends StatelessWidget {
                 disableClusteringAtZoom: 18,
                 // 自定义聚合点样式
                 builder: (context, markers) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: Colors.blue,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(1, 2),
-                        ),
-                      ],
-                    ),
-                    width: 40,
-                    height: 40,
-                    child: Center(
-                      child: Text(
-                        markers.length.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  );
+                  return _buildClusterMarker(context, markers);
                 },
               ),
             ),
             PolygonLayer(polygons: polygons),
+            PolylineLayer(polylines: polylines),
           ],
         ),
+        // 加载指示器
         if (isLoading)
           Center(
             child: Container(
@@ -104,6 +84,7 @@ class MapTile extends StatelessWidget {
               child: const CircularProgressIndicator(color: Colors.white),
             ),
           ),
+        // 错误提示
         if (errMsg.isNotEmpty)
           Positioned(
             top: 20,
@@ -127,6 +108,35 @@ class MapTile extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  // 构建聚合点样式
+  Widget _buildClusterMarker(BuildContext context, List<Marker> markers) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.blue,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(1, 2),
+          ),
+        ],
+      ),
+      width: 40,
+      height: 40,
+      child: Center(
+        child: Text(
+          markers.length.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
     );
   }
 }

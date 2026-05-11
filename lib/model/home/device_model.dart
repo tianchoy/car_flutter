@@ -3,8 +3,8 @@ class DeviceModel {
   final String deviceName;
   final String? deviceType;
   String? deviceStatus;
-  String? latitude;
-  String? longitude;
+  double latitude;
+  double longitude;
   String? deviceCreateTime;
   String? deviceUpdateTime;
 
@@ -13,8 +13,8 @@ class DeviceModel {
     required this.deviceName,
     this.deviceType,
     this.deviceStatus,
-    this.latitude,
-    this.longitude,
+    required this.latitude,
+    required this.longitude,
     this.deviceCreateTime,
     this.deviceUpdateTime,
   });
@@ -28,8 +28,8 @@ class DeviceModel {
       deviceName: toString(json['deviceName']),
       deviceType: toString(json['deviceType']),
       deviceStatus: toString(json['deviceStatus']),
-      latitude: toString(json['latitude']),
-      longitude: toString(json['longitude']),
+      latitude: json['latitude'],
+      longitude: json['longitude'],
       deviceCreateTime: toString(json['deviceCreateTime']),
       deviceUpdateTime: toString(json['deviceUpdateTime']),
     );

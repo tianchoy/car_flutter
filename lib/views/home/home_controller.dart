@@ -75,7 +75,6 @@ class HomeController extends GetxController {
 
   // 移动地图到当前位置
   Future<void> _moveToCurrentLocation() async {
-    // 确保地图控制器已准备好
     await Future.delayed(const Duration(milliseconds: 100));
     mapController.move(currentPosition.value, mapController.camera.zoom);
   }
@@ -86,12 +85,19 @@ class HomeController extends GetxController {
     if (response.data != null && response.data['code'] == 0) {
       final data = response.data['data'];
       if (data != null) {
-        // 解析设备列表
         final List<dynamic> list = data['list'] ?? [];
-        // 更新设备列表
-        deviceList.value = list
-            .map((json) => DeviceModel.fromJson(json))
-            .toList();
+        final convertedList = list.map((json) {
+          final gcjLocation = _repository.transformToGCJ02(
+            json['longitude'],
+            json['latitude'],
+          );
+          json['longitude'] = gcjLocation.longitude;
+          json['latitude'] = gcjLocation.latitude;
+
+          return DeviceModel.fromJson(json);
+        }).toList();
+
+        deviceList.value = convertedList;
       }
     } else {
       errorMessage.value = '获取设备列表失败: ${response.data['msg'] ?? '未知错误'}';

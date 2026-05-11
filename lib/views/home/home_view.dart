@@ -1,4 +1,5 @@
 import 'package:car/components/widget/is_login.dart';
+import 'package:car/components/widget/named_marker.dart'; // 导入工厂方法
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
@@ -33,36 +34,35 @@ class HomeView extends GetView<HomeController> {
                   duration: const Duration(seconds: 1),
                 );
               },
-              markers: [
-                ...controller.deviceList.map(
-                  (device) => Marker(
-                    point: LatLng(
-                      double.parse(device.latitude ?? '0'),
-                      double.parse(device.longitude ?? '0'),
-                    ),
-                    width: 40,
-                    height: 40,
-                    child: GestureDetector(
+              markers: controller.deviceList
+                  .map((device) {
+                    final latitude = device.latitude?.toString() ?? '';
+                    final longitude = device.longitude?.toString() ?? '';
+
+                    if (latitude == null || longitude == null) {
+                      return null;
+                    }
+                    return createNamedMarker(
+                      point: LatLng(
+                        double.parse(latitude),
+                        double.parse(longitude),
+                      ),
+                      deviceName: device.deviceName ?? '未知设备',
                       onTap: () {
                         Get.snackbar(
-                          '点击设备',
-                          '设备名称: ${device.deviceName ?? '无'}',
+                          '设备信息',
+                          '设备名称: ${device.deviceName}',
                           snackPosition: SnackPosition.TOP,
-                          duration: const Duration(seconds: 1),
+                          duration: const Duration(seconds: 2),
                         );
                         Get.toNamed('/detail');
                       },
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 40,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                    );
+                  })
+                  .whereType<Marker>()
+                  .toList(),
             ),
-            if (!controller.isLoggedIn.value) IsLogin(),
+            if (!controller.isLoggedIn.value) const IsLogin(),
           ],
         ),
       ),
