@@ -1,9 +1,9 @@
 class UserModel {
-  late final String username;
-  late final String? avatar;
-  late final String email;
-  late final String phone;
-  late final String address;
+  final String username;
+  final String? avatar;
+  final String email;
+  final String phone;
+  final String address;
 
   UserModel({
     required this.username,
@@ -15,11 +15,11 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      username: json['username'],
-      avatar: json['avatar'],
-      email: json['email'],
-      phone: json['phone'],
-      address: json['address'],
+      username: json['username'] as String? ?? '',
+      avatar: json['avatar'] as String?,
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      address: json['address'] as String? ?? '',
     );
   }
 }

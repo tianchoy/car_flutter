@@ -22,6 +22,11 @@ class ApiService {
     return await _httpService.get(userInfoUrl);
   }
 
+  // 获取用户设备列表API
+  Future<Response> getUserDeviceList() async {
+    return await _httpService.get(userDeviceList);
+  }
+
   // 获取消息列表API
   Future<Response> getMessagesList() async {
     return await _httpService.get(messagesListUrl);

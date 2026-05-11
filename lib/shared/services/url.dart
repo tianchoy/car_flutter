@@ -4,4 +4,5 @@ String mapUrl =
 String loginUrl = '/sys/login';
 String logoutUrl = '/sys/logout';
 String userInfoUrl = '/sys/user/info';
+String userDeviceList = '/userDevice/list';
 String messagesListUrl = '/usermessage/listForUser';

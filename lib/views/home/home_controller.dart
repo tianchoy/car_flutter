@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../model/home/device_model.dart';
 import 'home_repository.dart';
 
 class HomeController extends GetxController {
@@ -15,6 +16,9 @@ class HomeController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final isLoggedIn = false.obs;
+
+  // 设备列表
+  final deviceList = <DeviceModel>[].obs;
 
   // 位置数据
   final currentPosition = const LatLng(39.9042, 116.4074).obs;
@@ -29,15 +33,19 @@ class HomeController extends GetxController {
     _initializeHomePage();
   }
 
+  // 初始化首页
   Future<void> _initializeHomePage() async {
     await _checkLoginStatus();
     await _loadCurrentLocation();
+    await _getUserDeviceList();
   }
 
+  // 检查登录状态
   Future<void> _checkLoginStatus() async {
     isLoggedIn.value = await _repository.checkToken();
   }
 
+  // 加载当前位置
   Future<void> _loadCurrentLocation() async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -65,15 +73,27 @@ class HomeController extends GetxController {
     }
   }
 
+  // 移动地图到当前位置
   Future<void> _moveToCurrentLocation() async {
     // 确保地图控制器已准备好
     await Future.delayed(const Duration(milliseconds: 100));
     mapController.move(currentPosition.value, mapController.camera.zoom);
   }
 
-  void moveToMyLocation() {
-    if (currentPosition.value != null) {
-      mapController.move(currentPosition.value, mapController.camera.zoom);
+  // 获取用户设备列表
+  Future<void> _getUserDeviceList() async {
+    final response = await _repository.getUserDeviceList();
+    Log.w('获取用户设备列表响应: $response');
+    if (response.data != null && response.data['code'] == 0) {
+      final data = response.data['data'];
+      if (data != null) {
+        // 解析设备列表
+        final List<dynamic> list = data['list'] ?? [];
+        // 更新设备列表
+        deviceList.value = list
+            .map((json) => DeviceModel.fromJson(json))
+            .toList();
+      }
     }
   }
 

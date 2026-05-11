@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../model/profile/profile_model.dart';
 import '../../utils/Logger.dart';
 import 'profile_repository.dart';
 
@@ -7,7 +8,7 @@ class ProfileController extends GetxController
     with GetSingleTickerProviderStateMixin {
   final ProfileRepository _repository = ProfileRepository();
   final isLoggedIn = false.obs;
-  late final profile = <String, dynamic>{}.obs;
+  final profile = Rx<UserModel?>(null);
 
   @override
   void onInit() {
@@ -26,7 +27,7 @@ class ProfileController extends GetxController
     try {
       final response = await _repository.fetchProfile();
       if (response.data != null && response.data['code'] == 0) {
-        profile.value = response.data['data'];
+        profile.value = UserModel.fromJson(response.data['data']);
       } else {
         Log.e('响应错误: ${response.data['msg']}');
       }

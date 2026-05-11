@@ -34,27 +34,38 @@ class HomeView extends GetView<HomeController> {
                 );
               },
               markers: [
-                Marker(
-                  point: LatLng(controller.latitude, controller.longitude),
-                  width: 40,
-                  height: 40,
-                  child: GestureDetector(
-                    onTap: () {
-                      Get.snackbar(
-                        '当前位置',
-                        '经度: ${controller.longitude.toStringAsFixed(6)}, 纬度: ${controller.latitude.toStringAsFixed(6)}',
-                        snackPosition: SnackPosition.TOP,
-                        duration: const Duration(seconds: 1),
-                      );
-                      Get.toNamed('/detail');
-                    },
-                    child: const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
-                  ),
-                ),
+                ...controller.deviceList
+                    .map(
+                      (device) => Marker(
+                        point: LatLng(
+                          double.parse(
+                            device.deviceLocation?.split(',')[0] ?? '0.000000',
+                          ),
+                          double.parse(
+                            device.deviceLocation?.split(',')[1] ?? '0.000000',
+                          ),
+                        ),
+                        width: 40,
+                        height: 40,
+                        child: GestureDetector(
+                          onTap: () {
+                            Get.snackbar(
+                              '点击设备',
+                              '设备名称: ${device.deviceName ?? '无'}',
+                              snackPosition: SnackPosition.TOP,
+                              duration: const Duration(seconds: 1),
+                            );
+                            Get.toNamed('/detail');
+                          },
+                          child: const Icon(
+                            Icons.location_on,
+                            color: Colors.red,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ],
             ),
             if (!controller.isLoggedIn.value) IsLogin(),

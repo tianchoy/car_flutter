@@ -1,11 +1,16 @@
-import 'package:geolocator/geolocator.dart';
 import 'package:coordtransform/coordtransform.dart';
-import '../../utils/Logger.dart';
+import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import '../../shared/services/api_service.dart';
+import '../../utils/Logger.dart';
 import '../../utils/session.dart';
 
 class HomeRepository {
+  final ApiService _apiService = ApiService();
+
   // 只返回原始数据，不持有状态
   Future<Position?> getCurrentLocation() async {
     try {
@@ -13,6 +18,7 @@ class HomeRepository {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         Log.w('定位服务未开启');
+        await Geolocator.openLocationSettings();
         return null;
       }
 
@@ -28,6 +34,7 @@ class HomeRepository {
 
       if (permission == LocationPermission.deniedForever) {
         Log.w('位置权限被永久拒绝');
+        await openAppSettings();
         return null;
       }
 
@@ -58,5 +65,10 @@ class HomeRepository {
     } catch (e) {
       return false;
     }
+  }
+
+  // 获取用户设备列表
+  Future<Response> getUserDeviceList() async {
+    return await _apiService.getUserDeviceList();
   }
 }
