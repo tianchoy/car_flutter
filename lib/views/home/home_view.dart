@@ -34,29 +34,38 @@ class HomeView extends GetView<HomeController> {
                   duration: const Duration(seconds: 1),
                 );
               },
-              markers: controller.deviceList
-                  .map((device) {
-                    final latitude = device.latitude.toString();
-                    final longitude = device.longitude.toString();
-                    return createNamedMarker(
-                      point: LatLng(
-                        double.parse(latitude),
-                        double.parse(longitude),
-                      ),
-                      deviceName: device.deviceName ?? '未知设备',
-                      onTap: () {
-                        Get.snackbar(
-                          '设备信息',
-                          '设备名称: ${device.deviceName}',
-                          snackPosition: SnackPosition.TOP,
-                          duration: const Duration(seconds: 1),
-                        );
-                        Get.toNamed('/detail', arguments: device);
-                      },
-                    );
-                  })
-                  .whereType<Marker>()
-                  .toList(),
+              markers: [
+                ...controller.deviceList
+                    .map((device) {
+                      final latitude = device.latitude.toString();
+                      final longitude = device.longitude.toString();
+                      return createNamedMarker(
+                        point: LatLng(
+                          double.parse(latitude),
+                          double.parse(longitude),
+                        ),
+                        deviceName: device.deviceName ?? '未知设备',
+                        onTap: () {
+                          Get.snackbar(
+                            '设备信息',
+                            '设备名称: ${device.deviceName}',
+                            snackPosition: SnackPosition.TOP,
+                            duration: const Duration(seconds: 1),
+                          );
+                          Get.toNamed('/detail', arguments: device);
+                        },
+                      );
+                    })
+                    .whereType<Marker>()
+                    .toList(),
+                Marker(
+                  width: 40,
+                  height: 40,
+                  point: LatLng(controller.latitude, controller.longitude),
+                  child: Icon(Icons.my_location, color: Colors.blue, size: 30),
+                  alignment: Alignment.center,
+                ),
+              ],
             ),
             if (!controller.isLoggedIn.value) const IsLogin(),
           ],

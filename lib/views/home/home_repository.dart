@@ -1,7 +1,5 @@
-import 'package:coordtransform/coordtransform.dart';
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../shared/services/api_service.dart';
@@ -49,12 +47,6 @@ class HomeRepository {
       Log.e('获取位置失败', error: e);
       return null;
     }
-  }
-
-  // 坐标转换
-  LatLng transformToGCJ02(double longitude, double latitude) {
-    CoordResult gcj = CoordTransform.transformWGS84toGCJ02(longitude, latitude);
-    return LatLng(gcj.lat, gcj.lon);
   }
 
   // 检查 token

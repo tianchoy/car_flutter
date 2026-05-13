@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../model/home/device_model.dart';
+import '../../utils/CoordTransform.dart';
 import 'home_repository.dart';
 
 class HomeController extends GetxController {
@@ -55,7 +56,7 @@ class HomeController extends GetxController {
 
       if (position != null) {
         // 转换坐标
-        final gcjPosition = _repository.transformToGCJ02(
+        final gcjPosition = transformToGCJ02(
           position.longitude,
           position.latitude,
         );
@@ -88,7 +89,7 @@ class HomeController extends GetxController {
         final List<dynamic> list = data['list'] ?? [];
         // 转换坐标并创建设备模型
         final convertedList = list.map((json) {
-          final gcjLocation = _repository.transformToGCJ02(
+          final gcjLocation = transformToGCJ02(
             json['longitude'],
             json['latitude'],
           );
