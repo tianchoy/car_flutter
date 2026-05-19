@@ -18,9 +18,19 @@ class MessagesController extends GetxController {
   final currPage = 1.obs;
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    loadMessages();
+    if (await checkLoginStatus()) {
+      await loadMessages();
+    }
+  }
+
+  Future<bool> checkLoginStatus() async {
+    try {
+      return await _repository.checkToken();
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> loadMessages() async {

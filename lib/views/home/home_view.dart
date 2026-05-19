@@ -23,46 +23,38 @@ class HomeView extends GetView<HomeController> {
             MapTile(
               isLoading: controller.isLoading.value,
               errMsg: controller.errorMessage.value,
-              latitude: controller.latitude,
-              longitude: controller.longitude,
+              latitude: controller.currentPosition.value.latitude,
+              longitude: controller.currentPosition.value.longitude,
               mapController: controller.mapController,
-              onMapTap: (point) {
-                Get.snackbar(
-                  '点击地图',
-                  '经度: ${point.longitude.toStringAsFixed(6)}, 纬度: ${point.latitude.toStringAsFixed(6)}',
-                  snackPosition: SnackPosition.TOP,
-                  duration: const Duration(seconds: 1),
-                );
-              },
               markers: [
-                ...controller.deviceList
-                    .map((device) {
-                      final latitude = device.latitude.toString();
-                      final longitude = device.longitude.toString();
-                      return createNamedMarker(
-                        point: LatLng(
-                          double.parse(latitude),
-                          double.parse(longitude),
-                        ),
-                        deviceName: device.deviceName ?? '未知设备',
-                        onTap: () {
-                          Get.snackbar(
-                            '设备信息',
-                            '设备名称: ${device.deviceName}',
-                            snackPosition: SnackPosition.TOP,
-                            duration: const Duration(seconds: 1),
-                          );
-                          Get.toNamed('/detail', arguments: device);
-                        },
+                ...controller.deviceList.map((device) {
+                  final latitude = device.latitude.toString();
+                  final longitude = device.longitude.toString();
+                  return createNamedMarker(
+                    point: LatLng(
+                      double.parse(latitude),
+                      double.parse(longitude),
+                    ),
+                    deviceName: device.plateNo ?? device.deviceName ?? '未知设备',
+                    onTap: () {
+                      Get.snackbar(
+                        '设备信息',
+                        '设备名称: ${device.deviceName}',
+                        snackPosition: SnackPosition.TOP,
+                        duration: const Duration(seconds: 1),
                       );
-                    })
-                    .whereType<Marker>()
-                    .toList(),
+                      Get.toNamed('/detail', arguments: device);
+                    },
+                  );
+                }).whereType<Marker>(),
                 Marker(
                   width: 40,
                   height: 40,
-                  point: LatLng(controller.latitude, controller.longitude),
-                  child: Icon(Icons.my_location, color: Colors.blue, size: 30),
+                  point: LatLng(
+                    controller.currentPosition.value.latitude,
+                    controller.currentPosition.value.longitude,
+                  ),
+                  child: Icon(Icons.place, color: Colors.blue, size: 30),
                   alignment: Alignment.center,
                 ),
               ],

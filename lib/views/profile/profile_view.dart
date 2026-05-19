@@ -25,7 +25,7 @@ class ProfileView extends GetView<ProfileController> {
                   child: const Icon(CupertinoIcons.person_circle),
                 ),
                 title: Text(
-                  controller.profile.value?.username ?? '加载中...',
+                  controller.profile.value?.username ?? '未登录',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

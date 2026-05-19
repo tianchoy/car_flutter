@@ -24,10 +24,6 @@ class HomeController extends GetxController {
   // 位置数据
   final currentPosition = const LatLng(39.9042, 116.4074).obs;
 
-  double get latitude => currentPosition.value.latitude;
-
-  double get longitude => currentPosition.value.longitude;
-
   @override
   void onInit() {
     super.onInit();
@@ -36,14 +32,22 @@ class HomeController extends GetxController {
 
   // 初始化首页
   Future<void> _initializeHomePage() async {
-    await _checkLoginStatus();
     await _loadCurrentLocation();
-    await _getUserDeviceList();
+    if (await _checkLoginStatus()) {
+      await _getUserDeviceList();
+    }
   }
 
   // 检查登录状态
-  Future<void> _checkLoginStatus() async {
-    isLoggedIn.value = await _repository.checkToken();
+  Future<bool> _checkLoginStatus() async {
+    try {
+      isLoggedIn.value = await _repository.checkToken();
+      return isLoggedIn.value;
+    } catch (e) {
+      errorMessage.value = '检查登录状态失败: ${e.toString()}';
+      Log.e('检查登录状态失败', error: e);
+      return false; // 异常时返回 false
+    }
   }
 
   // 加载当前位置

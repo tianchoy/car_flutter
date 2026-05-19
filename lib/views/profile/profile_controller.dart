@@ -11,10 +11,11 @@ class ProfileController extends GetxController
   final profile = Rx<UserModel?>(null);
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    isLogin();
-    fetchProfile();
+    if (await isLogin()) {
+      await fetchProfile();
+    }
   }
 
   @override
@@ -42,7 +43,11 @@ class ProfileController extends GetxController
     Get.offAllNamed('/');
   }
 
-  Future<void> isLogin() async {
-    isLoggedIn.value = await _repository.checkToken();
+  Future<bool> isLogin() async {
+    try {
+      return await _repository.checkToken();
+    } catch (e) {
+      return false;
+    }
   }
 }
