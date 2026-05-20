@@ -1,5 +1,8 @@
+import 'package:car/components/widget/map_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../shared/widgets/main_scaffold.dart';
 import './detail_controller.dart';
@@ -24,10 +27,67 @@ class DetailView extends GetView<DetailController> {
         ),
         child: Column(
           children: [
-            Text('设备名称: ${controller.device?.plateNo ?? '未知设备'}'),
-            Text('经度: ${controller.device?.longitude ?? '未知经度'}'),
-            Text('纬度: ${controller.device?.latitude ?? '未知纬度'}'),
-            Icon(Icons.arrow_right_rounded, color: Colors.black, size: 20),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              padding: EdgeInsets.fromLTRB(10.0, 0, 10.0, 10.0),
+              margin: EdgeInsets.all(10.0),
+              width: double.infinity,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(padding: EdgeInsets.zero, child: Text('车辆定位')),
+                      TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          backgroundColor: Color(0xFFF0F9F0),
+                          foregroundColor: Color(0xFF07C160),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 2,
+                          ),
+                          minimumSize: Size(0, 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text('定位', style: TextStyle(fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 200,
+                    child: MapTile(
+                      isLoading: false,
+                      errMsg: '',
+                      markers: [
+                        Marker(
+                          width: 40,
+                          height: 40,
+                          point: LatLng(
+                            controller.device?.latitude ?? 0.0,
+                            controller.device?.longitude ?? 0.0,
+                          ),
+                          child: Icon(
+                            Icons.place,
+                            color: Colors.blue,
+                            size: 30,
+                          ),
+                          alignment: Alignment.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
