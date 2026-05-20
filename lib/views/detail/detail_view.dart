@@ -44,7 +44,9 @@ class DetailView extends GetView<DetailController> {
                     children: [
                       Padding(padding: EdgeInsets.zero, child: Text('车辆定位')),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          await controller.moveToCurrentLocation();
+                        },
                         style: TextButton.styleFrom(
                           backgroundColor: Color(0xFFF0F9F0),
                           foregroundColor: Color(0xFF07C160),
@@ -67,6 +69,7 @@ class DetailView extends GetView<DetailController> {
                     child: MapTile(
                       isLoading: false,
                       errMsg: '',
+                      mapController: controller.mapController,
                       markers: [
                         Marker(
                           width: 40,
