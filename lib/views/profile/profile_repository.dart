@@ -1,7 +1,6 @@
 import 'package:dio/src/response.dart';
 
 import '../../shared/services/api_service.dart';
-import '../../utils/Logger.dart';
 import '../../utils/session.dart';
 
 class ProfileRepository {
@@ -20,14 +19,11 @@ class ProfileRepository {
   }
 
   // 检查 token 是否有效
-  Future<bool> checkToken() async {
+  Future<String?> getToken() async {
     try {
-      final token = await getSession('token');
-      Log.i('检查 token: $token');
-      return token != null && token.isNotEmpty;
+      return await getSession('token');
     } catch (e) {
-      Log.e('检查 token 失败', error: e);
-      return false;
+      return null;
     }
   }
 }

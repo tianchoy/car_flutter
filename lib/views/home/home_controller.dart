@@ -41,12 +41,14 @@ class HomeController extends GetxController {
   // 检查登录状态
   Future<bool> _checkLoginStatus() async {
     try {
-      isLoggedIn.value = await _repository.checkToken();
+      final token = await _repository.getToken();
+      isLoggedIn.value = token != null && token.isNotEmpty;
       return isLoggedIn.value;
     } catch (e) {
       errorMessage.value = '检查登录状态失败: ${e.toString()}';
       Log.e('检查登录状态失败', error: e);
-      return false; // 异常时返回 false
+      isLoggedIn.value = false;
+      return false;
     }
   }
 
@@ -56,7 +58,7 @@ class HomeController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final position = await _repository.getCurrentLocation();
+      final position = await _repository.getCurrentPosition();
 
       if (position != null) {
         // 转换坐标

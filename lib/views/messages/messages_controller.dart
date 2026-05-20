@@ -27,7 +27,8 @@ class MessagesController extends GetxController {
 
   Future<bool> checkLoginStatus() async {
     try {
-      return await _repository.checkToken();
+      final token = await _repository.getToken();
+      return token != null && token.isNotEmpty;
     } catch (e) {
       return false;
     }

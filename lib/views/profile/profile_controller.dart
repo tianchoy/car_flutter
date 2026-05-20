@@ -45,8 +45,11 @@ class ProfileController extends GetxController
 
   Future<bool> isLogin() async {
     try {
-      return await _repository.checkToken();
+      final token = await _repository.getToken();
+      isLoggedIn.value = token != null && token.isNotEmpty;
+      return isLoggedIn.value;
     } catch (e) {
+      isLoggedIn.value = false;
       return false;
     }
   }

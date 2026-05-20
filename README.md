@@ -61,4 +61,15 @@ A new Flutter project for car connect internet.
       );
       ```
 
-
+- snackbar
+    ```dart
+    
+    Get.snackbar
+    (
+    title,
+    content,
+    snackPosition: SnackPosition.TOP,
+    duration: const Duration(seconds: 1),
+    );
+    
+    ```

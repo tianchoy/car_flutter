@@ -7,12 +7,11 @@ class MessagesRepository {
   final ApiService _apiService = ApiService();
 
   // 检查 token
-  Future<bool> checkToken() async {
+  Future<String?> getToken() async {
     try {
-      final token = await getSession('token');
-      return token != null && token.isNotEmpty;
+      return await getSession('token');
     } catch (e) {
-      return false;
+      return null;
     }
   }
 

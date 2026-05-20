@@ -37,12 +37,6 @@ class HomeView extends GetView<HomeController> {
                     ),
                     deviceName: device.plateNo ?? device.deviceName ?? '未知设备',
                     onTap: () {
-                      Get.snackbar(
-                        '设备信息',
-                        '设备名称: ${device.deviceName}',
-                        snackPosition: SnackPosition.TOP,
-                        duration: const Duration(seconds: 1),
-                      );
                       Get.toNamed('/detail', arguments: device);
                     },
                   );
