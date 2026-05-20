@@ -23,12 +23,13 @@ class DetailController extends GetxController {
 
   Future<void> moveToCurrentLocation() async {
     if (device == null) return;
+    await _detailRepository.fetchDetailData(device);
     await Future.delayed(const Duration(milliseconds: 100));
     final currentPosition = LatLng(device!.latitude, device!.longitude);
     try {
       mapController.move(currentPosition, mapController.camera.zoom);
     } catch (e) {
-      print('地图移动失败: $e');
+      Log.i('地图移动失败: $e');
     }
   }
 
