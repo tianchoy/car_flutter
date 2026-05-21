@@ -112,9 +112,4 @@ class HomeController extends GetxController {
       errorMessage.value = '获取设备列表失败: ${response.data['msg'] ?? '未知错误'}';
     }
   }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

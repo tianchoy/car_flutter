@@ -32,9 +32,4 @@ class DetailController extends GetxController {
       Log.i('地图移动失败: $e');
     }
   }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

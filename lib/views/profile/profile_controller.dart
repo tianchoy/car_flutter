@@ -18,11 +18,6 @@ class ProfileController extends GetxController
     }
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
-
   // 获取用户信息API
   Future<void> fetchProfile() async {
     try {

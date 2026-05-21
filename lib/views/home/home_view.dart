@@ -17,6 +17,7 @@ class HomeView extends GetView<HomeController> {
     return MainScaffold(
       title: '首页',
       showBackButton: false,
+      showBottomNavBar: true,
       body: Obx(
         () => Stack(
           children: [
