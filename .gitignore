@@ -11,7 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-lib/shared/services/url.dart
+.env
 
 # IntelliJ related
 *.iml
