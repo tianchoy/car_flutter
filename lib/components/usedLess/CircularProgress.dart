@@ -5,12 +5,14 @@ class CircularProgress extends StatelessWidget {
   final String value;
   final String label;
   final Color circleColor;
+  final double diameter;
 
   const CircularProgress({
     super.key,
     this.tips = '',
     this.value = '',
     this.label = '',
+    required this.diameter,
     required this.circleColor,
   });
 
@@ -20,8 +22,8 @@ class CircularProgress extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         SizedBox(
-          width: 150,
-          height: 150,
+          width: diameter,
+          height: diameter,
           child: CircularProgressIndicator(
             value: 1,
             strokeWidth: 4,
@@ -33,8 +35,8 @@ class CircularProgress extends StatelessWidget {
         Transform.rotate(
           angle: 360 * 3.14159 / 180,
           child: SizedBox(
-            width: 150,
-            height: 150,
+            width: diameter,
+            height: diameter,
             child: CircularProgressIndicator(
               value: 0.8,
               strokeWidth: 12,
@@ -49,12 +51,15 @@ class CircularProgress extends StatelessWidget {
           children: [
             Text(
               tips,
-              style: TextStyle(fontSize: 150 * 0.08, color: Colors.black87),
+              style: TextStyle(
+                fontSize: diameter * 0.08,
+                color: Colors.black87,
+              ),
             ),
             Text(
               value,
               style: TextStyle(
-                fontSize: 150 * 0.2,
+                fontSize: diameter * 0.2,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[600],
               ),

@@ -64,8 +64,8 @@ class DetailView extends GetView<DetailController> {
   Widget buildCircularProgress() {
     return CustomCard(
       buildBody: _circularProgress(),
-      title: '车辆状态',
-      label: '状态',
+      title: '轨迹记录',
+      label: '更多轨迹',
       onClickFunction: () {},
       showDivider: true,
     );
@@ -73,18 +73,21 @@ class DetailView extends GetView<DetailController> {
 
   Widget _circularProgress() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         CircularProgress(
-          tips: '速度',
+          diameter: 150,
+          tips: '条',
           value: '150',
-          label: 'km/h',
-          circleColor: Colors.lightGreenAccent,
+          label: '今日轨迹',
+          circleColor: Colors.greenAccent,
         ),
+        SizedBox(width: 30),
         CircularProgress(
-          tips: '速度',
+          diameter: 150,
+          tips: 'km',
           value: '150',
-          label: 'km/h',
+          label: '今日里程',
           circleColor: Colors.orangeAccent,
         ),
       ],

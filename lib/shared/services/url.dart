@@ -8,3 +8,4 @@ String logoutUrl = '/sys/logout';
 String userInfoUrl = '/sys/user/info';
 String userDeviceList = '/userDevice/list';
 String messagesListUrl = '/usermessage/listForUser';
+String trackPos = '/gps/trackPos?';

@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../model/home/device_model.dart';
-import 'detail_repository.dart';
 import '../../utils/Logger.dart';
+import 'detail_repository.dart';
 
 class DetailController extends GetxController {
   final DetailRepository _detailRepository = DetailRepository();
@@ -23,7 +23,8 @@ class DetailController extends GetxController {
 
   Future<void> moveToCurrentLocation() async {
     if (device == null) return;
-    await _detailRepository.fetchDetailData(device);
+    final data = {'deviceId': device!.deviceId};
+    await _detailRepository.fetchTrackData(data);
     await Future.delayed(const Duration(milliseconds: 100));
     final currentPosition = LatLng(device!.latitude, device!.longitude);
     try {

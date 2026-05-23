@@ -23,12 +23,17 @@ class ApiService {
   }
 
   // 获取用户设备列表API
-  Future<Response> getUserDeviceList(data) async {
+  Future<Response> getUserDeviceList(Map<String, dynamic> data) async {
     return await _httpService.post(userDeviceList, data: data);
   }
 
   // 获取消息列表API
   Future<Response> getMessagesList() async {
     return await _httpService.get(messagesListUrl);
+  }
+
+  // 获取轨迹位置API
+  Future<Response> getTrackPos(Map<String, dynamic> data) async {
+    return await _httpService.post(trackPos, data: data);
   }
 }
