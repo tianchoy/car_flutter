@@ -23,7 +23,16 @@ class DetailController extends GetxController {
 
   Future<void> moveToCurrentLocation() async {
     if (device == null) return;
-    final data = {'deviceId': device!.deviceId};
+    final data = {
+      'deviceId': device!.deviceId,
+      'imei': device!.imei,
+      'startTime': '',
+      'endTime': '',
+      'minParkTime': 120,
+      'withStop': false,
+      'withPos': false,
+      'withTrip': true,
+    };
     await _detailRepository.fetchTrackData(data);
     await Future.delayed(const Duration(milliseconds: 100));
     final currentPosition = LatLng(device!.latitude, device!.longitude);
