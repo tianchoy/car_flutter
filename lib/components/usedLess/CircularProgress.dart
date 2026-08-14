@@ -51,9 +51,10 @@ class CircularProgress extends StatelessWidget {
           children: [
             Text(
               tips,
+              textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: diameter * 0.08,
-                color: Colors.black87,
+                color: Colors.grey[500],
               ),
             ),
             Text(
