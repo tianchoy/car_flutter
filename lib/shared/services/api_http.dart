@@ -72,12 +72,16 @@ class HttpService {
           requestOptions: error.requestOptions,
           error: '网络连接超时，请稍后重试',
         );
+      case DioExceptionType.transformTimeout:
+        return DioException(
+          requestOptions: error.requestOptions,
+          error: '数据转换超时，请稍后重试',
+        );
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode ?? 0;
         String message = '请求失败，状态码: $statusCode';
         if (statusCode == 401) {
           message = '未授权，请重新登录';
-          // 处理未授权，例如跳转到登录页
           clearToken();
         } else if (statusCode == 404) {
           message = '请求资源不存在';
