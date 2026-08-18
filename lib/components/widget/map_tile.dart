@@ -13,8 +13,8 @@ class MapTile extends StatelessWidget {
   final double initialZoom;
   final MapController? mapController;
   final List<Marker> markers;
-  final List<Polygon> polygons;
-  final List<Polyline> polylines;
+  final List<Polygon> polygons; // 多边形
+  final List<Polyline> polylines; // 折线
   final void Function(LatLng)? onMapTap;
 
   const MapTile({
