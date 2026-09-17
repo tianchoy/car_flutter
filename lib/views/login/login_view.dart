@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
-import 'login_controller.dart';
+
+import '../../app/router_instance.dart';
+import '../../shared/services/app_links.dart';
 import '../../shared/widgets/main_scaffold.dart';
+import '../../shared/widgets/reference_ui.dart';
+import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
@@ -12,25 +16,31 @@ class LoginView extends GetView<LoginController> {
     return MainScaffold(
       title: '登录',
       showBackButton: false,
+      showBottomNavBar: false,
+      backgroundColor: const Color(0xFFFBFCFE),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
+        onTap: FocusScope.of(context).unfocus,
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
-                _buildLogo(),
-                const SizedBox(height: 40),
-                _buildUsernameField(),
-                const SizedBox(height: 16),
-                _buildPasswordField(),
-                const SizedBox(height: 30),
-                _buildLoginButton(),
-                const SizedBox(height: 16),
-                _buildFooter(),
-                const SizedBox(height: 20),
+                _buildBrand(),
+                const SizedBox(height: 26),
+                _buildModeSwitch(),
+                const SizedBox(height: 18),
+                Obx(
+                  () => controller.useSmsLogin.value
+                      ? _buildSmsForm()
+                      : _buildPasswordForm(),
+                ),
+                const SizedBox(height: 12),
+                _buildAgreement(context),
+                const SizedBox(height: 18),
+                _buildLoginButton(context),
+                const SizedBox(height: 18),
+                _buildLinks(),
               ],
             ),
           ),
@@ -39,154 +49,233 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildBrand() {
     return Column(
       children: [
-        Icon(Icons.lock_outline, size: 80, color: Get.theme.primaryColor),
-        const SizedBox(height: 16),
-        Text(
-          '欢迎回来',
-          style: Get.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
+        Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: .1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            CupertinoIcons.location_solid,
+            color: AppColors.primary,
+            size: 48,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '请登录以继续',
-          style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+        const SizedBox(height: 15),
+        const Text(
+          '中导物联',
+          style: TextStyle(
+            fontSize: 27,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 7),
+        const Text(
+          '智能车联网管理平台',
+          style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
         ),
       ],
     );
   }
 
-  Widget _buildUsernameField() {
+  Widget _buildModeSwitch() {
     return Obx(
-      () => CupertinoTextField(
-        controller: controller.usernameController,
-        placeholder: '请输入用户名',
-        prefix: Padding(
-          padding: const EdgeInsets.only(left: 8.0, right: 4.0), // 左侧加间距
-          child: Icon(Icons.person, size: 20),
-        ),
-        suffix: controller.username.value.isNotEmpty
-            ? GestureDetector(
-                onTap: controller.clearUsername,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 8.0,
-                  ),
-                  child: Icon(Icons.clear, size: 18),
-                ),
-              )
-            : null,
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        style: const TextStyle(fontSize: 16),
+      () => Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => controller.useSmsLogin.value = false,
+              child: _modeTab('密码登录', !controller.useSmsLogin.value),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => controller.useSmsLogin.value = true,
+              child: _modeTab('验证码登录', controller.useSmsLogin.value),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPasswordField() {
-    return Obx(
-      () => CupertinoTextField(
-        controller: controller.passwordController,
-        placeholder: '请输入密码',
-        obscureText: controller.obscurePassword.value,
-        prefix: Padding(
-          padding: const EdgeInsets.only(left: 8.0, right: 4.0), // 左侧加间距
-          child: Icon(Icons.lock, size: 20),
+  Widget _modeTab(String text, bool selected) {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 11),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: selected ? AppColors.primary : AppColors.divider,
+            width: selected ? 2 : 1,
+          ),
         ),
-        suffix: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (controller.password.value.isNotEmpty)
-              GestureDetector(
-                onTap: controller.clearPassword,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 10.0,
-                    vertical: 8.0,
-                  ),
-                  child: Icon(Icons.clear, size: 18),
-                ),
-              ),
-            GestureDetector(
-              onTap: controller.togglePasswordVisibility,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(
-                  controller.obscurePassword.value
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  size: 20,
-                ),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: selected ? AppColors.primary : AppColors.secondaryText,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordForm() {
+    return Column(
+      children: [
+        ReferenceInput(
+          controller: controller.usernameController,
+          hint: '请输入账号或手机号',
+          prefix: const Icon(CupertinoIcons.person),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 13),
+        Obx(
+          () => ReferenceInput(
+            controller: controller.passwordController,
+            hint: '请输入密码',
+            obscureText: controller.obscurePassword.value,
+            onSubmitted: (_) => controller.login(),
+            prefix: const Icon(CupertinoIcons.lock),
+            suffix: ReferenceIconButton(
+              icon: controller.obscurePassword.value
+                  ? CupertinoIcons.eye_slash
+                  : CupertinoIcons.eye,
+              onPressed: controller.togglePasswordVisibility,
+              color: AppColors.secondaryText,
+              size: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmsForm() {
+    return Column(
+      children: [
+        ReferenceInput(
+          controller: controller.phoneController,
+          hint: '请输入手机号',
+          keyboardType: TextInputType.phone,
+          prefix: const Icon(CupertinoIcons.phone),
+        ),
+        const SizedBox(height: 13),
+        Obx(
+          () => ReferenceInput(
+            controller: controller.smsCodeController,
+            hint: '请输入验证码',
+            keyboardType: TextInputType.number,
+            prefix: const Icon(CupertinoIcons.chat_bubble),
+            suffix: CupertinoButton(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              onPressed: controller.canSendSmsCode
+                  ? controller.sendSmsCode
+                  : null,
+              child: Text(
+                controller.smsCountdown.value == 0
+                    ? '获取验证码'
+                    : '${controller.smsCountdown.value}s',
+                style: const TextStyle(fontSize: 13),
               ),
             ),
-          ],
+          ),
         ),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        style: const TextStyle(fontSize: 16),
+      ],
+    );
+  }
+
+  Widget _buildAgreement(BuildContext context) {
+    return Obx(
+      () => Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: Transform.scale(
+              scale: 1.15,
+              child: CupertinoCheckbox(
+                value: controller.agreed.value,
+                onChanged: (value) => controller.agreed.value = value ?? false,
+                activeColor: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                text: '我已阅读并同意',
+                style: const TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+                children: [
+                  TextSpan(
+                    text: '《用户协议》',
+                    style: const TextStyle(color: AppColors.primary),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => LegalLinks.showUserAgreement(context),
+                  ),
+                  const TextSpan(text: '和'),
+                  TextSpan(
+                    text: '《隐私政策》',
+                    style: const TextStyle(color: AppColors.primary),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => LegalLinks.showPrivacyPolicy(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(BuildContext context) {
     return Obx(
-      () => CupertinoButton(
-        onPressed:
-            (controller.username.value.isNotEmpty &&
-                controller.password.value.isNotEmpty &&
-                controller.password.value.length >= 6 &&
-                !controller.isLoading.value)
+      () => ReferenceButton(
+        label: '登录',
+        expand: true,
+        loading: controller.isLoading.value,
+        onPressed: controller.isFormValid && controller.agreed.value
             ? () {
-                FocusScope.of(Get.context!).unfocus();
+                FocusScope.of(context).unfocus();
                 controller.login();
               }
             : null,
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(12),
-        minimumSize: const Size(double.infinity, 50),
-        disabledColor: Colors.blue.withAlpha(100),
-        child: controller.isLoading.value
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                '登录',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
       ),
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildLinks() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        TextButton(
-          onPressed: () {
-            Get.offAllNamed('/');
-          },
-          child: const Text('暂不登录'),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Get.toNamed(Routes.register),
+          child: const Text('注册账号›'),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Get.toNamed(Routes.forgotPassword),
+          child: const Text('忘记密码›'),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Get.offAllNamed(Routes.home),
+          child: const Text('暂不登录›'),
         ),
       ],
     );

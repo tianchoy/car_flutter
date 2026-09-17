@@ -1,0 +1,561 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get.dart';
+
+import 'package:car/app/route_arguments.dart';
+import 'package:car/app/route_observer.dart';
+import 'package:car/app/router_instance.dart';
+import 'package:car/components/widget/map_tile.dart';
+import 'package:car/utils/car_icon.dart';
+import 'package:car/model/home/device_detail_model.dart';
+import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/shared/widgets/find_car.dart';
+import 'package:car/shared/widgets/main_scaffold.dart';
+import 'package:car/shared/widgets/reference_ui.dart';
+import 'detail_controller.dart';
+
+class DetailView extends GetView<DetailController> {
+  const DetailView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        MainScaffold(
+          title: '详情',
+          showBackButton: true,
+          showBottomNavBar: false,
+          actions: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () => _showRefreshOptions(context),
+              child: const Icon(CupertinoIcons.refresh_circled, size: 19),
+            ),
+          ],
+          body: Obx(
+            () => CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                AppRefreshControl(
+                  onRefresh: controller.loadDetails,
+                ),
+                SliverPadding(
+                  // 顶部留白为 0：让地图卡片紧贴顶部导航栏；底部收紧，iOS 安全区已占空间。
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildMapCard(),
+                      // 设备状态紧随地图下方展示
+                      if (controller.detail.value != null)
+                        _buildStatusCard(controller.detail.value!),
+                      _buildDeviceInfoCard(),
+                      _buildFeatureCard(),
+                      if (controller.isLoading.value)
+                        const Padding(
+                          padding: EdgeInsets.all(18),
+                          child: Center(child: AppLoadingIndicator()),
+                        ),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        _RouteAwarePause(controller: controller),
+      ],
+    );
+  }
+
+  Future<void> _showRefreshOptions(BuildContext context) async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('刷新频率'),
+        actions: [
+          _refreshAction(context, 0, '停止刷新'),
+          _refreshAction(context, 5, '每 5 秒刷新'),
+          _refreshAction(context, 10, '每 10 秒刷新'),
+          _refreshAction(context, 30, '每 30 秒刷新'),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消', style: TextStyle(fontSize: 15)),
+        ),
+      ),
+    );
+  }
+
+  CupertinoActionSheetAction _refreshAction(
+    BuildContext context,
+    int seconds,
+    String label,
+  ) => CupertinoActionSheetAction(
+    isDefaultAction: controller.refreshIntervalSeconds.value == seconds,
+    onPressed: () {
+      Navigator.pop(context);
+      controller.setRefreshInterval(seconds);
+    },
+    child: Text(label, style: const TextStyle(fontSize: 15)),
+  );
+
+  Widget _buildMapCard() {
+    final point = controller.mapPosition;
+    final title =
+        controller.device?.plateNo ?? controller.device?.deviceName ?? '当前车辆';
+    return ReferenceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 278,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: MapTile(
+                      latitude: point?.latitude ?? 39.9042,
+                      longitude: point?.longitude ?? 116.4074,
+                      mapController: controller.mapController,
+                      initialZoom: 14,
+                      clusterMarkers: false,
+                      isLoading: controller.isRefreshing.value,
+                      errMsg: point == null
+                          ? '设备暂无有效定位'
+                          : controller.errorMessage.value,
+                      markers: point == null
+                          ? const []
+                          : [
+                              Marker(
+                                width: 38,
+                                height: 38,
+                                point: point,
+                                child: Image.asset(
+                                  deviceIconPath(
+                                    online: controller.isOnline,
+                                    carType: controller.device?.carType,
+                                  ),
+                                  width: 34,
+                                  height: 34,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.white.withValues(alpha: .94),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          StatusPill(
+                            label: controller.isOnline ? '在线' : '离线',
+                            online: controller.isOnline,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
+            child: Row(
+              children: [
+                const Icon(
+                  CupertinoIcons.location,
+                  color: AppColors.primary,
+                  size: 19,
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    '地址：${controller.isLoadingAddress.value ? '正在解析…' : controller.displayAddress}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                if (controller.isLoadingAddress.value ||
+                    controller.showParseAddressButton)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      onPressed: controller.parseAddress,
+                      child: Text(
+                        controller.isLoadingAddress.value ? '解析中…' : '解析中文地址',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceInfoCard() {
+    final device = controller.device;
+    return ReferenceCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                CupertinoIcons.device_phone_portrait,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'ID：${device?.deviceNo ?? device?.deviceId ?? '--'}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (controller.refreshIntervalSeconds.value > 0)
+                Text(
+                  '${controller.refreshIntervalSeconds.value}s 自动刷新',
+                  style: const TextStyle(
+                    color: AppColors.secondaryText,
+                    fontSize: 11,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 通信时间靠左、当前位置靠右，同一行两端对齐
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(child: _infoItem('通信时间', controller.positionUpdateTime)),
+              _infoItem(
+                '当前位置',
+                controller.mapPosition == null ? '暂无' : '已定位',
+                alignRight: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoItem(String label, String value, {bool alignRight = false}) =>
+      Column(
+        crossAxisAlignment: alignRight
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: alignRight ? TextAlign.right : TextAlign.left,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      );
+
+  Widget _buildStatusCard(DeviceDetailModel detail) {
+    return ReferenceCard(
+      child: Column(
+        children: [
+          const SectionTitle('设备状态'),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _statusItem(
+                CupertinoIcons.wifi,
+                '信号',
+                controller.signalStrength,
+                AppColors.primary,
+              ),
+              _statusItem(
+                CupertinoIcons.location,
+                '卫星',
+                controller.satelliteCount,
+                AppColors.primaryDark,
+              ),
+              _statusItem(
+                CupertinoIcons.bolt_fill,
+                '电压',
+                '${controller.voltage}V',
+                AppColors.warning,
+              ),
+              _statusItem(
+                CupertinoIcons.battery_full,
+                '电量',
+                '${controller.batteryPercent}%',
+                AppColors.success,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusItem(IconData icon, String label, String value, Color color) =>
+      Column(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(height: 5),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildFeatureCard() => ReferenceCard(
+    child: Column(
+      children: [
+        const SectionTitle('车辆功能'),
+        FeatureGrid(
+          crossAxisCount: 5,
+          children: [
+            _feature(
+              CupertinoIcons.chart_bar_alt_fill,
+              '轨迹回放',
+              Routes.playback,
+              assetName: 'gjhf',
+            ),
+            _feature(
+              CupertinoIcons.location,
+              '车辆跟踪',
+              Routes.tracking,
+              assetName: 'clgz',
+              color: AppColors.success,
+            ),
+            _feature(
+              CupertinoIcons.arrow_right,
+              '里程记录',
+              Routes.mileage,
+              assetName: 'lcjl',
+              color: AppColors.primaryDark,
+            ),
+            _feature(
+              CupertinoIcons.car_detailed,
+              '停车记录',
+              Routes.stopRecord,
+              assetName: 'tcjl',
+              color: AppColors.warning,
+            ),
+            _feature(
+              CupertinoIcons.square_grid_2x2,
+              '电子围栏',
+              Routes.geofence,
+              assetName: 'dzwl',
+              color: const Color(0xFF6E58B5),
+            ),
+            FeatureTile(
+              icon: CupertinoIcons.search,
+              assetName: 'pos',
+              title: '一键寻车',
+              color: AppColors.primary,
+              onTap: () {
+                final dest = controller.mapPosition;
+                if (dest == null) {
+                  AppToast.show('提示', '设备暂无有效定位');
+                  return;
+                }
+                final context = Get.context;
+                if (context == null) return;
+                final device = controller.device;
+                startFindCar(
+                  context,
+                  destination: dest,
+                  title:
+                      device?.plateNo ??
+                      device?.deviceName ??
+                      device?.deviceNo ??
+                      '我的车辆',
+                );
+              },
+            ),
+            FeatureTile(
+              icon: CupertinoIcons.power,
+              assetName: 'power',
+              title: '恢复油电',
+              color: AppColors.success,
+              onTap: () => _sendPowerCommand(restore: true),
+            ),
+            FeatureTile(
+              icon: CupertinoIcons.xmark_octagon,
+              assetName: 'offpower',
+              title: '断开油电',
+              color: AppColors.danger,
+              onTap: () => _sendPowerCommand(restore: false),
+            ),
+            _feature(
+              CupertinoIcons.share,
+              '分享设备',
+              Routes.deviceShare,
+              assetName: 'share',
+              color: const Color(0xFF159A9C),
+            ),
+            _feature(
+              CupertinoIcons.paperplane,
+              '发送指令',
+              Routes.commands,
+              assetName: 'cmd',
+              color: AppColors.danger,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  /// 断油电 / 恢复油电：确认后调用控制器下发指令（密码可留空）。
+  Future<void> _sendPowerCommand({required bool restore}) async {
+    final rootContext = Get.context;
+    if (rootContext == null) return;
+    final passwordController = TextEditingController();
+    final confirmed = await showCupertinoDialog<bool>(
+      context: rootContext,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(restore ? '恢复油电' : '断开油电'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text(
+              restore ? '确定恢复车辆油电吗？' : '确定断开车辆油电吗？',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 10),
+            CupertinoTextField(
+              controller: passwordController,
+              placeholder: '密码（没有可留空）',
+              obscureText: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              style: const TextStyle(fontSize: 15),
+              placeholderStyle: const TextStyle(
+                fontSize: 15,
+                color: CupertinoColors.placeholderText,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    final password = passwordController.text;
+    passwordController.dispose();
+    if (confirmed != true) return;
+    await controller.sendPowerCommand(restore: restore, password: password);
+  }
+
+  Widget _feature(
+    IconData icon,
+    String title,
+    String route, {
+    required String assetName,
+    Color? color,
+  }) => FeatureTile(
+    icon: icon,
+    assetName: assetName,
+    title: title,
+    color: color ?? AppColors.primary,
+    onTap: controller.device == null
+        ? null
+        : () => Get.toNamed(
+            route,
+            arguments: DeviceRouteArgs(controller.device!),
+          ),
+  );
+}
+
+/// 通过 [RouteAware] 监听详情页进出栈：离开本页暂停自动刷新，返回本页恢复。
+class _RouteAwarePause extends StatefulWidget {
+  const _RouteAwarePause({required this.controller});
+
+  final DetailController controller;
+
+  @override
+  State<_RouteAwarePause> createState() => _RouteAwarePauseState();
+}
+
+class _RouteAwarePauseState extends State<_RouteAwarePause> with RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPushNext() => widget.controller.pauseAutoRefresh();
+
+  @override
+  void didPopNext() => widget.controller.resumeAutoRefresh();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}

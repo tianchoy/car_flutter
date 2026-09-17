@@ -4,18 +4,26 @@ import '../../shared/services/api_service.dart';
 import '../../utils/session.dart';
 
 class MessagesRepository {
-  final ApiService _apiService = ApiService();
+  MessagesRepository({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
-  // 检查 token
-  Future<String?> getToken() async {
-    try {
-      return await getSession('token');
-    } catch (e) {
-      return null;
-    }
+  final ApiService _apiService;
+
+  Future<String?> getToken() => getSession(SessionKeys.token);
+
+  Future<Response<dynamic>> fetchMessages({
+    required int page,
+    required int pageSize,
+  }) {
+    return _apiService.getMessagesList(
+      queryParameters: <String, dynamic>{'page': page, 'pageSize': pageSize},
+    );
   }
 
-  Future<Response> fetchMessages() async {
-    return await _apiService.getMessagesList();
+  Future<Response<dynamic>> markMessageRead(String messageId) {
+    return _apiService.markMessageRead(messageId);
   }
+
+  Future<Response<dynamic>> fetchUnreadCount() =>
+      _apiService.getUnreadMessageCount();
 }

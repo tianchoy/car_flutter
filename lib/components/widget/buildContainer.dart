@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class BuildContainer extends StatelessWidget {
-  const BuildContainer({super.key, this.child, this.color = Colors.white});
+  const BuildContainer({
+    super.key,
+    this.child,
+    this.color = CupertinoColors.white,
+  });
 
   final Widget? child;
   final Color color;

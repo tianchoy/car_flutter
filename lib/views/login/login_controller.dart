@@ -1,125 +1,157 @@
-// login_controller.dart
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'dart:async';
 
-import 'login_respository.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
+import 'package:car/shared/widgets/app_toast.dart';
+
+import '../../app/router_instance.dart';
+import '../../shared/models/api_response.dart';
+import 'login_repository.dart';
 
 class LoginController extends GetxController {
-  final LoginRepository loginRepository = LoginRepository();
+  LoginController({LoginRepository? loginRepository})
+    : _loginRepository = loginRepository ?? LoginRepository();
 
-  // 表单状态
+  final LoginRepository _loginRepository;
   final formKey = GlobalKey<FormState>();
-
-  // TextEditingController 用于控制输入框
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController smsCodeController = TextEditingController();
 
-  // Rx 变量用于响应式监听
   final RxString username = ''.obs;
   final RxString password = ''.obs;
+  final RxString phone = ''.obs;
+  final RxString smsCode = ''.obs;
+  final RxInt smsCountdown = 0.obs;
+  final RxBool useSmsLogin = false.obs;
+  final RxBool agreed = false.obs;
   final RxBool isLoading = false.obs;
   final RxBool obscurePassword = true.obs;
 
-  // 计算属性
-  bool get isFormValid =>
-      username.value.isNotEmpty && password.value.isNotEmpty;
+  Timer? _smsTimer;
+
+  bool get canSendSmsCode =>
+      phone.value.length >= 11 && smsCountdown.value == 0 && !isLoading.value;
+
+  bool get isFormValid => useSmsLogin.value
+      ? phone.value.isNotEmpty && smsCode.value.isNotEmpty && !isLoading.value
+      : username.value.isNotEmpty &&
+            password.value.isNotEmpty &&
+            !isLoading.value;
 
   @override
   void onInit() {
     super.onInit();
-    usernameController.addListener(() {
-      username.value = usernameController.text.trim();
-    });
-    passwordController.addListener(() {
-      password.value = passwordController.text.trim();
-    });
+    usernameController.addListener(
+      () => username.value = usernameController.text.trim(),
+    );
+    passwordController.addListener(
+      () => password.value = passwordController.text,
+    );
+    phoneController.addListener(
+      () => phone.value = phoneController.text.trim(),
+    );
+    smsCodeController.addListener(
+      () => smsCode.value = smsCodeController.text.trim(),
+    );
   }
 
-  // 切换密码可见性
-  void togglePasswordVisibility() {
-    obscurePassword.value = !obscurePassword.value;
-  }
+  void togglePasswordVisibility() =>
+      obscurePassword.value = !obscurePassword.value;
 
-  void login() async {
-    // 表单验证
-    if (username.value.isEmpty) {
-      Get.snackbar(
-        '提示',
-        '请输入用户名',
-        snackPosition: SnackPosition.TOP,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 1),
-      );
-      return;
-    }
-
-    if (password.value.isEmpty) {
-      Get.snackbar(
-        '提示',
-        '请输入密码',
-        snackPosition: SnackPosition.TOP,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 1),
-      );
-      return;
-    }
-
-    if (password.value.length < 6) {
-      Get.snackbar(
-        '提示',
-        '密码长度不能少于6位',
-        snackPosition: SnackPosition.TOP,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 1),
-      );
-      return;
-    }
-
-    // 防止重复提交
-    if (isLoading.value) return;
-
+  Future<void> sendSmsCode() async {
+    if (!canSendSmsCode) return;
     isLoading.value = true;
     try {
-      await loginRepository.login(username.value, password.value);
-      // 登录成功后的处理
-      Get.snackbar(
-        '成功',
-        '登录成功',
-        snackPosition: SnackPosition.TOP,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 1),
-      );
-      // 跳转到主页
-      Get.offAllNamed('/');
-    } catch (e) {
-      Get.snackbar(
-        '错误',
-        '登录失败：$e',
-        snackPosition: SnackPosition.TOP,
-        colorText: Colors.black,
-        duration: const Duration(seconds: 1),
-      );
+      await _loginRepository.sendSmsCode(phone.value);
+      smsCountdown.value = 60;
+      _smsTimer?.cancel();
+      _smsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (smsCountdown.value <= 1) {
+          timer.cancel();
+          smsCountdown.value = 0;
+        } else {
+          smsCountdown.value--;
+        }
+      });
+      _showMessage('提示', '验证码已发送');
+    } on ApiBusinessException catch (error) {
+      _showMessage('发送失败', error.message);
+    } catch (_) {
+      _showMessage('发送失败', '验证码发送失败，请稍后重试');
     } finally {
       isLoading.value = false;
     }
   }
 
-  // 清除用户名
-  void clearUsername() {
-    usernameController.clear();
-    username.value = '';
+  Future<void> login() async {
+    if (useSmsLogin.value) {
+      await _smsLogin();
+      return;
+    }
+    final normalizedUsername = username.value.trim();
+    if (normalizedUsername.isEmpty) {
+      _showMessage('提示', '请输入用户名');
+      return;
+    }
+    if (password.value.isEmpty) {
+      _showMessage('提示', '请输入密码');
+      return;
+    }
+    if (isLoading.value) return;
+    isLoading.value = true;
+    try {
+      await _loginRepository.login(normalizedUsername, password.value);
+      _showMessage('成功', '登录成功');
+      Get.offAllNamed(Routes.home);
+    } on ApiBusinessException catch (error) {
+      _showMessage('登录失败', error.message);
+    } catch (_) {
+      _showMessage('登录失败', '登录服务连接失败，请检查网络后重试');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  // 清除密码
-  void clearPassword() {
-    passwordController.clear();
-    password.value = '';
+  Future<void> _smsLogin() async {
+    if (phone.value.isEmpty) {
+      _showMessage('提示', '请输入手机号');
+      return;
+    }
+    if (smsCode.value.isEmpty) {
+      _showMessage('提示', '请输入验证码');
+      return;
+    }
+    if (isLoading.value) return;
+    isLoading.value = true;
+    try {
+      await _loginRepository.smsLogin(phone.value, smsCode.value);
+      _showMessage('成功', '登录成功');
+      Get.offAllNamed(Routes.home);
+    } on ApiBusinessException catch (error) {
+      _showMessage('登录失败', error.message);
+    } catch (_) {
+      _showMessage('登录失败', '登录服务连接失败，请检查网络后重试');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void clearUsername() => usernameController.clear();
+  void clearPassword() => passwordController.clear();
+
+  void _showMessage(String title, String message) {
+    AppToast.show(title, message, duration: const Duration(seconds: 2));
   }
 
   @override
   void onClose() {
+    _smsTimer?.cancel();
     usernameController.dispose();
     passwordController.dispose();
+    phoneController.dispose();
+    smsCodeController.dispose();
     super.onClose();
   }
 }

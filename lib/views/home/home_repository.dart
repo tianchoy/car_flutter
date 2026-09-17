@@ -6,24 +6,32 @@ import '../../utils/getCurrentPosistion.dart';
 import '../../utils/session.dart';
 
 class HomeRepository {
-  final ApiService _apiService = ApiService();
+  HomeRepository({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
-  // 检查 token
-  Future<String?> getToken() async {
-    try {
-      return await getSession('token');
-    } catch (e) {
-      return null;
-    }
+  final ApiService _apiService;
+
+  Future<String?> getToken() => getSession(SessionKeys.token);
+
+  Future<Position?> getCurrentPosition() => getCurrentLocation();
+
+  Future<Response<dynamic>> getUserDeviceList(Map<String, dynamic> data) {
+    return _apiService.getUserDeviceList(data);
   }
 
-  // 获取当前位置
-  Future<Position?> getCurrentPosition() async {
-    return await getCurrentLocation();
+  Future<Response<dynamic>> getDeviceInfo(String deviceId) {
+    return _apiService.getDeviceInfo(deviceId);
   }
 
-  // 获取用户设备列表
-  Future<Response> getUserDeviceList(Map<String, dynamic> data) async {
-    return await _apiService.getUserDeviceList(data);
+  Future<Response<dynamic>> getDeviceLastPosition(Map<String, dynamic> query) {
+    return _apiService.getDeviceLastPosition(query);
+  }
+
+  Future<Response<dynamic>> getTrackPos(Map<String, dynamic> query) {
+    return _apiService.getTrackPos(query);
+  }
+
+  Future<Response<dynamic>> deleteDevice(String deviceId) {
+    return _apiService.deleteDevice(deviceId);
   }
 }

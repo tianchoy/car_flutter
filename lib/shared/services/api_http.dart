@@ -1,33 +1,50 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart' hide Response;
 
+import '../../shared/models/api_response.dart';
 import '../../utils/session.dart';
+import 'session_expiry_coordinator.dart';
+import 'url.dart';
 
 class HttpService {
-  late Dio _dio;
-  final String baseUrl;
-  final Duration timeout;
-
   HttpService({
     required this.baseUrl,
     this.timeout = const Duration(seconds: 15),
-  }) {
-    _initDio();
+    Dio? dio,
+  }) : _dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               baseUrl: baseUrl,
+               connectTimeout: timeout,
+               receiveTimeout: timeout,
+               contentType: Headers.jsonContentType,
+               responseType: ResponseType.json,
+             ),
+           ) {
     _setupInterceptors();
   }
 
-  void _initDio() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: timeout,
-        receiveTimeout: timeout,
-        contentType: Headers.jsonContentType,
-        responseType: ResponseType.json,
-      ),
-    );
+  final Dio _dio;
+  final String baseUrl;
+  final Duration timeout;
 
+  @visibleForTesting
+  Dio get dio => _dio;
+
+  @visibleForTesting
+  static Map<String, String> buildAuthenticationHeaders(String? token) {
+    final headers = <String, String>{'clientId': AppConfig.clientId};
+    final normalizedToken = token?.trim();
+    if (normalizedToken != null && normalizedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $normalizedToken';
+    }
+    return headers;
+  }
+
+  void _setupInterceptors() {
     if (kDebugMode) {
       _dio.interceptors.add(
         LogInterceptor(
@@ -40,87 +57,68 @@ class HttpService {
         ),
       );
     }
-  }
 
-  void _setupInterceptors() {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          String? token = await getSession('token');
-          options.headers['token'] = token;
-          return handler.next(options);
+          final token = await getSession(SessionKeys.token);
+          options.headers.addAll(buildAuthenticationHeaders(token));
+          handler.next(options);
         },
         onResponse: (response, handler) {
-          // 统一处理响应
-          return handler.next(response);
+          final envelope = ApiResponse<Object?>.fromJson(response.data);
+          if (envelope.isTokenExpired) {
+            unawaited(SessionExpiryCoordinator.handleExpiredSession());
+          }
+          handler.next(response);
         },
-        onError: (DioException e, handler) {
-          // 统一处理错误
-          final errorResponse = _handleError(e);
-          return handler.reject(errorResponse);
+        onError: (error, handler) {
+          if (error.response?.statusCode == 401) {
+            unawaited(SessionExpiryCoordinator.handleExpiredSession());
+          }
+          handler.reject(_normalizeError(error));
         },
       ),
     );
   }
 
-  DioException _handleError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: '网络连接超时，请稍后重试',
-        );
-      case DioExceptionType.transformTimeout:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: '数据转换超时，请稍后重试',
-        );
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode ?? 0;
-        String message = '请求失败，状态码: $statusCode';
-        if (statusCode == 401) {
-          message = '未授权，请重新登录';
-          clearToken();
-        } else if (statusCode == 404) {
-          message = '请求资源不存在';
-        } else if (statusCode >= 500) {
-          message = '服务器内部错误，请稍后重试';
-        }
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: message,
-          response: error.response,
-        );
-      case DioExceptionType.cancel:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: '请求已取消',
-        );
-      case DioExceptionType.badCertificate:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: 'SSL证书验证失败，请检查服务器证书',
-        );
-      case DioExceptionType.connectionError:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: '网络连接错误，请检查网络设置',
-        );
-      case DioExceptionType.unknown:
-        return DioException(
-          requestOptions: error.requestOptions,
-          error: '发生未知错误，请稍后重试',
-        );
-    }
+  DioException _normalizeError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final message = switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => '网络连接超时，请稍后重试',
+      DioExceptionType.transformTimeout => '数据转换超时，请稍后重试',
+      DioExceptionType.cancel => '请求已取消',
+      DioExceptionType.badCertificate => 'SSL证书验证失败，请检查服务器证书',
+      DioExceptionType.connectionError => '网络连接错误，请检查网络设置',
+      DioExceptionType.badResponse => _httpStatusMessage(statusCode),
+      DioExceptionType.unknown => '发生未知错误，请稍后重试',
+    };
+
+    return DioException(
+      requestOptions: error.requestOptions,
+      response: error.response,
+      type: error.type,
+      error: ApiNetworkException(
+        message,
+        statusCode: statusCode,
+        payload: error.response?.data,
+      ),
+      stackTrace: error.stackTrace,
+    );
   }
 
-  Future<void> clearToken() async {
-    // 清除本地存储的 token
-    await deleteSession('token');
-    // 跳转到登录页
-    Get.toNamed('/login');
+  String _httpStatusMessage(int? statusCode) {
+    if (statusCode == 401) return '未授权，请重新登录';
+    if (statusCode == 403) return '没有权限访问';
+    if (statusCode == 404) return '请求资源不存在';
+    if (statusCode != null && statusCode >= 500) return '服务器错误，请稍后重试';
+    return '请求失败${statusCode == null ? '' : '，状态码: $statusCode'}';
+  }
+
+  Future<void> clearToken() {
+    return SessionExpiryCoordinator.handleExpiredSession();
   }
 
   Future<Response<T>> get<T>(
@@ -129,19 +127,14 @@ class HttpService {
     Options? options,
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
-  }) async {
-    try {
-      final response = await _dio.get<T>(
-        path,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-        onReceiveProgress: onReceiveProgress,
-      );
-      return response;
-    } catch (e) {
-      rethrow;
-    }
+  }) {
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onReceiveProgress: onReceiveProgress,
+    );
   }
 
   Future<Response<T>> post<T>(
@@ -152,21 +145,16 @@ class HttpService {
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
-  }) async {
-    try {
-      final response = await _dio.post<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-        onSendProgress: onSendProgress,
-        onReceiveProgress: onReceiveProgress,
-      );
-      return response;
-    } catch (e) {
-      rethrow;
-    }
+  }) {
+    return _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
   }
 
   Future<Response<T>> put<T>(
@@ -175,19 +163,14 @@ class HttpService {
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
-  }) async {
-    try {
-      final response = await _dio.put<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
-      return response;
-    } catch (e) {
-      rethrow;
-    }
+  }) {
+    return _dio.put<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 
   Future<Response<T>> delete<T>(
@@ -196,18 +179,13 @@ class HttpService {
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,
-  }) async {
-    try {
-      final response = await _dio.delete<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
-      return response;
-    } catch (e) {
-      rethrow;
-    }
+  }) {
+    return _dio.delete<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
   }
 }

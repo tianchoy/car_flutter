@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class BuildBody extends StatelessWidget {
   const BuildBody({super.key, this.child});
@@ -8,7 +8,7 @@ class BuildBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Padding(padding: EdgeInsetsGeometry.all(16.0), child: child),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
   }
 }

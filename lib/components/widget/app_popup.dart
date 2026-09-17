@@ -14,6 +14,8 @@ class AppPopup {
     bool isShowTitle = true,
     bool isShowMessage = true,
     bool isShowCancel = true,
+    // 当前选中项：会以加粗 + 主色 + 勾选图标高亮展示。
+    T? selectedOption,
   }) {
     // 确保有内容可显示
     assert(options.isNotEmpty, 'options cannot be empty');
@@ -43,12 +45,32 @@ class AppPopup {
         actions: [
           ...options.map(
             (option) => CupertinoActionSheetAction(
-              child: Text(
-                displayText(option),
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: CupertinoColors.black,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (option == selectedOption)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 6),
+                      child: Icon(
+                        CupertinoIcons.checkmark,
+                        size: 16,
+                        color: CupertinoColors.activeBlue,
+                      ),
+                    ),
+                  Text(
+                    displayText(option),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: option == selectedOption
+                          ? FontWeight.w700
+                          : FontWeight.normal,
+                      color: option == selectedOption
+                          ? CupertinoColors.activeBlue
+                          : CupertinoColors.black,
+                    ),
+                  ),
+                ],
               ),
               onPressed: () {
                 onSelected?.call(option);

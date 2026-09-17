@@ -1,0 +1,688 @@
+import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'package:car/app/route_arguments.dart';
+import 'package:car/model/home/device_model.dart';
+import 'package:car/shared/models/api_response.dart';
+import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/utils/CoordTransform.dart';
+import 'package:car/utils/geo_utils.dart';
+import 'package:car/utils/car_icon.dart';
+import 'geofence_repository.dart';
+
+class GeofenceRecord {
+  GeofenceRecord({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.area,
+    this.alarmType = 1,
+    this.deviceCount = 0,
+  });
+
+  final String id;
+  final String name;
+  final String type;
+  final String area;
+  final int alarmType;
+  final int deviceCount;
+
+  bool get isCircle =>
+      type.toLowerCase() == 'circle' || area.startsWith('CIRCLE');
+
+  factory GeofenceRecord.fromJson(Map<String, dynamic> json) {
+    final area = stringValue(json['area']);
+    return GeofenceRecord(
+      id: stringValue(json['id']).isNotEmpty
+          ? stringValue(json['id'])
+          : stringValue(json['geoId']),
+      name: stringValue(json['name'], fallback: '未命名围栏'),
+      type: stringValue(
+        json['type'],
+        fallback: area.startsWith('CIRCLE') ? 'circle' : 'polygon',
+      ),
+      area: area,
+      alarmType: intValue(json['alarmType'], fallback: 1),
+      deviceCount: intValue(json['deviceCount']),
+    );
+  }
+}
+
+class GeofenceController extends GetxController {
+  GeofenceController({GeofenceRepository? repository})
+    : _repository = repository ?? GeofenceRepository();
+
+  final GeofenceRepository _repository;
+  final DeviceModel? device = DeviceRouteArgs.deviceFrom(Get.arguments);
+  final MapController mapController = MapController();
+  final fences = <GeofenceRecord>[].obs;
+  final selectedFence = Rxn<GeofenceRecord>();
+  final drawingMode = 'polygon'.obs;
+  final isDrawing = false.obs;
+  final draftPoints = <LatLng>[].obs;
+  final circleCenter = Rxn<LatLng>();
+  final circleRadius = 0.0.obs;
+  final isLoading = false.obs;
+  final isSaving = false.obs;
+  /// 底部围栏列表是否展开：进入页面默认收起，点击箭头展开，向下拖动收起。
+  final fenceListExpanded = false.obs;
+
+  void toggleFenceList() =>
+      fenceListExpanded.value = !fenceListExpanded.value;
+
+  void collapseFenceList() => fenceListExpanded.value = false;
+  final deviceTab = 0.obs;
+  final boundDevices = <Map<String, dynamic>>[].obs;
+  final unboundDevices = <Map<String, dynamic>>[].obs;
+  final selectedBoundDeviceNos = <String>{}.obs;
+  final selectedUnboundDeviceNos = <String>{}.obs;
+  final isLoadingDevices = false.obs;
+  final initialCenter = Rxn<LatLng>();
+
+  @override
+  void onInit() {
+    super.onInit();
+    final deviceModel = device;
+    if (deviceModel != null && deviceModel.hasLocation) {
+      initialCenter.value = transformToGCJ02(
+        deviceModel.longitude!,
+        deviceModel.latitude!,
+      );
+    }
+    loadFences();
+  }
+
+  Future<void> loadFences() async {
+    isLoading.value = true;
+    try {
+      final result = await _repository.fetchFences();
+      if (result.isSuccess) {
+        fences.assignAll(
+          result.data
+                  ?.whereType<Map>()
+                  .map((item) => GeofenceRecord.fromJson(jsonMapFrom(item)))
+                  .where((fence) => fence.id.isNotEmpty)
+                  .toList() ??
+              const <GeofenceRecord>[],
+        );
+      } else {
+        AppToast.show(
+          '提示',
+          result.message.isEmpty ? '获取围栏失败' : result.message,
+        );
+      }
+    } catch (_) {
+      AppToast.show('提示', '获取围栏失败，请稍后重试');
+    } finally {
+      if (!isClosed) isLoading.value = false;
+    }
+  }
+
+  void setDrawingMode(String mode) {
+    if (mode != 'circle' && mode != 'polygon') return;
+    drawingMode.value = mode;
+    clearDraft();
+  }
+
+  void startDrawing() {
+    selectedFence.value = null;
+    isDrawing.value = true;
+    clearDraft();
+  }
+
+  void clearDraft() {
+    draftPoints.clear();
+    circleCenter.value = null;
+    circleRadius.value = 0;
+  }
+
+  void finishDrawing() {
+    if (!canFinishDrawing) return;
+    isDrawing.value = false;
+  }
+
+  bool get canFinishDrawing => drawingMode.value == 'polygon'
+      ? draftPoints.length >= 3
+      : circleCenter.value != null && circleRadius.value > 0;
+
+  void handleMapTap(LatLng point) {
+    if (!isDrawing.value) return;
+    if (drawingMode.value == 'polygon') {
+      draftPoints.add(point);
+      return;
+    }
+    final center = circleCenter.value;
+    if (center == null) {
+      circleCenter.value = point;
+    } else {
+      circleRadius.value = GeoUtils.distanceMeters(center, point);
+    }
+  }
+
+  void selectFence(GeofenceRecord fence) {
+    selectedFence.value = fence;
+    isDrawing.value = false;
+    clearDraft();
+    boundDevices.clear();
+    unboundDevices.clear();
+    selectedBoundDeviceNos.clear();
+    selectedUnboundDeviceNos.clear();
+    loadFenceDevices();
+  }
+
+  Future<void> loadFenceDevices() async {
+    final fence = selectedFence.value;
+    if (fence == null || isLoadingDevices.value) return;
+    isLoadingDevices.value = true;
+    try {
+      final loadedBound = await loadBoundDevices(fenceId: fence.id);
+      final loadedUnbound = await loadUnboundDevices(fenceId: fence.id);
+      boundDevices.assignAll(loadedBound);
+      unboundDevices.assignAll(loadedUnbound);
+    } finally {
+      if (!isClosed) isLoadingDevices.value = false;
+    }
+  }
+
+  String deviceNoOf(Map<String, dynamic> device) => stringValue(
+        device['deviceNo'] ?? device['imei'] ?? device['deviceId'] ?? device['id'],
+      );
+
+  String deviceTitle(Map<String, dynamic> device) => stringValue(
+    device['deviceName'] ??
+        device['plateNo'] ??
+        device['deviceNo'] ??
+        device['imei'] ??
+        device['deviceId'],
+    fallback: '未命名设备',
+  );
+
+  void toggleDeviceSelection(
+    Map<String, dynamic> device, {
+    required bool bound,
+  }) {
+    final deviceNo = deviceNoOf(device);
+    if (deviceNo.isEmpty) return;
+    final target = bound ? selectedBoundDeviceNos : selectedUnboundDeviceNos;
+    if (target.contains(deviceNo)) {
+      target.remove(deviceNo);
+    } else {
+      target.add(deviceNo);
+    }
+    target.refresh();
+  }
+
+  Future<void> bindSelectedDevices() async {
+    final fence = selectedFence.value;
+    if (fence == null || selectedUnboundDeviceNos.isEmpty) return;
+    await bindDevices(fenceId: fence.id, deviceNos: selectedUnboundDeviceNos.toList());
+    selectedUnboundDeviceNos.clear();
+    await loadFenceDevices();
+  }
+
+  Future<void> unbindSelectedDevices() async {
+    final fence = selectedFence.value;
+    if (fence == null || selectedBoundDeviceNos.isEmpty) return;
+    await unbindDevices(fenceId: fence.id, deviceNos: selectedBoundDeviceNos.toList());
+    selectedBoundDeviceNos.clear();
+    await loadFenceDevices();
+  }
+
+  void editSelectedFence() {
+    final fence = selectedFence.value;
+    if (fence == null) return;
+    drawingMode.value = fence.isCircle ? 'circle' : 'polygon';
+    final parsed = parseArea(fence.area, fence.isCircle);
+    if (fence.isCircle && parsed.isNotEmpty) {
+      circleCenter.value = parsed.first;
+      circleRadius.value = parsed.length > 1
+          ? GeoUtils.distanceMeters(parsed.first, parsed[1])
+          : 0;
+    } else {
+      draftPoints.assignAll(parsed);
+    }
+    isDrawing.value = true;
+  }
+
+  Future<void> saveFence({required String name, int alarmType = 1}) async {
+    if (name.trim().isEmpty || !canFinishDrawing) return;
+    final area = _draftArea;
+    if (area == null) return;
+    isSaving.value = true;
+    try {
+      final selected = selectedFence.value;
+      final data = <String, dynamic>{
+        'name': name.trim(),
+        'area': area,
+        'alarmType': alarmType,
+        'type': drawingMode.value,
+      };
+      final result = selected == null
+          ? await _repository.createFence(data)
+          : await _repository.updateFence(selected.id, data);
+      if (result.isSuccess) {
+        selectedFence.value = null;
+        isDrawing.value = false;
+        clearDraft();
+        await loadFences();
+      } else {
+        AppToast.show(
+          '提示',
+          result.message.isEmpty ? '保存围栏失败' : result.message,
+        );
+      }
+    } catch (_) {
+      AppToast.show('提示', '保存围栏失败，请稍后重试');
+    } finally {
+      if (!isClosed) isSaving.value = false;
+    }
+  }
+
+  Future<void> deleteSelectedFence() async {
+    final fence = selectedFence.value;
+    if (fence == null) return;
+    try {
+      final result = await _repository.deleteFence(fence.id);
+      if (result.isSuccess) {
+        selectedFence.value = null;
+        await loadFences();
+        // 删除结果统一用顶部弹出提示反馈。
+        AppToast.show('成功', '围栏已删除');
+      } else {
+        AppToast.show(
+          '提示',
+          result.message.isEmpty ? '删除围栏失败' : result.message,
+        );
+      }
+    } catch (_) {
+      AppToast.show('提示', '删除围栏失败，请稍后重试');
+    }
+  }
+
+  Future<void> bindDevices({
+    required String fenceId,
+    required List<String> deviceNos,
+  }) async {
+    if (deviceNos.isEmpty) return;
+    try {
+      final result = await _repository.bindDevices({
+        'geofenceId': fenceId,
+        'deviceNos': deviceNos,
+      });
+      if (!result.isSuccess) {
+        AppToast.show(
+          '提示',
+          result.message.isEmpty ? '绑定设备失败' : result.message,
+        );
+      }
+    } catch (_) {
+      AppToast.show('提示', '绑定设备失败，请稍后重试');
+    }
+  }
+
+  Future<void> unbindDevices({
+    required String fenceId,
+    required List<String> deviceNos,
+  }) async {
+    if (deviceNos.isEmpty) return;
+    try {
+      final result = await _repository.unbindDevices({
+        'geofenceId': fenceId,
+        'deviceNos': deviceNos,
+      });
+      if (!result.isSuccess) {
+        AppToast.show(
+          '提示',
+          result.message.isEmpty ? '解绑设备失败' : result.message,
+        );
+      }
+    } catch (_) {
+      AppToast.show('提示', '解绑设备失败，请稍后重试');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadBoundDevices({
+    required String fenceId,
+    int page = 1,
+    int pageSize = 10,
+  }) => _loadDevicePage(
+    query: <String, dynamic>{
+      'pageNum': page,
+      'pageSize': pageSize,
+      'geoId': fenceId,
+    },
+    bound: true,
+  );
+
+  Future<List<Map<String, dynamic>>> loadUnboundDevices({
+    required String fenceId,
+    int page = 1,
+    int pageSize = 10,
+  }) => _loadDevicePage(
+    query: <String, dynamic>{
+      'pageNum': page,
+      'pageSize': pageSize,
+      'geoId': fenceId,
+    },
+    bound: false,
+  );
+
+  Future<List<Map<String, dynamic>>> _loadDevicePage({
+    required Map<String, dynamic> query,
+    required bool bound,
+  }) async {
+    try {
+      final response = bound
+          ? await _repository.getBoundDevices(query)
+          : await _repository.getUnboundDevices(query);
+      final result = ApiResponse<JsonMap>.fromJson(
+        response.data,
+        dataParser: jsonMapFrom,
+      );
+      if (!result.isSuccess) return const <Map<String, dynamic>>[];
+      final data = result.data ?? const <String, dynamic>{};
+      final list = data['list'] is List
+          ? data['list'] as List
+          : const <dynamic>[];
+      return list.whereType<Map>().map(jsonMapFrom).toList();
+    } catch (_) {
+      return const <Map<String, dynamic>>[];
+    }
+  }
+
+  List<LatLng> parseArea(String area, bool circle) {
+    if (circle && area.startsWith('CIRCLE')) {
+      final value = area.replaceFirst('CIRCLE (', '').replaceFirst(')', '');
+      final parts = value.split(',');
+      if (parts.length != 2) return const <LatLng>[];
+      final coordinate = parts.first.trim().split(RegExp(r'\s+'));
+      if (coordinate.length != 2) return const <LatLng>[];
+      final latitude = double.tryParse(coordinate[0]);
+      final longitude = double.tryParse(coordinate[1]);
+      if (latitude == null ||
+          longitude == null ||
+          !isValidCoordinate(longitude, latitude)) {
+        return const <LatLng>[];
+      }
+      final center = transformToGCJ02(longitude, latitude);
+      final radius = double.tryParse(parts[1].trim()) ?? 0;
+      final edge = _offsetByMeters(center, radius, 90);
+      return edge == null ? [center] : [center, edge];
+    }
+    if (!area.startsWith('POLYGON')) return const <LatLng>[];
+    final value = area.replaceFirst('POLYGON ((', '').replaceFirst('))', '');
+    return value
+        .split(',')
+        .map((pair) {
+          final coordinate = pair.trim().split(RegExp(r'\s+'));
+          if (coordinate.length != 2) return null;
+          final latitude = double.tryParse(coordinate[0]);
+          final longitude = double.tryParse(coordinate[1]);
+          if (latitude == null ||
+              longitude == null ||
+              !isValidCoordinate(longitude, latitude)) {
+            return null;
+          }
+          return transformToGCJ02(longitude, latitude);
+        })
+        .whereType<LatLng>()
+        .toList();
+  }
+
+  String? get _draftArea {
+    if (drawingMode.value == 'circle') {
+      final center = circleCenter.value;
+      if (center == null || circleRadius.value <= 0) return null;
+      final wgs = transformToWGS84(center.longitude, center.latitude);
+      return 'CIRCLE (${wgs.latitude} ${wgs.longitude}, ${circleRadius.value})';
+    }
+    if (draftPoints.length < 3) return null;
+    final values = draftPoints
+        .map((point) {
+          final wgs = transformToWGS84(point.longitude, point.latitude);
+          return '${wgs.latitude} ${wgs.longitude}';
+        })
+        .join(', ');
+    return 'POLYGON (($values))';
+  }
+
+  LatLng? _offsetByMeters(LatLng origin, double meters, double bearing) {
+    if (meters <= 0) return null;
+    const radius = 6371000.0;
+    final angularDistance = meters / radius;
+    final bearingRadians = bearing * math.pi / 180;
+    final latitude = origin.latitude * math.pi / 180;
+    final longitude = origin.longitude * math.pi / 180;
+    final destinationLatitude = math.asin(
+      math.sin(latitude) * math.cos(angularDistance) +
+          math.cos(latitude) *
+              math.sin(angularDistance) *
+              math.cos(bearingRadians),
+    );
+    final destinationLongitude =
+        longitude +
+        math.atan2(
+          math.sin(bearingRadians) *
+              math.sin(angularDistance) *
+              math.cos(latitude),
+          math.cos(angularDistance) -
+              math.sin(latitude) * math.sin(destinationLatitude),
+        );
+    return LatLng(
+      destinationLatitude * 180 / math.pi,
+      destinationLongitude * 180 / math.pi,
+    );
+  }
+
+  List<Polygon> get polygons {
+    final result = <Polygon>[];
+    // 编辑已有围栏时，旧范围以更淡的描边作为参考一直保留，
+    // 不会因开始绘制新点而消失。
+    final editing = isDrawing.value ? selectedFence.value : null;
+    if (editing != null && !editing.isCircle) {
+      final oldPoints = parseArea(editing.area, false);
+      if (oldPoints.length >= 3) {
+        result.add(
+          Polygon(
+            points: oldPoints,
+            color: AppColors.danger.withValues(alpha: 0.08),
+            borderColor: AppColors.danger.withValues(alpha: 0.5),
+            borderStrokeWidth: 1.5,
+          ),
+        );
+      }
+    }
+    if (isDrawing.value &&
+        drawingMode.value == 'polygon' &&
+        draftPoints.length >= 3) {
+      result.add(
+        Polygon(
+          points: draftPoints.toList(),
+          color: AppColors.danger.withValues(alpha: 0.2),
+          borderColor: AppColors.danger,
+          borderStrokeWidth: 2,
+        ),
+      );
+    }
+    for (final fence in fences) {
+      if (fence == editing || fence.isCircle) continue;
+      final points = parseArea(fence.area, false);
+      if (points.length >= 3) {
+        result.add(
+          Polygon(
+            points: points,
+            color: AppColors.danger.withValues(alpha: 0.15),
+            borderColor: AppColors.danger,
+            borderStrokeWidth: 2,
+          ),
+        );
+      }
+    }
+    return result;
+  }
+
+  /// 绘制中的草稿点（含圆形中心）以独立标记实时显示：点击即出现一个点，
+  /// 不再等到第三个点形成面才显示。
+  List<Marker> get draftMarkers {
+    final result = <Marker>[];
+    if (!isDrawing.value) return result;
+    if (drawingMode.value == 'circle') {
+      final center = circleCenter.value;
+      if (center != null) result.add(_dotMarker(center, isCenter: true));
+    } else {
+      for (final point in draftPoints) {
+        result.add(_dotMarker(point));
+      }
+    }
+    return result;
+  }
+
+  /// 地图标记：设备当前位置车标 + 绘制中的草稿点。
+  List<Marker> get mapMarkers {
+    final result = <Marker>[];
+    final model = device;
+    if (model != null && model.hasLocation) {
+      result.add(
+        Marker(
+          width: 40,
+          height: 40,
+          point: transformToGCJ02(model.longitude!, model.latitude!),
+          child: Image.asset(
+            deviceIconPath(online: model.isOnline, carType: model.carType),
+            width: 32,
+            height: 32,
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+    result.addAll(draftMarkers);
+    return result;
+  }
+
+  /// 编辑围栏时，已有顶点可在地图上自由拖动（只支持移动，不支持删除）。
+  void updateDraftPoint(LatLng original, LatLng updated) {
+    final index = draftPoints.indexOf(original);
+    if (index < 0) return;
+    draftPoints[index] = updated;
+    draftPoints.refresh();
+  }
+
+  /// 把屏幕像素位移换算为经纬度位移，得到顶点拖动后的新坐标。
+  LatLng? _moveByPixels(LatLng origin, MapCamera camera, Offset delta) {
+    try {
+      final reference = camera.center;
+      // flutter_map v8：屏幕偏移以地图左上角为原点、y 轴向下，与手势位移方向一致。
+      final referenceOffset = camera.latLngToScreenOffset(reference);
+      final moved = camera.screenOffsetToLatLng(referenceOffset + delta);
+      return LatLng(
+        origin.latitude + (moved.latitude - reference.latitude),
+        origin.longitude + (moved.longitude - reference.longitude),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Marker _dotMarker(LatLng point, {bool isCenter = false}) => Marker(
+        point: point,
+        width: 30,
+        height: 30,
+        child: Builder(
+          builder: (context) {
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanUpdate: (details) {
+                final camera = MapCamera.of(context);
+                final updated = _moveByPixels(point, camera, details.delta);
+                if (updated == null) return;
+                if (isCenter) {
+                  circleCenter.value = updated;
+                } else {
+                  updateDraftPoint(point, updated);
+                }
+              },
+              child: Center(
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: isCenter ? AppColors.primary : AppColors.danger,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: CupertinoColors.white, width: 2),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x33000000), blurRadius: 3),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+  List<CircleMarker> get circles {
+    final result = <CircleMarker>[];
+    // 编辑已有围栏时，旧范围作为参考一直保留，不会因开始绘制新半径而消失。
+    final editing = isDrawing.value ? selectedFence.value : null;
+    if (editing != null && editing.isCircle) {
+      final points = parseArea(editing.area, true);
+      if (points.isNotEmpty) {
+        final radius = points.length > 1
+            ? GeoUtils.distanceMeters(points[0], points[1])
+            : 0.0;
+        result.add(
+          CircleMarker(
+            point: points.first,
+            radius: radius,
+            color: AppColors.danger.withValues(alpha: 0.08),
+            borderColor: AppColors.danger.withValues(alpha: 0.5),
+            borderStrokeWidth: 1.5,
+            useRadiusInMeter: true,
+          ),
+        );
+      }
+    }
+    for (final fence in fences.where((item) => item.isCircle)) {
+      if (fence == editing) continue;
+      final points = parseArea(fence.area, true);
+      if (points.isNotEmpty) {
+        final radius = points.length > 1
+            ? GeoUtils.distanceMeters(points[0], points[1])
+            : 0.0;
+        result.add(
+          CircleMarker(
+            point: points.first,
+            radius: radius,
+            color: AppColors.danger.withValues(alpha: 0.15),
+            borderColor: AppColors.danger,
+            borderStrokeWidth: 2,
+            useRadiusInMeter: true,
+          ),
+        );
+      }
+    }
+    final center = circleCenter.value;
+    if (isDrawing.value &&
+        drawingMode.value == 'circle' &&
+        center != null &&
+        circleRadius.value > 0) {
+      result.add(
+        CircleMarker(
+          point: center,
+          radius: circleRadius.value,
+          color: AppColors.danger.withValues(alpha: 0.2),
+          borderColor: AppColors.danger,
+          borderStrokeWidth: 2,
+          useRadiusInMeter: true,
+        ),
+      );
+    }
+    return result;
+  }
+}

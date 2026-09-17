@@ -1,12 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class CustomCard extends StatelessWidget {
-  final Widget buildBody;
-  final Function? onClickFunction;
-  final String title;
-  final String? label;
-  final bool showDivider;
-
   const CustomCard({
     super.key,
     required this.buildBody,
@@ -16,15 +10,21 @@ class CustomCard extends StatelessWidget {
     this.showDivider = false,
   });
 
+  final Widget buildBody;
+  final Function? onClickFunction;
+  final String title;
+  final String? label;
+  final bool showDivider;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10.0),
+        color: CupertinoColors.white,
+        borderRadius: BorderRadius.circular(10),
       ),
-      padding: EdgeInsets.fromLTRB(10.0, 0, 10.0, 10.0),
-      margin: EdgeInsets.all(10.0),
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+      margin: const EdgeInsets.all(10),
       width: double.infinity,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -37,32 +37,32 @@ class CustomCard extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: CupertinoColors.black,
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: () async {
-                  onClickFunction?.call();
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: Color(0xFFF0F9F0),
-                  foregroundColor: Color(0xFF07C160),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  minimumSize: Size(0, 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+              CupertinoButton(
+                onPressed: () async => onClickFunction?.call(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 2,
                 ),
-                child: Text(label!, style: TextStyle(fontSize: 14)),
+                minimumSize: Size.zero,
+                color: const Color(0xFFF0F9F0),
+                borderRadius: BorderRadius.circular(10),
+                child: Text(label ?? '', style: const TextStyle(fontSize: 14)),
               ),
             ],
           ),
           if (showDivider)
-            Divider(color: Colors.grey[100], height: 1, thickness: 1),
+            const SizedBox(
+              width: double.infinity,
+              height: 1,
+              child: ColoredBox(color: CupertinoColors.systemGrey5),
+            ),
           SizedBox(width: double.infinity, height: 200, child: buildBody),
         ],
       ),

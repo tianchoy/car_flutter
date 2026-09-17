@@ -1,0 +1,3 @@
+class WebContentRepository {
+  const WebContentRepository();
+}

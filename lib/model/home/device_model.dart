@@ -1,19 +1,4 @@
 class DeviceModel {
-  final String deviceId;
-  String? deviceName;
-  final String? deviceType;
-  String? deviceStatus;
-  double latitude;
-  double longitude;
-  String? deviceCreateTime;
-  String? deviceUpdateTime;
-  String? imei;
-  String? iccid;
-  String? plateNo;
-  String? simMerchant;
-  String? carType;
-  String? deptId;
-
   DeviceModel({
     required this.deviceId,
     this.deviceName,
@@ -23,7 +8,7 @@ class DeviceModel {
     required this.longitude,
     this.deviceCreateTime,
     this.deviceUpdateTime,
-    this.imei,
+    this.deviceNo,
     this.iccid,
     this.plateNo,
     this.simMerchant,
@@ -31,29 +16,76 @@ class DeviceModel {
     this.deptId,
   });
 
-  // 从 JSON 解析设备模型
+  final String deviceId;
+  String? deviceName;
+  final String? deviceType;
+  String? deviceStatus;
+  final double? latitude;
+  final double? longitude;
+  String? deviceCreateTime;
+  String? deviceUpdateTime;
+  String? deviceNo;
+  String? iccid;
+  String? plateNo;
+  String? simMerchant;
+  String? carType;
+  String? deptId;
+
+  bool get hasLocation => latitude != null && longitude != null;
+  bool get isOnline => deviceStatus?.toLowerCase() == 'online';
+
+  /// 判等依据：deviceNo 优先、deviceId 兜底。
+  /// 这样无论设备列表如何排序、是否重新拉取生成新实例，
+  /// 「当前选中设备」都能被正确识别（选择弹窗的高亮勾选依赖 == 比较）。
+  String get _identityKey {
+    final value = deviceNo ?? '';
+    return value.isNotEmpty ? value : deviceId;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DeviceModel && _identityKey == other._identityKey;
+  }
+
+  @override
+  int get hashCode => _identityKey.hashCode;
+
   factory DeviceModel.fromJson(Map<String, dynamic> json) {
-    String toString(dynamic value) => value?.toString() ?? '';
+    String? nullableString(dynamic value) {
+      final normalized = value?.toString().trim();
+      return normalized == null || normalized.isEmpty ? null : normalized;
+    }
+
+    double? nullableDouble(dynamic value) {
+      if (value is num) return value.toDouble();
+      return double.tryParse(value?.toString().trim() ?? '');
+    }
+
     return DeviceModel(
-      deviceId: toString(json['deviceId']),
-      deviceName: toString(json['deviceName']),
-      deviceType: toString(json['deviceType']),
-      deviceStatus: toString(json['connectionStatus']),
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      deviceCreateTime: toString(json['deviceCreateTime']),
-      deviceUpdateTime: toString(json['deviceUpdateTime']),
-      imei: toString(json['imei']),
-      iccid: toString(json['iccid']),
-      plateNo: toString(json['plateNo']),
-      simMerchant: toString(json['simMerchant']),
-      carType: toString(json['carType']),
-      deptId: toString(json['companyId']),
+      deviceId:
+          nullableString(json['deviceId']) ?? nullableString(json['id']) ?? '',
+      deviceName: nullableString(json['deviceName']),
+      deviceType: nullableString(json['deviceType']),
+      deviceStatus:
+          nullableString(json['connectionStatus']) ??
+          nullableString(json['status']),
+      latitude: nullableDouble(json['latitude']),
+      longitude: nullableDouble(json['longitude']),
+      deviceCreateTime: nullableString(json['deviceCreateTime']),
+      deviceUpdateTime: nullableString(json['deviceUpdateTime']),
+      deviceNo: nullableString(json['deviceNo']) ?? nullableString(json['imei']),
+      iccid: nullableString(json['iccid']),
+      plateNo: nullableString(json['plateNo']),
+      simMerchant: nullableString(json['simMerchant']),
+      carType: nullableString(json['carType']),
+      deptId:
+          nullableString(json['deptId']) ?? nullableString(json['companyId']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    return <String, dynamic>{
       'deviceId': deviceId,
       'deviceName': deviceName,
       'deviceType': deviceType,
@@ -62,12 +94,12 @@ class DeviceModel {
       'longitude': longitude,
       'deviceCreateTime': deviceCreateTime,
       'deviceUpdateTime': deviceUpdateTime,
-      'imei': imei,
+      'deviceNo': deviceNo,
       'iccid': iccid,
       'plateNo': plateNo,
       'simMerchant': simMerchant,
       'carType': carType,
-      'companyId': deptId,
+      'deptId': deptId,
     };
   }
 }

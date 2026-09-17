@@ -1,4 +1,6 @@
 // 定义消息模型
+import '../../shared/models/api_response.dart';
+
 class MessageModel {
   final String messageId;
   final String content;
@@ -23,19 +25,16 @@ class MessageModel {
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
-    String toString(dynamic value) => value?.toString() ?? '';
-    int toInt(dynamic value) => value as int;
-
     return MessageModel(
-      messageId: toString(json['messageId']),
-      content: toString(json['content']),
-      messageType: toInt(json['messageType']),
-      status: toInt(json['status']),
-      createTime: toString(json['createTime']),
-      readTime: json['readTime']?.toString(),
-      deleted: toInt(json['deleted']),
-      userId: toString(json['userId']),
-      transactionId: toString(json['transactionId']),
+      messageId: stringValue(json['messageId']),
+      content: stringValue(json['content']),
+      messageType: intValue(json['messageType']),
+      status: intValue(json['status']),
+      createTime: stringValue(json['createTime']),
+      readTime: json['readTime'] == null ? null : stringValue(json['readTime']),
+      deleted: intValue(json['deleted']),
+      userId: stringValue(json['userId']),
+      transactionId: stringValue(json['transactionId']),
     );
   }
 }

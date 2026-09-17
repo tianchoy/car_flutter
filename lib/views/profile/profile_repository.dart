@@ -1,29 +1,28 @@
-import 'package:dio/src/response.dart';
+import 'package:dio/dio.dart';
 
 import '../../shared/services/api_service.dart';
 import '../../utils/session.dart';
 
 class ProfileRepository {
-  final ApiService _apiService = ApiService();
+  ProfileRepository({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
-  // 获取用户信息API
-  Future<Response<dynamic>> fetchProfile() async {
-    return await _apiService.getUserInfo();
-  }
+  final ApiService _apiService;
 
-  // 退出登录API
+  Future<Response<dynamic>> fetchProfile() => _apiService.getUserInfo();
+
+  Future<Response<dynamic>> fetchDevices() =>
+      _apiService.getUserDeviceList({'pageSize': 1000});
+
   Future<void> logout() async {
-    await _apiService.logout();
-    // 清除本地存储
-    await deleteSession('token');
-  }
-
-  // 检查 token 是否有效
-  Future<String?> getToken() async {
     try {
-      return await getSession('token');
-    } catch (e) {
-      return null;
+      await _apiService.logout();
+    } catch (_) {
+      // Clearing the local account is mandatory even when the server is offline.
+    } finally {
+      await clearAuthenticatedSession();
     }
   }
+
+  Future<String?> getToken() => getSession(SessionKeys.token);
 }

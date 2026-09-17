@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -16,16 +16,15 @@ Marker createNamedMarker({
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 设备名称标签
         Container(
           constraints: const BoxConstraints(maxWidth: 100),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: CupertinoColors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: CupertinoColors.black.withValues(alpha: 0.2),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -34,7 +33,7 @@ Marker createNamedMarker({
           child: Text(
             deviceName,
             style: const TextStyle(
-              color: Colors.black87,
+              color: CupertinoColors.black,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -43,10 +42,13 @@ Marker createNamedMarker({
           ),
         ),
         const SizedBox(height: 2),
-        // 位置图标，带点击事件
         GestureDetector(
           onTap: onTap,
-          child: const Icon(Icons.location_on, color: Colors.red, size: 32),
+          child: const Icon(
+            CupertinoIcons.location_solid,
+            color: CupertinoColors.systemRed,
+            size: 32,
+          ),
         ),
       ],
     ),

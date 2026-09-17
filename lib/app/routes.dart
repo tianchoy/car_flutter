@@ -1,44 +1,27 @@
-import 'package:get/get.dart';
-import '../views/home/home_binding.dart';
-import '../views/home/home_view.dart';
-import '../views/login/login_bindings.dart';
-import '../views/login/login_view.dart';
-import '../views/messages/messages_binding.dart';
-import '../views/messages/messages_view.dart';
-import '../views/profile/profile_binding.dart';
-import '../views/profile/profile_view.dart';
-import '../views/detail/detail_view.dart';
-import '../views/detail/detail_binding.dart';
-import 'router_instance.dart';
-
-class AppRouter {
-  static final routes = [
-    GetPage(
-      name: Routes.home,
-      page: () => const HomeView(),
-      binding: HomeBinding(),
-    ),
-    GetPage(
-      name: Routes.messages,
-      page: () => const MessagesView(),
-      binding: MessagesBinding(),
-    ),
-    GetPage(
-      name: Routes.profile,
-      page: () => const ProfileView(),
-      binding: ProfileBinding(),
-    ),
-    GetPage(
-      name: Routes.login,
-      page: () => LoginView(),
-      binding: LoginBindings(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: Routes.detail,
-      page: () => DetailView(),
-      binding: DetailBinding(),
-      transition: Transition.cupertino,
-    ),
-  ];
+class Routes {
+  static const startup = '/startup';
+  static const home = '/';
+  static const messages = '/messages';
+  static const profile = '/profile';
+  static const login = '/login';
+  static const detail = '/detail';
+  static const geofence = '/geofence';
+  static const deviceList = '/device-list';
+  static const addDevice = '/add-device';
+  static const scanCode = '/scan-code';
+  static const playback = '/playback';
+  static const tracking = '/tracking';
+  static const mileage = '/mileage';
+  static const stopRecord = '/stop-record';
+  static const deviceShare = '/device-share';
+  static const commands = '/commands';
+  static const register = '/register';
+  static const forgotPassword = '/forgot-password';
+  static const userInfo = '/user-info';
+  static const vehicleList = '/vehicle-list';
+  static const vehicleDetail = '/vehicle-detail';
+  static const changePassword = '/change-password';
+  static const renewal = '/renewal';
+  static const payDeviceList = '/pay-device-list';
+  static const webContent = '/web-content';
 }
