@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
-import 'package:car/components/widget/car_icon_picker.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
+import 'package:car/widgets/car_icon_picker.dart';
 import 'package:car/utils/car_icon.dart';
 import 'vehicle_detail_controller.dart';
 

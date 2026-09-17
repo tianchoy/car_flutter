@@ -5,10 +5,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/utils/CoordTransform.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/geo_utils.dart';
 import 'package:car/utils/car_icon.dart';
 import 'tracking_repository.dart';

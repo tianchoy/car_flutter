@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../shared/services/api_service.dart';
-import '../../utils/getCurrentPosistion.dart';
+import '../../services/api_service.dart';
+import '../../utils/get_current_position.dart';
 import '../../utils/session.dart';
 
 class HomeRepository {

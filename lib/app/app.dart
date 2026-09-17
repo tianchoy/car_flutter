@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 
-import '../shared/widgets/reference_ui.dart';
-import 'route_observer.dart';
-import 'router_instance.dart';
+import '../widgets/reference_ui.dart';
+import 'routes/route_observer.dart';
+import 'routes/router_instance.dart';
 import '../views/home/home_controller.dart';
 
 class App extends StatelessWidget {

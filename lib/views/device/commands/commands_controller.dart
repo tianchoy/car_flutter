@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/model/device/command_models.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/models/device/command_models.dart';
 import 'commands_repository.dart';
 
 class CommandsController extends GetxController {

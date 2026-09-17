@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'package:car/utils/car_icon.dart';
 import 'add_device_controller.dart';
 

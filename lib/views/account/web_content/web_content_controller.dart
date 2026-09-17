@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import 'package:car/app/route_arguments.dart';
+import 'package:car/app/routes/route_arguments.dart';
 import 'web_content_repository.dart';
 
 class WebContentController extends GetxController {

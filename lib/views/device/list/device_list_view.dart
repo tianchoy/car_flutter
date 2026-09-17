@@ -2,13 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/components/widget/map_tile.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/widgets/map_tile.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'device_list_controller.dart';
-import 'package:car/utils/CoordTransform.dart';
+import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/car_icon.dart';
 
 class DeviceListView extends GetView<DeviceListController> {

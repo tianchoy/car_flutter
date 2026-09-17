@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/components/widget/car_icon_picker.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/car_icon_picker.dart';
 import 'package:car/views/account/scan_code/scan_code_controller.dart';
 import 'add_device_repository.dart';
 

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import '../../app/router_instance.dart';
-import '../../shared/models/api_response.dart';
+import '../../app/routes/router_instance.dart';
+import '../../models/api_response.dart';
 import 'login_repository.dart';
 
 class LoginController extends GetxController {

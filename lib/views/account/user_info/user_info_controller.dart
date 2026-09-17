@@ -1,9 +1,9 @@
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/services/session_expiry_coordinator.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/services/session_expiry_coordinator.dart';
 import 'user_info_repository.dart';
 
 class UserInfoController extends GetxController {

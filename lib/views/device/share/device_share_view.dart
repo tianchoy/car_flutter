@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'device_share_controller.dart';
 
 class DeviceShareView extends GetView<DeviceShareController> {

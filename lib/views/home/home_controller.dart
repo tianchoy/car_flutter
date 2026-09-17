@@ -5,15 +5,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../model/home/device_detail_model.dart';
-import '../../model/home/device_model.dart';
-import '../../model/home/track_summary.dart';
-import '../../shared/models/api_response.dart';
-import '../../shared/widgets/app_toast.dart';
-import '../../utils/CoordTransform.dart';
-import '../../utils/Logger.dart';
+import '../../models/home/device_detail_model.dart';
+import '../../models/home/device_model.dart';
+import '../../models/home/track_summary.dart';
+import '../../models/api_response.dart';
+import '../../widgets/app_toast.dart';
+import '../../utils/coord_transform.dart';
+import '../../utils/logger.dart';
 import '../../utils/session.dart';
 import 'home_repository.dart';
+import 'package:car/utils/time_utils.dart';
 
 class HomeController extends GetxController {
   HomeController({HomeRepository? repository})
@@ -296,8 +297,8 @@ class HomeController extends GetxController {
     final start = DateTime(now.year, now.month, now.day);
     final response = await _repository.getTrackPos(<String, dynamic>{
       'deviceNo': device.deviceNo ?? device.deviceId,
-      'startTime': _formatDateTime(start),
-      'endTime': _formatDateTime(now),
+      'startTime': formatDateTime(start),
+      'endTime': formatDateTime(now),
       'minParkTime': 120,
       'withStop': false,
       'withPos': false,
@@ -315,12 +316,6 @@ class HomeController extends GetxController {
             totalDistanceMeters: 0,
             averageSpeed: 0,
           );
-  }
-
-  String _formatDateTime(DateTime value) {
-    String pad(int number) => number.toString().padLeft(2, '0');
-    return '${value.year}-${pad(value.month)}-${pad(value.day)} '
-        '${pad(value.hour)}:${pad(value.minute)}:${pad(value.second)}';
   }
 
   Future<void> selectDevice(DeviceModel device) async {

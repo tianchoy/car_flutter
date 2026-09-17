@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
 
-import '../../app/router_instance.dart';
-import '../../shared/services/app_links.dart';
-import '../../shared/widgets/main_scaffold.dart';
-import '../../shared/widgets/reference_ui.dart';
+import '../../app/routes/router_instance.dart';
+import '../../services/app_links.dart';
+import '../../widgets/main_scaffold.dart';
+import '../../widgets/reference_ui.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {

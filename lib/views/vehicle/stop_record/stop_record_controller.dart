@@ -2,12 +2,13 @@ import 'package:flutter/widgets.dart';
 
 import 'package:get/get.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/widgets/reference_date_time_picker.dart';
-import 'package:car/model/vehicle/record_models.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/reference_date_time_picker.dart';
+import 'package:car/models/vehicle/record_models.dart';
 import 'stop_record_repository.dart';
+import 'package:car/utils/time_utils.dart';
 
 class StopRecordController extends GetxController {
   StopRecordController({StopRecordRepository? repository})
@@ -42,8 +43,8 @@ class StopRecordController extends GetxController {
     try {
       final response = await _repository.fetchTrack(<String, dynamic>{
         'deviceNo': currentDevice.deviceNo ?? currentDevice.deviceId,
-        'startTime': _format(startTime.value),
-        'endTime': _format(endTime.value),
+        'startTime': formatDateTime(startTime.value),
+        'endTime': formatDateTime(endTime.value),
         'minParkTime': 10,
         'withStop': true,
         'withPos': false,
@@ -88,9 +89,4 @@ class StopRecordController extends GetxController {
     await load();
   }
 
-  String _format(DateTime value) {
-    String pad(int number) => number.toString().padLeft(2, '0');
-    return '${value.year}-${pad(value.month)}-${pad(value.day)} '
-        '${pad(value.hour)}:${pad(value.minute)}:${pad(value.second)}';
-  }
 }

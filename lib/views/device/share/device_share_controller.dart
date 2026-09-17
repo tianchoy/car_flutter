@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/widgets/reference_date_time_picker.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/reference_date_time_picker.dart';
 import 'device_share_repository.dart';
 
 class DeviceShareController extends GetxController {

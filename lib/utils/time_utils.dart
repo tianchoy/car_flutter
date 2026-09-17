@@ -34,3 +34,10 @@ String relativeTime(String? value, {String fallback = ''}) {
   if (months < 12) return '$months个月前';
   return '${days ~/ 365}年前';
 }
+
+/// 格式化为 `yyyy-MM-dd HH:mm:ss`（接口通用的时间格式）。
+String formatDateTime(DateTime value) {
+  String pad(int number) => number.toString().padLeft(2, '0');
+  return '${value.year}-${pad(value.month)}-${pad(value.day)} '
+      '${pad(value.hour)}:${pad(value.minute)}:${pad(value.second)}';
+}

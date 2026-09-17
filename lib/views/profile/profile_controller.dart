@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 
-import '../../app/router_instance.dart';
-import '../../shared/models/api_response.dart';
-import '../../shared/services/auth_session_service.dart';
-import '../../shared/services/session_expiry_coordinator.dart';
-import '../../utils/Logger.dart';
-import '../../model/profile/profile_model.dart';
+import '../../app/routes/router_instance.dart';
+import '../../models/api_response.dart';
+import '../../services/auth_session_service.dart';
+import '../../services/session_expiry_coordinator.dart';
+import '../../utils/logger.dart';
+import '../../models/profile/profile_model.dart';
 import 'profile_repository.dart';
 
 class ProfileController extends GetxController

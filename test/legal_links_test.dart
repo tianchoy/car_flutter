@@ -1,4 +1,4 @@
-import 'package:car/shared/services/app_links.dart';
+import 'package:car/services/app_links.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 

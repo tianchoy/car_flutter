@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:car/utils/CoordTransform.dart';
-import 'package:car/shared/models/api_response.dart';
+import 'package:car/utils/coord_transform.dart';
+import 'package:car/models/api_response.dart';
 import 'package:car/utils/geo_utils.dart';
 
 void main() {

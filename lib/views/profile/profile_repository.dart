@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../../shared/services/api_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/session.dart';
 
 class ProfileRepository {

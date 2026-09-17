@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import 'package:car/shared/widgets/main_scaffold.dart';
+import 'package:car/widgets/main_scaffold.dart';
 import 'scan_code_controller.dart';
 
 class ScanCodeView extends GetView<ScanCodeController> {

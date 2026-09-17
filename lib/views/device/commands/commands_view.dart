@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
-import 'package:car/model/device/command_models.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
+import 'package:car/models/device/command_models.dart';
 import 'commands_controller.dart';
 
 class CommandsView extends GetView<CommandsController> {

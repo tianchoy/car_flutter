@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/shared/services/app_links.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/services/app_links.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'register_controller.dart';
 
 class RegisterView extends GetView<RegisterController> {

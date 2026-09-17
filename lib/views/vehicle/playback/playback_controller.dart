@@ -5,15 +5,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/widgets/app_toast.dart';
-import 'package:car/shared/widgets/reference_date_time_picker.dart';
-import 'package:car/utils/CoordTransform.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/app_toast.dart';
+import 'package:car/widgets/reference_date_time_picker.dart';
+import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/geo_utils.dart';
-import 'package:car/model/vehicle/playback_models.dart';
+import 'package:car/models/vehicle/playback_models.dart';
 import 'playback_repository.dart';
+import 'package:car/utils/time_utils.dart';
 
 class PlaybackController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -133,8 +134,8 @@ class PlaybackController extends GetxController
     try {
       final response = await _repository.fetchTrack(<String, dynamic>{
         'deviceNo': currentDevice.deviceNo ?? currentDevice.deviceId,
-        'startTime': _format(startTime.value),
-        'endTime': _format(endTime.value),
+        'startTime': formatDateTime(startTime.value),
+        'endTime': formatDateTime(endTime.value),
         'minParkTime': 2,
         'withStop': false,
         'withPos': true,
@@ -255,7 +256,7 @@ class PlaybackController extends GetxController
         longitude: converted.longitude,
         speed: 0,
         rotation: 0,
-        time: _format(DateTime.now()),
+        time: formatDateTime(DateTime.now()),
       );
       _moveMap(LatLng(converted.latitude, converted.longitude));
     }
@@ -451,12 +452,6 @@ class PlaybackController extends GetxController
       point.longitude.abs() <= 180 &&
       point.time.isNotEmpty &&
       !(point.latitude == 0 && point.longitude == 0);
-
-  String _format(DateTime value) {
-    String pad(int number) => number.toString().padLeft(2, '0');
-    return '${value.year}-${pad(value.month)}-${pad(value.day)} '
-        '${pad(value.hour)}:${pad(value.minute)}:${pad(value.second)}';
-  }
 
   @override
   void onClose() {

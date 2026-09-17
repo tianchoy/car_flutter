@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/services/api_service.dart';
-import 'package:car/utils/Logger.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/services/api_service.dart';
+import 'package:car/utils/logger.dart';
 
 class DetailRepository {
   DetailRepository({ApiService? apiService})

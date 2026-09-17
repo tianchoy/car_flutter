@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import 'package:car/shared/services/api_service.dart';
+import 'package:car/services/api_service.dart';
 
 class RenewalRepository {
   RenewalRepository({ApiService? apiService})

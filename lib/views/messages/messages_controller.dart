@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import '../../model/message/msg_model.dart';
-import '../../shared/models/api_response.dart';
-import '../../utils/Logger.dart';
+import '../../models/message/msg_model.dart';
+import '../../models/api_response.dart';
+import '../../utils/logger.dart';
 import 'messages_repository.dart';
 
 class MessagesController extends GetxController {

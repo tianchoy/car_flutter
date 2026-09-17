@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
-import 'package:car/app/route_arguments.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
+import 'package:car/app/routes/route_arguments.dart';
 import 'mileage_controller.dart';
-import 'package:car/model/vehicle/record_models.dart';
+import 'package:car/models/vehicle/record_models.dart';
 
 class MileageView extends GetView<MileageController> {
   const MileageView({super.key});

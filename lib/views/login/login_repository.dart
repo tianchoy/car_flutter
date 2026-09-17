@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../../shared/models/api_response.dart';
-import '../../shared/services/api_service.dart';
+import '../../models/api_response.dart';
+import '../../services/api_service.dart';
 import '../../utils/session.dart';
 
 class LoginRepository {

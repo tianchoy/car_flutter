@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../utils/Logger.dart';
+import '../../utils/logger.dart';
 
 class SessionKeys {
   SessionKeys._();

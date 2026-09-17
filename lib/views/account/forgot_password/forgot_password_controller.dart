@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/shared/models/api_response.dart';
+import 'package:car/models/api_response.dart';
 import 'forgot_password_repository.dart';
 
 class ForgotPasswordController extends GetxController {

@@ -1,20 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
-import 'package:car/shared/widgets/find_car.dart';
+import 'package:car/widgets/app_toast.dart';
+import 'package:car/widgets/find_car.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../app/route_arguments.dart';
-import '../../app/router_instance.dart';
-import '../../shared/services/app_links.dart';
+import '../../app/routes/route_arguments.dart';
+import '../../app/routes/router_instance.dart';
+import '../../services/app_links.dart';
 import '../../utils/car_icon.dart';
 import '../../utils/time_utils.dart';
-import '../../components/widget/app_popup.dart';
-import '../../components/widget/map_tile.dart';
-import '../../model/home/device_model.dart';
-import '../../shared/widgets/main_scaffold.dart';
-import '../../shared/widgets/reference_ui.dart';
+import '../../widgets/app_popup.dart';
+import '../../widgets/map_tile.dart';
+import '../../models/home/device_model.dart';
+import '../../widgets/main_scaffold.dart';
+import '../../widgets/reference_ui.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -336,7 +336,10 @@ class HomeView extends GetView<HomeController> {
                 bottom: Radius.circular(16),
               ),
               child: MapTile(
-                isLoading: controller.isRefreshingPosition.value,
+                // 刷新位置时的加载提示统一由页面级居中指示器展示（busy 已包含
+                // isRefreshingPosition），此处不再叠加地图内的第二个指示器，
+                // 避免刷新时页面中央同时出现两个 loading。
+                isLoading: false,
                 errMsg: _positionMessage(),
                 latitude: point.latitude,
                 longitude: point.longitude,

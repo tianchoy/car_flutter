@@ -4,15 +4,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/model/home/device_detail_model.dart';
-import 'package:car/model/home/track_summary.dart';
-import 'package:car/shared/models/api_response.dart';
-import 'package:car/shared/widgets/app_toast.dart';
-import 'package:car/utils/CoordTransform.dart';
-import 'package:car/utils/Logger.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/home/device_detail_model.dart';
+import 'package:car/models/home/track_summary.dart';
+import 'package:car/models/api_response.dart';
+import 'package:car/widgets/app_toast.dart';
+import 'package:car/utils/coord_transform.dart';
+import 'package:car/utils/logger.dart';
 import 'detail_repository.dart';
+import 'package:car/utils/time_utils.dart';
 
 class DetailController extends GetxController {
   DetailController({DetailRepository? repository})
@@ -255,8 +256,8 @@ class DetailController extends GetxController {
     final start = DateTime(now.year, now.month, now.day);
     final response = await _detailRepository.fetchTrackData(<String, dynamic>{
       'deviceNo': currentDevice.deviceNo ?? currentDevice.deviceId,
-      'startTime': _formatDateTime(start),
-      'endTime': _formatDateTime(now),
+      'startTime': formatDateTime(start),
+      'endTime': formatDateTime(now),
       'minParkTime': 120,
       'withStop': false,
       'withPos': false,
@@ -404,12 +405,6 @@ class DetailController extends GetxController {
     return decimals == 0
         ? number.toStringAsFixed(0)
         : number.toStringAsFixed(decimals);
-  }
-
-  String _formatDateTime(DateTime value) {
-    String pad(int number) => number.toString().padLeft(2, '0');
-    return '${value.year}-${pad(value.month)}-${pad(value.day)} '
-        '${pad(value.hour)}:${pad(value.minute)}:${pad(value.second)}';
   }
 
   @override

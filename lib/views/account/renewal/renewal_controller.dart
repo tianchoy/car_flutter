@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
 import 'renewal_repository.dart';
 
 class RenewalController extends GetxController {

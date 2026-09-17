@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/router_instance.dart';
-import 'package:car/model/home/device_model.dart';
-import 'package:car/shared/models/api_response.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/models/home/device_model.dart';
+import 'package:car/models/api_response.dart';
 import 'vehicle_list_repository.dart';
 
 class VehicleListController extends GetxController {

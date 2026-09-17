@@ -3,9 +3,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:car/components/widget/map_tile.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/widgets/map_tile.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'tracking_controller.dart';
 
 class TrackingView extends GetView<TrackingController> {

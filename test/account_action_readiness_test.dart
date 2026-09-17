@@ -1,5 +1,5 @@
-import 'package:car/shared/services/api_service.dart';
-import 'package:car/shared/services/api_http.dart';
+import 'package:car/services/api_service.dart';
+import 'package:car/services/api_http.dart';
 import 'package:car/views/account/forgot_password/forgot_password_controller.dart';
 import 'package:car/views/account/forgot_password/forgot_password_repository.dart';
 import 'package:car/views/account/register/register_controller.dart';

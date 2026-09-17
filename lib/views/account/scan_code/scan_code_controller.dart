@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:car/shared/widgets/app_toast.dart';
+import 'package:car/widgets/app_toast.dart';
 import 'scan_code_repository.dart';
 
 class ScanCodeController extends GetxController with WidgetsBindingObserver {

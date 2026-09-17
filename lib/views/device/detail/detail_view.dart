@@ -2,16 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/route_arguments.dart';
-import 'package:car/app/route_observer.dart';
-import 'package:car/app/router_instance.dart';
-import 'package:car/components/widget/map_tile.dart';
+import 'package:car/app/routes/route_arguments.dart';
+import 'package:car/app/routes/route_observer.dart';
+import 'package:car/app/routes/router_instance.dart';
+import 'package:car/widgets/map_tile.dart';
 import 'package:car/utils/car_icon.dart';
-import 'package:car/model/home/device_detail_model.dart';
-import 'package:car/shared/widgets/app_toast.dart';
-import 'package:car/shared/widgets/find_car.dart';
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
+import 'package:car/models/home/device_detail_model.dart';
+import 'package:car/widgets/app_toast.dart';
+import 'package:car/widgets/find_car.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
 import 'detail_controller.dart';
 
 class DetailView extends GetView<DetailController> {

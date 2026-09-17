@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import '../../model/message/msg_model.dart';
-import '../../shared/widgets/main_scaffold.dart';
-import '../../shared/widgets/reference_ui.dart';
+import '../../models/message/msg_model.dart';
+import '../../widgets/main_scaffold.dart';
+import '../../widgets/reference_ui.dart';
 import 'messages_controller.dart';
 
 class MessagesView extends GetView<MessagesController> {

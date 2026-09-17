@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import 'package:car/shared/widgets/main_scaffold.dart';
-import 'package:car/shared/widgets/reference_ui.dart';
-import 'package:car/model/vehicle/record_models.dart';
+import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/reference_ui.dart';
+import 'package:car/models/vehicle/record_models.dart';
 import 'stop_record_controller.dart';
 
 class StopRecordView extends GetView<StopRecordController> {
