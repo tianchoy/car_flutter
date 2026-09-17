@@ -562,18 +562,19 @@ class _DeviceManagerSheet extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.page,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                child: SizedBox(
+                  width: double.infinity,
+                  // 与上方「多边形 / 圆形」保持一致的滑动分段控件样式。
                   child: Obx(
-                    () => Row(
-                      children: [
-                        _bindTab('已绑定', 0),
-                        _bindTab('未绑定', 1),
-                      ],
+                    () => CupertinoSlidingSegmentedControl<int>(
+                      groupValue: controller.deviceTab.value,
+                      children: const {
+                        0: Text('已绑定'),
+                        1: Text('未绑定'),
+                      },
+                      onValueChanged: (value) {
+                        if (value != null) controller.deviceTab.value = value;
+                      },
                     ),
                   ),
                 ),
@@ -660,31 +661,6 @@ class _DeviceManagerSheet extends StatelessWidget {
     );
   }
 
-  Widget _bindTab(String label, int value) {
-    final selected = controller.deviceTab.value == value;
-    return Expanded(
-      child: CupertinoButton(
-        padding: EdgeInsets.zero,
-        onPressed: () => controller.deviceTab.value = value,
-        child: Container(
-          height: 36,
-          margin: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : CupertinoColors.white,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? CupertinoColors.white : AppColors.text,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 const List<String> _alarmTypeLabels = [

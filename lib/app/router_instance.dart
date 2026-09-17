@@ -78,19 +78,16 @@ class AppRouter {
       name: Routes.home,
       page: () => const HomeView(),
       binding: HomeBinding(),
-      transition: Transition.cupertino,
     ),
     GetPage(
       name: Routes.messages,
       page: () => const MessagesView(),
       binding: MessagesBinding(),
-      transition: Transition.cupertino,
     ),
     GetPage(
       name: Routes.profile,
       page: () => const ProfileView(),
       binding: ProfileBinding(),
-      transition: Transition.cupertino,
     ),
     GetPage(
       name: Routes.login,

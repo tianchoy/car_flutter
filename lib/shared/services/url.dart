@@ -13,7 +13,7 @@ class AppConfig {
   static const String androidPackageName = 'com.example.car';
 
   static const String amapTileUrl =
-      'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}';
+      'https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7';
 
   static String get apiBaseUrl {
     final configuredValue = dotenv.env['API_URL']?.trim();

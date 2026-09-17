@@ -9,6 +9,7 @@ import '../../app/route_arguments.dart';
 import '../../app/router_instance.dart';
 import '../../shared/services/app_links.dart';
 import '../../utils/car_icon.dart';
+import '../../utils/time_utils.dart';
 import '../../components/widget/app_popup.dart';
 import '../../components/widget/map_tile.dart';
 import '../../model/home/device_model.dart';
@@ -190,6 +191,8 @@ class HomeView extends GetView<HomeController> {
       options: devices,
       displayText: _deviceDisplayName,
       isShowMessage: false,
+      // 选择车辆只保留蓝色加粗字体，不显示选中对号。
+      showSelectedCheck: false,
       selectedOption: controller.selectedDevice.value,
     );
     if (device != null) controller.selectDevice(device);
@@ -226,9 +229,13 @@ class HomeView extends GetView<HomeController> {
         .clamp(0, 100)
         .toDouble();
     final online = detail?.isOnline == true || device?.isOnline == true;
-    final lastLoc =
-        detail?.lastUpdateTime ??
-        (controller.devicePosition.value == null ? '暂无位置' : '刚刚');
+    // 最后定位：按接口返回的最后更新时间做相对展示
+    // （刚刚 / x分钟前 / x小时前 / x天前 / x个月前 / x年前）；
+    // 接口没给时间但有定位时才兜底为「刚刚」。
+    final lastLoc = relativeTime(
+      detail?.lastUpdateTime,
+      fallback: controller.devicePosition.value == null ? '暂无位置' : '刚刚',
+    );
     return ReferenceCard(
       child: Row(
         children: [

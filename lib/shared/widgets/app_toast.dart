@@ -19,7 +19,7 @@ class AppToast {
       colorText: Colors.black,
       duration: duration,
       // 白色半透明底：Get.snackbar 仅支持纯色/半透明色，无法叠加实时背景模糊。
-      backgroundColor: Colors.white.withValues(alpha: 0.72),
+      backgroundColor: Colors.white.withValues(alpha: 0.1),
     );
   }
 }
