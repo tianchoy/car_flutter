@@ -11,40 +11,42 @@ Future<String?> showCarIconPicker({
   required BuildContext context,
   String current = '',
   int crossAxisCount = 5,
-}) =>
-    showCupertinoModalPopup<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Container(
-          // 高度随内容自适应：内容本身决定弹框高度，仅当超过 0.85 屏高时才限制并内部滚动。
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          decoration: const BoxDecoration(
-            color: CupertinoColors.systemBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          // 用 SingleChildScrollView + 最小 Column，避免 Expanded 把弹框撑到 0.85 屏高。
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '选择车标',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                _CarIconGrid(
-                  current: current,
-                  crossAxisCount: crossAxisCount,
-                ),
-              ],
-            ),
+}) => showCupertinoModalPopup<String>(
+  context: context,
+  builder: (context) => Container(
+    // 高度随内容自适应：内容本身决定弹框高度，仅当超过 0.85 屏高时才限制并内部滚动。
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.85,
+    ),
+    decoration: const BoxDecoration(
+      color: CupertinoColors.systemBackground,
+      // 仅顶部圆角：底部直接贴住屏幕下缘，不产生留白。
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    // SafeArea 放在 Container 内部：背景色延伸到屏幕最底部（含 Home
+    // Indicator 区域），内容自动避开底部安全区，消除底部留白。
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        // 用 SingleChildScrollView + 最小 Column，避免 Expanded 把弹框撑到 0.85 屏高。
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '选择车标',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              _CarIconGrid(current: current, crossAxisCount: crossAxisCount),
+            ],
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
 
 class _CarIconGrid extends StatelessWidget {
   const _CarIconGrid({required this.current, required this.crossAxisCount});
@@ -54,58 +56,58 @@ class _CarIconGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          final spacing = 8.0;
-          final cellWidth =
-              (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
-                  crossAxisCount;
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: carIconOptions
-                .map(
-                  (option) => SizedBox(
-                    width: cellWidth,
-                    child: CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      onPressed: () => Navigator.pop(context, option.name),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 8,
+    builder: (context, constraints) {
+      final spacing = 8.0;
+      final cellWidth =
+          (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+          crossAxisCount;
+      return Wrap(
+        spacing: spacing,
+        runSpacing: spacing,
+        children: carIconOptions
+            .map(
+              (option) => SizedBox(
+                width: cellWidth,
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  onPressed: () => Navigator.pop(context, option.name),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      // 仅选中项显示蓝色边框，未选中不显示边框。
+                      border: current == option.name
+                          ? Border.all(color: AppColors.primary)
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          carIconPreviewPath(option.name),
+                          width: 34,
+                          height: 34,
+                          fit: BoxFit.contain,
                         ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          // 仅选中项显示蓝色边框，未选中不显示边框。
-                          border: current == option.name
-                              ? Border.all(color: AppColors.primary)
-                              : null,
+                        const SizedBox(height: 4),
+                        Text(
+                          option.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              carIconPreviewPath(option.name),
-                              width: 34,
-                              height: 34,
-                              fit: BoxFit.contain,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              option.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                )
-                .toList(),
-          );
-        },
+                ),
+              ),
+            )
+            .toList(),
       );
+    },
+  );
 }

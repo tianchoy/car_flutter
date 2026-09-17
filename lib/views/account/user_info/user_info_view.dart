@@ -28,18 +28,20 @@ class UserInfoView extends GetView<UserInfoController> {
                   ReferenceCard(
                     child: Column(
                       children: [
-                        _infoRow(
-                          '账号',
-                          controller.value(['id', 'userId', 'username']),
-                        ),
+                        _infoRow('账号', _text(controller.profile.value?.userName)),
                         _infoRow(
                           '手机号',
-                          controller.value(['mobile', 'phonenumber', 'phone']),
+                          _text(controller.profile.value?.phoneNumber),
                         ),
-                        _infoRow('类型', _userType),
+                        // 用户来源渠道（APP/小程序/H5/后台录入），
+                        // 按接口文档 §3.3 字典映射，非登录体系类型。
+                        _infoRow(
+                          '类型',
+                          _text(controller.profile.value?.userSourceTypeName),
+                        ),
                         _infoRow(
                           '创建时间',
-                          controller.value(['createTime', 'create_time']),
+                          _text(controller.profile.value?.createTime),
                         ),
                       ],
                     ),
@@ -95,10 +97,9 @@ class UserInfoView extends GetView<UserInfoController> {
     );
   }
 
-  String get _userType {
-    final type = controller.value(['type', 'userType'], fallback: '0');
-    return type == '1' || type.toLowerCase() == 'company' ? '公司用户' : '个人用户';
-  }
+  /// 空值统一展示为 '--'。
+  String _text(String? value) =>
+      (value == null || value.trim().isEmpty) ? '--' : value.trim();
 
   Widget _infoRow(String label, String value) {
     return Padding(

@@ -59,13 +59,13 @@ class ProfileView extends GetView<ProfileController> {
   Widget _buildUserCard() {
     final user = controller.profile.value;
     final loggedIn = controller.isLoggedIn.value;
-    final displayName = user?.username.isNotEmpty == true
-        ? user!.username
+    final displayName = user?.userName.isNotEmpty == true
+        ? user!.userName
         : loggedIn
         ? '车主用户'
         : '点击登录';
-    final subtitle = user?.phone.isNotEmpty == true
-        ? user!.phone
+    final subtitle = user?.phoneNumber.isNotEmpty == true
+        ? user!.phoneNumber
         : loggedIn
         ? '查看个人信息'
         : '登录后管理车辆和设备';

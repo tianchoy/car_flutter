@@ -18,7 +18,7 @@ class ProfileController extends GetxController
   final ProfileRepository _repository;
   final AuthSessionService _authSessionService = AuthSessionService();
   final isLoggedIn = false.obs;
-  final profile = Rx<UserModel?>(null);
+  final profile = Rxn<UserProfileModel>();
   final vehicleCount = 0.obs;
   final isLoading = false.obs;
   final errorMessage = ''.obs;
@@ -54,9 +54,9 @@ class ProfileController extends GetxController
         return;
       }
       if (profileResult.isSuccess) {
-        profile.value = UserModel.fromJson(
-          profileResult.data ?? const <String, dynamic>{},
-        );
+        profile.value = profileResult.data == null
+            ? null
+            : UserProfileModel.fromJson(profileResult.data!);
       } else {
         errorMessage.value = profileResult.message;
         Log.w('获取用户信息失败: ${profileResult.message}');

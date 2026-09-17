@@ -48,9 +48,12 @@ class HttpService {
     if (kDebugMode) {
       _dio.interceptors.add(
         LogInterceptor(
-          request: false,
-          requestHeader: false,
-          requestBody: false,
+          // 打印请求信息（URL、方法、query 参数）：便于核对接口路径与入参。
+          request: true,
+          // 打印请求头（含 Authorization: Bearer <token>、clientId）。
+          requestHeader: true,
+          // 打印请求体（POST/PUT 的入参）。
+          requestBody: true,
           responseHeader: false,
           responseBody: false,
           error: true,

@@ -38,6 +38,7 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   '请输入当前密码',
                   controller.oldObscure.value,
                   controller.oldObscure.toggle,
+                  errorText: controller.oldPasswordError,
                 ),
               ),
               const SizedBox(height: 12),
@@ -47,6 +48,7 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   '请输入新密码',
                   controller.newObscure.value,
                   controller.newObscure.toggle,
+                  errorText: controller.newPasswordError,
                 ),
               ),
               const Padding(
@@ -66,6 +68,7 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   '请再次输入新密码',
                   controller.confirmObscure.value,
                   controller.confirmObscure.toggle,
+                  errorText: controller.confirmPasswordError,
                 ),
               ),
               const SizedBox(height: 28),
@@ -74,7 +77,9 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   label: '确认修改',
                   expand: true,
                   loading: controller.isSubmitting.value,
-                  onPressed: controller.isSubmitting.value
+                  // 信息未填写完整或不符合规则时，按钮置为不可点击状态。
+                  onPressed: controller.isSubmitting.value ||
+                          !controller.canSubmit
                       ? null
                       : controller.submit,
                 ),
@@ -95,12 +100,14 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
     TextEditingController fieldController,
     String hint,
     bool obscure,
-    VoidCallback onToggle,
-  ) {
+    VoidCallback onToggle, {
+    String? errorText,
+  }) {
     return ReferenceInput(
       controller: fieldController,
       hint: hint,
       obscureText: obscure,
+      errorText: errorText,
       prefix: const Icon(CupertinoIcons.lock),
       suffix: ReferenceIconButton(
         onPressed: onToggle,

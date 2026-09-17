@@ -9,7 +9,9 @@ class ProfileRepository {
 
   final ApiService _apiService;
 
-  Future<Response<dynamic>> fetchProfile() => _apiService.getUserInfo();
+  /// 获取当前登录用户个人信息（优先 GET /system/appUser/profile，
+  /// 后端未部署时自动回退旧接口）。
+  Future<Response<dynamic>> fetchProfile() => _apiService.getUserProfile();
 
   Future<Response<dynamic>> fetchDevices() =>
       _apiService.getUserDeviceList({'pageSize': 1000});

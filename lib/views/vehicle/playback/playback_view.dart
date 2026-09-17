@@ -39,9 +39,8 @@ class PlaybackView extends GetView<PlaybackController> {
   }
 
   Widget _buildTopBar() {
-    final plate = controller.device?.plateNo ??
-        controller.device?.deviceId ??
-        '未命名设备';
+    final plate =
+        controller.device?.plateNo ?? controller.device?.deviceId ?? '未命名设备';
     final status = controller.device?.deviceStatus ?? '';
     final online = status.toLowerCase() == 'online';
     return Positioned(
@@ -82,8 +81,7 @@ class PlaybackView extends GetView<PlaybackController> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: (online ? AppColors.success : AppColors.secondaryText)
                       .withValues(alpha: .12),
@@ -123,8 +121,8 @@ class PlaybackView extends GetView<PlaybackController> {
   }
 
   Widget _buildMap() {
-    final initial = controller.initialCenter.value ??
-        const LatLng(39.9042, 116.4074);
+    final initial =
+        controller.initialCenter.value ?? const LatLng(39.9042, 116.4074);
     return Stack(
       children: [
         FlutterMap(
@@ -135,7 +133,8 @@ class PlaybackView extends GetView<PlaybackController> {
             minZoom: 3,
             maxZoom: 18,
             interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.drag |
+              flags:
+                  InteractiveFlag.drag |
                   InteractiveFlag.pinchZoom |
                   InteractiveFlag.doubleTapZoom,
             ),
@@ -303,8 +302,10 @@ class PlaybackView extends GetView<PlaybackController> {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFF1890FF)),
                   borderRadius: BorderRadius.circular(16),

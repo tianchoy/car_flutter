@@ -83,8 +83,10 @@ class ApiService {
     return _httpService.post<dynamic>(ApiEndpoints.logout);
   }
 
-  Future<Response<dynamic>> getUserInfo() {
-    return _httpService.get<dynamic>(ApiEndpoints.userInfo);
+  /// 获取当前登录用户个人信息（GET /system/appUser/profile）。
+  /// 仅需登录态，token 由 HttpService 统一放在请求头。
+  Future<Response<dynamic>> getUserProfile() {
+    return _httpService.get<dynamic>(ApiEndpoints.appUserProfile);
   }
 
   Future<Response<dynamic>> getUserDeviceList(Map<String, dynamic> data) {

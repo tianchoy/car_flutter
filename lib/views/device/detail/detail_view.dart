@@ -11,6 +11,7 @@ import 'package:car/models/home/device_detail_model.dart';
 import 'package:car/widgets/app_toast.dart';
 import 'package:car/widgets/find_car.dart';
 import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/app_bottom_sheet.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'detail_controller.dart';
 
@@ -36,9 +37,7 @@ class DetailView extends GetView<DetailController> {
             () => CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                AppRefreshControl(
-                  onRefresh: controller.loadDetails,
-                ),
+                AppRefreshControl(onRefresh: controller.loadDetails),
                 SliverPadding(
                   // 顶部留白为 0：让地图卡片紧贴顶部导航栏；底部收紧，iOS 安全区已占空间。
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -68,36 +67,26 @@ class DetailView extends GetView<DetailController> {
   }
 
   Future<void> _showRefreshOptions(BuildContext context) async {
-    await showCupertinoModalPopup<void>(
+    final selected = await showAppActionSheet<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('刷新频率'),
-        actions: [
-          _refreshAction(context, 0, '停止刷新'),
-          _refreshAction(context, 5, '每 5 秒刷新'),
-          _refreshAction(context, 10, '每 10 秒刷新'),
-          _refreshAction(context, 30, '每 30 秒刷新'),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消', style: TextStyle(fontSize: 15)),
-        ),
-      ),
+      title: '刷新频率',
+      actions: [
+        _refreshAction(0, '停止刷新'),
+        _refreshAction(5, '每 5 秒刷新'),
+        _refreshAction(10, '每 10 秒刷新'),
+        _refreshAction(30, '每 30 秒刷新'),
+      ],
     );
+    if (selected == null) return;
+    controller.setRefreshInterval(selected);
   }
 
-  CupertinoActionSheetAction _refreshAction(
-    BuildContext context,
-    int seconds,
-    String label,
-  ) => CupertinoActionSheetAction(
-    isDefaultAction: controller.refreshIntervalSeconds.value == seconds,
-    onPressed: () {
-      Navigator.pop(context);
-      controller.setRefreshInterval(seconds);
-    },
-    child: Text(label, style: const TextStyle(fontSize: 15)),
-  );
+  AppSheetAction<int> _refreshAction(int seconds, String label) =>
+      AppSheetAction<int>(
+        label: label,
+        value: seconds,
+        isDefault: controller.refreshIntervalSeconds.value == seconds,
+      );
 
   Widget _buildMapCard() {
     final point = controller.mapPosition;

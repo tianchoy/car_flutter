@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:car/widgets/app_toast.dart';
 
 import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/app_bottom_sheet.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'package:car/models/device/command_models.dart';
 import 'commands_controller.dart';
@@ -381,25 +382,18 @@ class CommandsView extends GetView<CommandsController> {
   }
 
   Future<void> _selectOption(CommandParameter parameter) async {
-    final option = await showCupertinoModalPopup<CommandOption>(
+    final option = await showAppActionSheet<CommandOption>(
       context: Get.context!,
-      builder: (context) => CupertinoActionSheet(
-        title: Text('请选择${parameter.label}'),
-        actions: parameter.options
-            .map(
-              (item) => CupertinoActionSheetAction(
-                isDefaultAction:
-                    controller.parameterValue(parameter) == item.value,
-                onPressed: () => Navigator.pop(context, item),
-                child: Text(item.label),
-              ),
-            )
-            .toList(),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-      ),
+      title: '请选择${parameter.label}',
+      actions: parameter.options
+          .map(
+            (item) => AppSheetAction<CommandOption>(
+              label: item.label,
+              value: item,
+              isDefault: controller.parameterValue(parameter) == item.value,
+            ),
+          )
+          .toList(),
     );
     if (option != null) controller.updateParameter(parameter, option.value);
   }
@@ -452,9 +446,7 @@ class CommandsView extends GetView<CommandsController> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        AppRefreshControl(
-          onRefresh: () => controller.loadHistory(reset: true),
-        ),
+        AppRefreshControl(onRefresh: () => controller.loadHistory(reset: true)),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
           sliver: SliverList(

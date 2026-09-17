@@ -191,8 +191,6 @@ class HomeView extends GetView<HomeController> {
       options: devices,
       displayText: _deviceDisplayName,
       isShowMessage: false,
-      // 选择车辆只保留蓝色加粗字体，不显示选中对号。
-      showSelectedCheck: false,
       selectedOption: controller.selectedDevice.value,
     );
     if (device != null) controller.selectDevice(device);

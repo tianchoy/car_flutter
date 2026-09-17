@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/app_bottom_sheet.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'geofence_controller.dart';
 
@@ -87,73 +88,73 @@ class GeofenceView extends GetView<GeofenceController> {
   }
 
   Widget _buildBottomPanelContent(BuildContext context, bool expanded) {
-        return AnimatedSize(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-          alignment: Alignment.topCenter,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!expanded)
-                // 收起态：底部只显示一个圆形向上箭头按钮，点击即展开。
-                Padding(
-                  // 收起态的圆形箭头贴底显示，留出底部安全区（iOS Home Indicator）
-                  // 的高度，避免与系统返回横线重叠。
-                  padding: const EdgeInsets.only(top: 8, bottom: 28),
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: controller.toggleFenceList,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.divider),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!expanded)
+            // 收起态：底部只显示一个圆形向上箭头按钮，点击即展开。
+            Padding(
+              // 收起态的圆形箭头贴底显示，留出底部安全区（iOS Home Indicator）
+              // 的高度，避免与系统返回横线重叠。
+              padding: const EdgeInsets.only(top: 8, bottom: 28),
+              child: Center(
+                child: GestureDetector(
+                  onTap: controller.toggleFenceList,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.divider),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
-                        child: const Icon(
-                          CupertinoIcons.chevron_up,
-                          size: 24,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
+                      ],
                     ),
-                  ),
-                )
-              else ...[
-                // 展开态：不再显示任何箭头，仅保留顶部短横线，按住下滑即全部隐藏。
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragUpdate: (details) {
-                    if (details.delta.dy > 4) controller.collapseFenceList();
-                  },
-                  child: SizedBox(
-                    height: 26,
-                    width: double.infinity,
-                    child: Center(
-                      child: Container(
-                        width: 38,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.divider,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
+                    child: const Icon(
+                      CupertinoIcons.chevron_up,
+                      size: 24,
+                      color: AppColors.secondaryText,
                     ),
                   ),
                 ),
-                _buildToolbar(context),
-                _buildFenceList(context),
-              ],
-            ],
-          ),
+              ),
+            )
+          else ...[
+            // 展开态：不再显示任何箭头，仅保留顶部短横线，按住下滑即全部隐藏。
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragUpdate: (details) {
+                if (details.delta.dy > 4) controller.collapseFenceList();
+              },
+              child: SizedBox(
+                height: 26,
+                width: double.infinity,
+                child: Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            _buildToolbar(context),
+            _buildFenceList(context),
+          ],
+        ],
+      ),
     );
   }
 
@@ -331,36 +332,18 @@ class GeofenceView extends GetView<GeofenceController> {
   }
 
   Future<void> _showFenceActions(BuildContext context, dynamic fence) async {
-    final action = await showCupertinoModalPopup<String>(
+    final action = await showAppActionSheet<String>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(
-          fence.name,
-          style: const TextStyle(fontSize: 14, color: AppColors.secondaryText),
+      title: fence.name,
+      actions: const [
+        AppSheetAction<String>(label: '管理设备', value: 'devices'),
+        AppSheetAction<String>(label: '编辑', value: 'edit'),
+        AppSheetAction<String>(
+          label: '删除',
+          value: 'delete',
+          isDestructive: true,
         ),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context, 'devices'),
-            child: const Text(
-              '管理设备',
-              style: TextStyle(fontSize: 15),
-            ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context, 'edit'),
-            child: const Text('编辑', style: TextStyle(fontSize: 15)),
-          ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, 'delete'),
-            child: const Text('删除', style: TextStyle(fontSize: 15)),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消', style: TextStyle(fontSize: 15)),
-        ),
-      ),
+      ],
     );
     if (!context.mounted) return;
     controller.selectFence(fence);
@@ -533,73 +516,78 @@ class _DeviceManagerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => SafeArea(
-        child: Container(
+      () => Container(
+        decoration: const BoxDecoration(
           color: CupertinoColors.systemBackground,
-          height: MediaQuery.sizeOf(context).height * .7,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        '围栏设备管理',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+          // 仅顶部圆角：底部直接贴住屏幕下缘，不产生留白。
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        // SafeArea 放在 Container 内部：背景色延伸到屏幕最底部，消除底部留白。
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * .7,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '围栏设备管理',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                    ReferenceIconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: CupertinoIcons.xmark,
-                      color: AppColors.secondaryText,
-                    ),
-                  ],
+                      ReferenceIconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: CupertinoIcons.xmark,
+                        color: AppColors.secondaryText,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  // 与上方「多边形 / 圆形」保持一致的滑动分段控件样式。
-                  child: Obx(
-                    () => CupertinoSlidingSegmentedControl<int>(
-                      groupValue: controller.deviceTab.value,
-                      children: const {
-                        0: Text('已绑定'),
-                        1: Text('未绑定'),
-                      },
-                      onValueChanged: (value) {
-                        if (value != null) controller.deviceTab.value = value;
-                      },
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    // 与上方「多边形 / 圆形」保持一致的滑动分段控件样式。
+                    child: Obx(
+                      () => CupertinoSlidingSegmentedControl<int>(
+                        groupValue: controller.deviceTab.value,
+                        children: const {0: Text('已绑定'), 1: Text('未绑定')},
+                        onValueChanged: (value) {
+                          if (value != null) controller.deviceTab.value = value;
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: controller.isLoadingDevices.value
-                    ? const Center(child: AppLoadingIndicator())
-                    : _buildDeviceList(),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: ReferenceButton(
-                  label: controller.deviceTab.value == 0 ? '批量解绑' : '批量绑定',
-                  expand: true,
-                  onPressed: controller.deviceTab.value == 0
-                      ? controller.selectedBoundDeviceNos.isEmpty
-                            ? null
-                            : controller.unbindSelectedDevices
-                      : controller.selectedUnboundDeviceNos.isEmpty
-                      ? null
-                      : controller.bindSelectedDevices,
+                const SizedBox(height: 8),
+                Expanded(
+                  child: controller.isLoadingDevices.value
+                      ? const Center(child: AppLoadingIndicator())
+                      : _buildDeviceList(),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: ReferenceButton(
+                    label: controller.deviceTab.value == 0 ? '批量解绑' : '批量绑定',
+                    expand: true,
+                    onPressed: controller.deviceTab.value == 0
+                        ? controller.selectedBoundDeviceNos.isEmpty
+                              ? null
+                              : controller.unbindSelectedDevices
+                        : controller.selectedUnboundDeviceNos.isEmpty
+                        ? null
+                        : controller.bindSelectedDevices,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -660,14 +648,6 @@ class _DeviceManagerSheet extends StatelessWidget {
       },
     );
   }
-
 }
 
-const List<String> _alarmTypeLabels = [
-  '不告警',
-  '出入告警',
-  '出告警',
-  '入告警',
-];
-
-
+const List<String> _alarmTypeLabels = ['不告警', '出入告警', '出告警', '入告警'];

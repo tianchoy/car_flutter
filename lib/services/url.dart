@@ -34,7 +34,9 @@ class ApiEndpoints {
   static const String forgotPasswordReset = '/auth/forgot-password/reset';
   static const String changePassword = '/user/profile/updatePassword';
 
-  static const String userInfo = '/sys/user/info';
+  /// 获取当前登录用户个人信息（仅登录态，token 只放请求头）。
+  /// 已统一替换旧的 /sys/user/info（个人中心与个人信息页均使用此接口）。
+  static const String appUserProfile = '/system/appUser/profile';
   static const String userDeviceList = '/userDevice/list';
   static const String deviceLastPosition = '/gps/lastPosition';
   static const String trackPosition = '/gps/trackPos';
@@ -78,7 +80,6 @@ String get baseUrl => AppConfig.apiBaseUrl;
 String get mapUrl => AppConfig.amapTileUrl;
 String get loginUrl => ApiEndpoints.authLogin;
 String get logoutUrl => ApiEndpoints.logout;
-String get userInfoUrl => ApiEndpoints.userInfo;
 String get userDeviceList => ApiEndpoints.userDeviceList;
 String get messagesListUrl => ApiEndpoints.messages;
 String get trackPos => ApiEndpoints.trackPosition;

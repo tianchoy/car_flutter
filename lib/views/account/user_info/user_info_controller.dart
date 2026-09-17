@@ -3,6 +3,7 @@ import 'package:car/widgets/app_toast.dart';
 
 import 'package:car/app/routes/router_instance.dart';
 import 'package:car/models/api_response.dart';
+import 'package:car/models/profile/profile_model.dart';
 import 'package:car/services/session_expiry_coordinator.dart';
 import 'user_info_repository.dart';
 
@@ -11,7 +12,9 @@ class UserInfoController extends GetxController {
     : _repository = repository ?? UserInfoRepository();
 
   final UserInfoRepository _repository;
-  final info = <String, dynamic>{}.obs;
+
+  /// 当前登录用户的个人信息。
+  final profile = Rxn<UserProfileModel>();
   final isLoading = true.obs;
 
   @override
@@ -20,10 +23,11 @@ class UserInfoController extends GetxController {
     load();
   }
 
+  /// 拉取当前登录用户的个人信息（GET /system/appUser/profile）。
   Future<void> load() async {
     isLoading.value = true;
     try {
-      final response = await _repository.fetchUserInfo();
+      final response = await _repository.fetchUserProfile();
       final result = ApiResponse<JsonMap>.fromJson(
         response.data,
         dataParser: jsonMapFrom,
@@ -33,7 +37,8 @@ class UserInfoController extends GetxController {
         return;
       }
       if (result.isSuccess) {
-        info.assignAll(result.data ?? const <String, dynamic>{});
+        final data = result.data;
+        profile.value = data == null ? null : UserProfileModel.fromJson(data);
       } else {
         AppToast.show(
           '提示',
@@ -45,14 +50,6 @@ class UserInfoController extends GetxController {
     } finally {
       if (!isClosed) isLoading.value = false;
     }
-  }
-
-  String value(List<String> keys, {String fallback = '--'}) {
-    for (final key in keys) {
-      final value = info[key]?.toString().trim() ?? '';
-      if (value.isNotEmpty) return value;
-    }
-    return fallback;
   }
 
   void openChangePassword() => Get.toNamed(Routes.changePassword);

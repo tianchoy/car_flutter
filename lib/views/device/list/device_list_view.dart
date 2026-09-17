@@ -6,6 +6,7 @@ import 'package:car/app/routes/router_instance.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/models/home/device_model.dart';
 import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/app_bottom_sheet.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'device_list_controller.dart';
 import 'package:car/utils/coord_transform.dart';
@@ -79,10 +80,10 @@ class DeviceListView extends GetView<DeviceListController> {
   }
 
   Widget _vDivider() => const SizedBox(
-        width: 1,
-        height: 26,
-        child: ColoredBox(color: AppColors.divider),
-      );
+    width: 1,
+    height: 26,
+    child: ColoredBox(color: AppColors.divider),
+  );
 
   Widget _filterTab(String label, int value, Color color) {
     final selected = controller.filter.value == label;
@@ -136,7 +137,10 @@ class DeviceListView extends GetView<DeviceListController> {
             child: GestureDetector(
               onTap: () => controller.openDevice(device),
               child: Image.asset(
-                deviceIconPath(online: device.isOnline, carType: device.carType),
+                deviceIconPath(
+                  online: device.isOnline,
+                  carType: device.carType,
+                ),
                 width: 30,
                 height: 30,
                 fit: BoxFit.contain,
@@ -208,7 +212,10 @@ class DeviceListView extends GetView<DeviceListController> {
               child: Padding(
                 padding: const EdgeInsets.all(7),
                 child: Image.asset(
-                  deviceIconPath(online: device.isOnline, carType: device.carType),
+                  deviceIconPath(
+                    online: device.isOnline,
+                    carType: device.carType,
+                  ),
                   fit: BoxFit.contain,
                 ),
               ),
@@ -281,29 +288,17 @@ class DeviceListView extends GetView<DeviceListController> {
     BuildContext context,
     DeviceModel device,
   ) async {
-    final action = await showCupertinoModalPopup<String>(
+    final action = await showAppActionSheet<String>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(
-          device.plateNo ?? device.deviceName ?? '设备操作',
-          style: const TextStyle(fontSize: 15, color: AppColors.secondaryText),
+      title: device.plateNo ?? device.deviceName ?? '设备操作',
+      actions: const [
+        AppSheetAction<String>(label: '查看详情', value: 'detail'),
+        AppSheetAction<String>(
+          label: '解绑设备',
+          value: 'unbind',
+          isDestructive: true,
         ),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context, 'detail'),
-            child: const Text('查看详情', style: TextStyle(fontSize: 15)),
-          ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, 'unbind'),
-            child: const Text('解绑设备', style: TextStyle(fontSize: 15)),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消', style: TextStyle(fontSize: 15)),
-        ),
-      ),
+      ],
     );
     if (!context.mounted) return;
     if (action == 'detail') controller.openDevice(device);
