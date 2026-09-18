@@ -35,6 +35,12 @@ class HomeController extends GetxController {
   );
   final currentPosition = const LatLng(39.9042, 116.4074).obs;
   final devicePosition = Rxn<LatLng>();
+  /// 选中设备的原始经纬度（WGS-84，未做偏移转换）：随路由传给下游页面，
+  /// 使其首帧即可居中到真实位置，无需等待接口返回。
+  final deviceRawPosition = Rxn<LatLng>();
+  /// 是否已成功获取到「我的位置」（手机 GPS）：未获取到时不渲染地图，
+  /// 避免用默认坐标（北京）兜底。
+  final hasUserLocation = false.obs;
   final positionState = 'loading'.obs;
 
   int _loadGeneration = 0;
@@ -76,6 +82,7 @@ class HomeController extends GetxController {
           position.longitude,
           position.latitude,
         );
+        hasUserLocation.value = true;
         _moveToCurrentLocation();
       } else {
         errorMessage.value = '无法获取当前位置';
@@ -295,6 +302,7 @@ class HomeController extends GetxController {
         if (devicePosition.value == null) positionState.value = 'invalid';
         return;
       }
+      deviceRawPosition.value = LatLng(latitude, longitude);
       devicePosition.value = transformToGCJ02(longitude, latitude);
       positionState.value = 'available';
     } catch (error, stackTrace) {

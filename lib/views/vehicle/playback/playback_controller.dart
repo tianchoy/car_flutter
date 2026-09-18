@@ -12,6 +12,7 @@ import 'package:car/widgets/app_toast.dart';
 import 'package:car/widgets/reference_date_time_picker.dart';
 import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/geo_utils.dart';
+import 'package:car/services/device_position_cache.dart';
 import 'package:car/models/vehicle/playback_models.dart';
 import 'playback_repository.dart';
 import 'package:car/utils/time_utils.dart';
@@ -24,7 +25,8 @@ class PlaybackController extends GetxController
   final PlaybackRepository _repository;
   // 支持 PlaybackRouteArgs / DeviceRouteArgs / DeviceModel / Map 四种入参：
   // 首页「更多轨迹」传入的是 PlaybackRouteArgs，若只按 DeviceRouteArgs 解析会取不到设备。
-  final DeviceModel? device = PlaybackRouteArgs.parse(Get.arguments)?.device;
+  final PlaybackRouteArgs? _args = PlaybackRouteArgs.parse(Get.arguments);
+  DeviceModel? get device => _args?.device;
 
   final MapController mapController = MapController();
   final startTime = DateTime.now().subtract(const Duration(hours: 6)).obs;
@@ -100,13 +102,21 @@ class PlaybackController extends GetxController
     super.onInit();
     _animationController = AnimationController(vsync: this)
       ..addListener(_animate);
-    final routeArgs = PlaybackRouteArgs.parse(Get.arguments);
+    final routeArgs = _args;
     final deviceModel = device;
-    if (deviceModel != null && deviceModel.hasLocation) {
+    // 中心点优先级：上游随路由传入的坐标 > 设备自带坐标 > 缓存。
+    final fromRoute = _routeCenter();
+    if (fromRoute != null) {
+      initialCenter.value = fromRoute;
+    } else if (deviceModel != null && deviceModel.hasLocation) {
       initialCenter.value = transformToGCJ02(
         deviceModel.longitude!,
         deviceModel.latitude!,
       );
+    } else {
+      // 兜底：同步取缓存保证首帧命中，再异步读持久化缓存。
+      initialCenter.value = DevicePositionCache.peek(_positionCacheKey ?? '');
+      unawaited(_restoreCachedCenter());
     }
     if (routeArgs?.startTime != null) {
       startTime.value = routeArgs!.startTime!;
@@ -398,6 +408,30 @@ class PlaybackController extends GetxController
   }
 
   LatLng? get currentLatLng => currentPoint.value?.latLng;
+
+  /// 路由参数携带的车辆坐标（已转 GCJ-02）：由上游页面传入，首帧即可用。
+  LatLng? _routeCenter() {
+    final lat = _args?.latitude;
+    final lng = _args?.longitude;
+    if (lat == null || lng == null || !isValidCoordinate(lng, lat)) return null;
+    return transformToGCJ02(lng, lat);
+  }
+
+  /// 缓存键：优先设备号，回退设备 ID。
+  String? get _positionCacheKey {
+    final no = device?.deviceNo;
+    if (no != null && no.isNotEmpty) return no;
+    final id = device?.deviceId;
+    return (id != null && id.isNotEmpty) ? id : null;
+  }
+
+  /// 路由参数没带坐标时用缓存位置作为地图初始中心，避免先显示默认坐标。
+  Future<void> _restoreCachedCenter() async {
+    final key = _positionCacheKey;
+    if (key == null) return;
+    final cached = await DevicePositionCache.read(key);
+    if (cached != null && !isClosed) initialCenter.value = cached;
+  }
 
   void handleMapReady() {
     if (points.isNotEmpty) _fitTrack();

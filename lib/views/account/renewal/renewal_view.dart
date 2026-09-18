@@ -20,7 +20,9 @@ class RenewalView extends GetView<RenewalController> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             AppRefreshControl(onRefresh: controller.load),
-            if (controller.isLoading.value)
+            // 仅首次加载（列表为空）时显示居中指示器；下拉刷新的反馈由
+            // AppRefreshControl 自己呈现，与消息页保持一致。
+            if (controller.isLoading.value && controller.devices.isEmpty)
               const SliverFillRemaining(
                 child: Center(child: AppLoadingIndicator()),
               )

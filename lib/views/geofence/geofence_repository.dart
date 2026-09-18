@@ -38,6 +38,13 @@ class GeofenceRepository {
     return ApiResponse<Object?>.fromJson(response.data);
   }
 
+  /// 设备最新定位：围栏页用它渲染车标并把地图居中到车辆（路由参数可能不带坐标）。
+  Future<Response<dynamic>> getDeviceLastPosition(
+    Map<String, dynamic> query,
+  ) {
+    return _apiService.getDeviceLastPosition(query);
+  }
+
   Future<Response<dynamic>> getBoundDevices(Map<String, dynamic> query) {
     return _apiService.getBoundGeofenceDevices(query);
   }

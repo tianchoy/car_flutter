@@ -6,13 +6,35 @@ import '../../models/api_response.dart';
 /// The parser intentionally accepts the old raw [DeviceModel] and JSON map
 /// forms so existing deep links remain safe while callers migrate.
 class DeviceRouteArgs {
-  const DeviceRouteArgs(this.device);
+  const DeviceRouteArgs(this.device, {this.latitude, this.longitude});
 
   final DeviceModel device;
 
+  /// 上游页面已知的车辆坐标（原始 WGS-84，未做偏移转换）。
+  ///
+  /// 随路由一起传入，使下游页面**首帧**就能居中到真实位置，无需等待
+  /// 接口返回，也不必依赖缓存。设备列表接口并不保证下发经纬度，因此
+  /// 由上游传入是最可靠的来源。
+  final double? latitude;
+  final double? longitude;
+
   static DeviceRouteArgs? parse(Object? value) {
     final device = deviceFrom(value);
-    return device == null ? null : DeviceRouteArgs(device);
+    if (device == null) return null;
+    double? lat;
+    double? lng;
+    if (value is DeviceRouteArgs) {
+      lat = value.latitude;
+      lng = value.longitude;
+    } else if (value is Map) {
+      lat = nullableDoubleValue(value['lat'] ?? value['latitude']);
+      lng = nullableDoubleValue(value['lng'] ?? value['longitude']);
+    }
+    return DeviceRouteArgs(
+      device,
+      latitude: lat ?? device.latitude,
+      longitude: lng ?? device.longitude,
+    );
   }
 
   static DeviceModel? deviceFrom(Object? value) {
@@ -31,11 +53,20 @@ class DeviceRouteArgs {
 /// Carries the target [device] plus an optional preselected time range so a
 /// mileage / stop-record segment can jump straight into the matching replay.
 class PlaybackRouteArgs {
-  const PlaybackRouteArgs(this.device, {this.startTime, this.endTime});
+  const PlaybackRouteArgs(
+    this.device, {
+    this.startTime,
+    this.endTime,
+    this.latitude,
+    this.longitude,
+  });
 
   final DeviceModel device;
   final DateTime? startTime;
   final DateTime? endTime;
+  /// 上游已知的车辆坐标（原始 WGS-84），用途同 [DeviceRouteArgs.latitude]。
+  final double? latitude;
+  final double? longitude;
 
   static PlaybackRouteArgs? parse(Object? value) {
     if (value is PlaybackRouteArgs) return value;
@@ -43,11 +74,21 @@ class PlaybackRouteArgs {
     if (device == null) return null;
     DateTime? start;
     DateTime? end;
+    double? lat;
+    double? lng;
     if (value is Map) {
       start = _parseDateTime(value['startTime']);
       end = _parseDateTime(value['endTime']);
+      lat = nullableDoubleValue(value['lat'] ?? value['latitude']);
+      lng = nullableDoubleValue(value['lng'] ?? value['longitude']);
     }
-    return PlaybackRouteArgs(device, startTime: start, endTime: end);
+    return PlaybackRouteArgs(
+      device,
+      startTime: start,
+      endTime: end,
+      latitude: lat ?? device.latitude,
+      longitude: lng ?? device.longitude,
+    );
   }
 
   static DateTime? _parseDateTime(Object? value) {

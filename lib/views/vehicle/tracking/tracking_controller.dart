@@ -11,6 +11,7 @@ import 'package:car/models/api_response.dart';
 import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/geo_utils.dart';
 import 'package:car/utils/car_icon.dart';
+import 'package:car/services/device_position_cache.dart';
 import 'tracking_repository.dart';
 
 class TrackingController extends GetxController
@@ -19,10 +20,13 @@ class TrackingController extends GetxController
     : _repository = repository ?? TrackingRepository();
 
   final TrackingRepository _repository;
-  final DeviceModel? device = DeviceRouteArgs.deviceFrom(Get.arguments);
+  final DeviceRouteArgs? _args = DeviceRouteArgs.parse(Get.arguments);
+  DeviceModel? get device => _args?.device;
   final MapController mapController = MapController();
 
   final currentPosition = Rxn<LatLng>();
+  /// 地图初始中心：首次定位返回前先用缓存位置，避免先显示默认的北京坐标。
+  final initialCenter = Rxn<LatLng>();
   final routePoints = <LatLng>[].obs;
   final speed = 0.0.obs;
   final positionTime = ''.obs;
@@ -73,6 +77,33 @@ class TrackingController extends GetxController
     ];
   }
 
+  /// 已行驶部分（蓝色实线）：起点 … 车标当前所在位置。
+  ///
+  /// 最后一个点是「设备刚上报、车标尚未抵达」的目标点，先不计入已行驶，
+  /// 于是车标与最后一点之间剩余的路段会显示为未行驶的灰色虚线。
+  List<LatLng> get traveledRoutePoints {
+    if (routePoints.isEmpty) return const <LatLng>[];
+    final current = currentPosition.value;
+    if (current == null) return routePoints.toList(growable: false);
+    final count = routePoints.length > 1 ? routePoints.length - 1 : 1;
+    final traveled = routePoints.take(count).toList();
+    if (traveled.isEmpty ||
+        GeoUtils.distanceMeters(traveled.last, current) >= 1) {
+      traveled.add(current);
+    }
+    return traveled;
+  }
+
+  /// 未行驶部分（淡灰色虚线）：车标当前位置 → 最后一次上报点。
+  List<LatLng> get untraveledRoutePoints {
+    final current = currentPosition.value;
+    if (routePoints.length < 2 || current == null) return const <LatLng>[];
+    final last = routePoints.last;
+    // 车标已抵达目标点（或几乎重合）时没有未行驶路段。
+    if (GeoUtils.distanceMeters(current, last) < 1) return const <LatLng>[];
+    return <LatLng>[current, last];
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -80,7 +111,42 @@ class TrackingController extends GetxController
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..addListener(_animatePosition);
+    // 同步取中心：优先上游随路由传入的坐标，其次缓存；保证首帧就落在车辆位置。
+    initialCenter.value =
+        _routeCenter() ?? DevicePositionCache.peek(_positionCacheKey ?? '');
+    unawaited(_restoreCachedCenter());
     unawaited(loadInitialPosition());
+  }
+
+  /// 路由参数携带的车辆坐标（已转 GCJ-02）：由上游页面传入，首帧即可用。
+  LatLng? _routeCenter() {
+    final lat = _args?.latitude;
+    final lng = _args?.longitude;
+    if (lat == null || lng == null || !isValidCoordinate(lng, lat)) return null;
+    return transformToGCJ02(lng, lat);
+  }
+
+  /// 缓存键：优先设备号，回退设备 ID。
+  String? get _positionCacheKey {
+    final no = device?.deviceNo;
+    if (no != null && no.isNotEmpty) return no;
+    final id = device?.deviceId;
+    return (id != null && id.isNotEmpty) ? id : null;
+  }
+
+  /// 进入页面先读取缓存位置，作为地图初始中心。
+  Future<void> _restoreCachedCenter() async {
+    final key = _positionCacheKey;
+    if (key == null) return;
+    final cached = await DevicePositionCache.read(key);
+    if (cached != null && !isClosed) initialCenter.value = cached;
+  }
+
+  /// 取到有效坐标后写入缓存，供下次进入页面直接使用。
+  Future<void> _cachePosition(LatLng point) async {
+    final key = _positionCacheKey;
+    if (key == null) return;
+    await DevicePositionCache.save(key, point);
   }
 
   Future<void> loadInitialPosition() async {
@@ -218,6 +284,7 @@ class TrackingController extends GetxController
     final latitude = nullableDoubleValue(data['latitude'])!;
     final next = transformToGCJ02(longitude, latitude);
     _lastKnownPosition = next;
+    unawaited(_cachePosition(next));
     final nextSpeed = nullableDoubleValue(data['speed']) ?? 0;
     final direction =
         nullableDoubleValue(

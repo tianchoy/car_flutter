@@ -43,11 +43,6 @@ class ProfileView extends GetView<ProfileController> {
                       ),
                     ),
                   ),
-                  if (controller.isLoading.value)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 18),
-                      child: Center(child: AppLoadingIndicator()),
-                    ),
                 ]),
               ),
             ),

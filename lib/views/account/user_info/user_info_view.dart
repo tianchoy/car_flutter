@@ -83,11 +83,6 @@ class UserInfoView extends GetView<UserInfoController> {
                       ),
                     ),
                   ),
-                  if (controller.isLoading.value)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 24),
-                      child: Center(child: AppLoadingIndicator()),
-                    ),
                 ]),
               ),
             ),

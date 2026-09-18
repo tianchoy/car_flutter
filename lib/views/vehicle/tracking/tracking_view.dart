@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
 
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
@@ -30,8 +29,23 @@ class TrackingView extends GetView<TrackingController> {
 
   Widget _buildMap() {
     return Obx(() {
+      // 还没有任何可用坐标（首次进入且无缓存）：显示占位加载，
+      // 而不是先用默认坐标（北京）构建地图、等接口返回再跳过去。
       final point =
-          controller.currentPosition.value ?? const LatLng(39.9042, 116.4074);
+          controller.currentPosition.value ?? controller.initialCenter.value;
+      if (point == null) {
+        return ColoredBox(
+          color: const Color(0xFFF2F4F8),
+          child: Center(
+            child: controller.isLoading.value
+                ? const AppLoadingIndicator()
+                : const EmptyState(
+                    message: '暂无车辆位置',
+                    icon: CupertinoIcons.location,
+                  ),
+          ),
+        );
+      }
       return MapTile(
         isLoading: controller.isLoading.value,
         errMsg: controller.errorMessage.value,
@@ -41,17 +55,36 @@ class TrackingView extends GetView<TrackingController> {
         mapController: controller.mapController,
         clusterMarkers: false,
         markers: controller.markers,
-        polylines: controller.routePoints.length > 1
-            ? [
-                Polyline(
-                  points: controller.routePoints.toList(),
-                  color: AppColors.primary,
-                  strokeWidth: 4,
-                ),
-              ]
-            : const <Polyline>[],
+        polylines: _routePolylines,
       );
     });
+  }
+
+  /// 与轨迹播放保持一致：已行驶=蓝色实线，未行驶=淡灰色虚线。
+  List<Polyline> get _routePolylines {
+    final polylines = <Polyline>[];
+    final traveled = controller.traveledRoutePoints;
+    if (traveled.length >= 2) {
+      polylines.add(
+        Polyline(
+          points: traveled,
+          color: const Color(0xFF1890FF),
+          strokeWidth: 6,
+        ),
+      );
+    }
+    final untraveled = controller.untraveledRoutePoints;
+    if (untraveled.length >= 2) {
+      polylines.add(
+        Polyline(
+          points: untraveled,
+          color: const Color(0xFF999999),
+          strokeWidth: 3,
+          pattern: StrokePattern.dashed(segments: const [16, 8]),
+        ),
+      );
+    }
+    return polylines;
   }
 
   Widget _buildToolsPanel() {

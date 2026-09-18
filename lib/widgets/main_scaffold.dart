@@ -16,7 +16,6 @@ class MainScaffold extends StatelessWidget {
     this.showBottomNavBar = true,
     this.floatingActionButton,
     this.backgroundColor = AppColors.page,
-    this.busy = false,
   });
 
   final String title;
@@ -27,9 +26,6 @@ class MainScaffold extends StatelessWidget {
   final bool showBottomNavBar;
   final Widget? floatingActionButton;
   final Color backgroundColor;
-  /// 页面忙碌置为 true 时（如首页刷新），整页吞掉点击事件，
-  /// 禁止用户在加载过程中操作任何控件（含导航栏与底部 Tab）。
-  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -74,16 +70,8 @@ class MainScaffold extends StatelessWidget {
         ],
       ),
     );
-    // 忙碌（如首页刷新）期间整页吞掉点击事件：AbsorbPointer 拦截冒泡，
-    // 禁止用户在加载过程中操作任何控件（含导航栏按钮与底部 Tab）。
-    if (!busy) return content;
-    return Stack(
-      children: [
-        content,
-        const Positioned.fill(
-          child: AbsorbPointer(child: ColoredBox(color: Color(0x0A000000))),
-        ),
-      ],
-    );
+    // 不再提供 busy 遮罩：刷新反馈统一由各页的 AppRefreshControl 呈现
+    // （与消息页一致），避免加载时出现半透明遮罩层。
+    return content;
   }
 }

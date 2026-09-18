@@ -27,7 +27,9 @@ class PlaybackView extends GetView<PlaybackController> {
                 // camera stay stable; only the marker/polyline layers update
                 // per frame via inner Obx. Rebuilding the whole FlutterMap every
                 // frame is what made the car appear to jump instantly.
-                Expanded(child: _buildMap()),
+                // 用 Obx 包裹：无坐标时显示占位，坐标就绪后再构建地图
+                // （FlutterMap 仍只构建一次，不会每帧重建）。
+                Expanded(child: Obx(() => _buildMap())),
                 Obx(() => _buildPanel(context)),
               ],
             ),
@@ -129,8 +131,17 @@ class PlaybackView extends GetView<PlaybackController> {
   }
 
   Widget _buildMap() {
+    // 还没有可用坐标时显示占位加载，避免先渲染默认坐标（北京）再跳过去；
+    // 轨迹点就绪后以第一个轨迹点作为中心兜底。
     final initial =
-        controller.initialCenter.value ?? const LatLng(39.9042, 116.4074);
+        controller.initialCenter.value ??
+        (controller.points.isNotEmpty ? controller.points.first.latLng : null);
+    if (initial == null) {
+      return const ColoredBox(
+        color: Color(0xFFF2F4F8),
+        child: Center(child: AppLoadingIndicator()),
+      );
+    }
     return Stack(
       children: [
         FlutterMap(

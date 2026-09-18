@@ -22,48 +22,29 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final busy =
-          controller.isLoading.value ||
-          controller.isLoadingDetails.value ||
-          controller.isRefreshingPosition.value;
-      return MainScaffold(
-        title: '首页',
-        showBackButton: false,
-        showBottomNavBar: true,
-        // 刷新（加载）过程中整页禁止点击，避免用户在加载期间操作其他控件。
-        busy: busy,
-        actions: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            onPressed: () => Get.toNamed(Routes.deviceList),
-            child: const Icon(CupertinoIcons.globe, size: 19),
-          ),
-          const SizedBox(width: 12),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            onPressed: () => Get.toNamed(Routes.addDevice),
-            child: const Icon(CupertinoIcons.add_circled, size: 19),
-          ),
-        ],
-        body: Stack(
-          children: [
-            _buildHomeContent(context),
-            if (busy)
-              const Positioned.fill(
-                child: AbsorbPointer(
-                  child: ColoredBox(
-                    color: Color(0x0A000000),
-                    child: Center(child: AppLoadingIndicator()),
-                  ),
-                ),
-              ),
-          ],
+    return MainScaffold(
+      title: '首页',
+      showBackButton: false,
+      showBottomNavBar: true,
+      actions: [
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          onPressed: () => Get.toNamed(Routes.deviceList),
+          child: const Icon(CupertinoIcons.globe, size: 19),
         ),
-      );
-    });
+        const SizedBox(width: 12),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          onPressed: () => Get.toNamed(Routes.addDevice),
+          child: const Icon(CupertinoIcons.add_circled, size: 19),
+        ),
+      ],
+      // 刷新/加载的反馈统一由 AppRefreshControl 展示（与消息页保持一致）：
+      // 不再叠加页面级居中 loading 指示器，也不再出现半透明遮罩层。
+      body: Obx(() => _buildHomeContent(context)),
+    );
   }
 
   Widget _buildHomeContent(BuildContext context) {
@@ -82,7 +63,6 @@ class HomeView extends GetView<HomeController> {
               _buildInfoCard(device),
               _buildLocationCard(),
               _buildTrackCard(device),
-              _buildFeatureCard(context, device),
               _buildServiceCard(context),
             ]),
           ),
@@ -306,9 +286,13 @@ class HomeView extends GetView<HomeController> {
     final hasDeviceMarker =
         device != null && controller.devicePosition.value != null;
     // 有设备：仅展示选中设备的位置；暂无设备：展示用户当前位置（带 marker）。
+    // 既无设备位置、也没拿到「我的位置」时为 null：此时不渲染地图，
+    // 避免用默认坐标（北京）兜底。
     final point = hasDeviceMarker
         ? controller.devicePosition.value!
-        : controller.currentPosition.value;
+        : (controller.hasUserLocation.value
+            ? controller.currentPosition.value
+            : null);
     return ReferenceCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -331,11 +315,15 @@ class HomeView extends GetView<HomeController> {
               borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(16),
               ),
-              child: MapTile(
-                // 刷新位置时的加载提示统一由页面级居中指示器展示（busy 已包含
-                // isRefreshingPosition），此处不再叠加地图内的第二个指示器，
-                // 避免刷新时页面中央同时出现两个 loading。
-                isLoading: false,
+              child: point == null
+                  ? const ColoredBox(
+                      color: Color(0xFFF2F4F8),
+                      child: Center(child: AppLoadingIndicator()),
+                    )
+                  : MapTile(
+                      // 刷新反馈统一由 AppRefreshControl 展示（与消息页一致），
+                      // 此处不再叠加地图内的第二个指示器。
+                      isLoading: false,
                 errMsg: _positionMessage(),
                 latitude: point.latitude,
                 longitude: point.longitude,
@@ -385,10 +373,13 @@ class HomeView extends GetView<HomeController> {
                       device,
                       startTime: _todayStart(),
                       endTime: DateTime.now(),
+                      // 带上已获取的原始坐标：回放页首帧即可居中到车辆位置。
+                      latitude: controller.deviceRawPosition.value?.latitude,
+                      longitude: controller.deviceRawPosition.value?.longitude,
                     ),
                   ),
           ),
-          // 与「设备详情」「服务中心」模块保持一致：标题与内容间距 10。
+          // 与「服务中心」模块保持一致：标题与内容间距 10。
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -418,11 +409,13 @@ class HomeView extends GetView<HomeController> {
     return DateTime(now.year, now.month, now.day);
   }
 
-  Widget _buildFeatureCard(BuildContext context, DeviceModel? device) {
+  /// 服务中心：四宫格（设备详情 / 在线客服 / 一键寻车 / 删除设备）。
+  Widget _buildServiceCard(BuildContext context) {
+    final device = controller.selectedDevice.value;
     return ReferenceCard(
       child: Column(
         children: [
-          const SectionTitle('设备详情'),
+          const SectionTitle('服务中心'),
           const SizedBox(height: 10),
           FeatureGrid(
             crossAxisCount: 4,
@@ -435,20 +428,21 @@ class HomeView extends GetView<HomeController> {
                     ? () => AppToast.show('提示', '暂无可查看的设备')
                     : () => Get.toNamed(
                         Routes.detail,
-                        arguments: DeviceRouteArgs(device),
+                        arguments: DeviceRouteArgs(
+                          device,
+                          // 带上已获取的原始坐标：详情页首帧即可居中到车辆位置。
+                          latitude: controller.deviceRawPosition.value?.latitude,
+                          longitude: controller.deviceRawPosition.value
+                              ?.longitude,
+                        ),
                       ),
               ),
               FeatureTile(
-                icon: CupertinoIcons.chart_bar_alt_fill,
-                assetName: 'gjhf',
-                title: '轨迹回放',
-                color: AppColors.primaryDark,
-                onTap: device == null
-                    ? null
-                    : () => Get.toNamed(
-                        Routes.playback,
-                        arguments: DeviceRouteArgs(device),
-                      ),
+                icon: CupertinoIcons.chat_bubble_2,
+                assetName: 'msg',
+                title: '在线客服',
+                color: AppColors.primary,
+                onTap: () => LegalLinks.showCustomerService(context),
               ),
               FeatureTile(
                 icon: CupertinoIcons.location,
@@ -457,51 +451,9 @@ class HomeView extends GetView<HomeController> {
                 color: AppColors.success,
                 onTap: () => _startFindCarForDevice(
                   context,
-                  controller.selectedDevice.value,
+                  device,
                   controller.devicePosition.value,
                 ),
-              ),
-              FeatureTile(
-                icon: CupertinoIcons.layers_alt,
-                assetName: 'dzwl',
-                title: '电子围栏',
-                color: const Color(0xFF6E58B5),
-                onTap: device == null
-                    ? null
-                    : () => Get.toNamed(
-                        Routes.geofence,
-                        arguments: DeviceRouteArgs(device),
-                      ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceCard(BuildContext context) {
-    return ReferenceCard(
-      child: Column(
-        children: [
-          const SectionTitle('服务中心'),
-          const SizedBox(height: 10),
-          FeatureGrid(
-            crossAxisCount: 3,
-            children: [
-              FeatureTile(
-                icon: CupertinoIcons.refresh_thick,
-                assetName: 'pay',
-                title: '一键续费',
-                color: AppColors.warning,
-                onTap: () => Get.toNamed(Routes.renewal),
-              ),
-              FeatureTile(
-                icon: CupertinoIcons.chat_bubble_2,
-                assetName: 'msg',
-                title: '在线客服',
-                color: AppColors.primary,
-                onTap: () => LegalLinks.showCustomerService(context),
               ),
               FeatureTile(
                 icon: CupertinoIcons.delete,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -13,6 +14,7 @@ import 'package:car/widgets/reference_ui.dart';
 import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/geo_utils.dart';
 import 'package:car/utils/car_icon.dart';
+import 'package:car/services/device_position_cache.dart';
 import 'geofence_repository.dart';
 
 class GeofenceRecord {
@@ -58,7 +60,8 @@ class GeofenceController extends GetxController {
     : _repository = repository ?? GeofenceRepository();
 
   final GeofenceRepository _repository;
-  final DeviceModel? device = DeviceRouteArgs.deviceFrom(Get.arguments);
+  final DeviceRouteArgs? _args = DeviceRouteArgs.parse(Get.arguments);
+  DeviceModel? get device => _args?.device;
   final MapController mapController = MapController();
   final fences = <GeofenceRecord>[].obs;
   final selectedFence = Rxn<GeofenceRecord>();
@@ -79,22 +82,32 @@ class GeofenceController extends GetxController {
   final deviceTab = 0.obs;
   final boundDevices = <Map<String, dynamic>>[].obs;
   final unboundDevices = <Map<String, dynamic>>[].obs;
-  final selectedBoundDeviceNos = <String>{}.obs;
-  final selectedUnboundDeviceNos = <String>{}.obs;
   final isLoadingDevices = false.obs;
+  /// 正在提交绑定状态变更的设备编号：用于开关的乐观显示，避免提交期间开关回弹。
+  final pendingDeviceNos = <String>{}.obs;
   final initialCenter = Rxn<LatLng>();
+  /// 车辆最新定位：路由参数可能不带坐标，需单独拉取；用于车标与地图居中。
+  final devicePosition = Rxn<LatLng>();
+  bool _didCenterMap = false;
 
   @override
   void onInit() {
     super.onInit();
     final deviceModel = device;
-    if (deviceModel != null && deviceModel.hasLocation) {
+    // 中心点优先级：上游随路由传入的坐标 > 设备自带坐标 > 缓存。
+    final fromRoute = _routeCenter();
+    if (fromRoute != null) {
+      initialCenter.value = fromRoute;
+    } else if (deviceModel != null && deviceModel.hasLocation) {
       initialCenter.value = transformToGCJ02(
         deviceModel.longitude!,
         deviceModel.latitude!,
       );
+    } else {
+      initialCenter.value = DevicePositionCache.peek(_positionCacheKey ?? '');
     }
     loadFences();
+    unawaited(_loadDevicePosition());
   }
 
   Future<void> loadFences() async {
@@ -123,6 +136,95 @@ class GeofenceController extends GetxController {
     }
   }
 
+  /// 路由参数携带的车辆坐标（已转 GCJ-02）：由上游页面传入，首帧即可用。
+  LatLng? _routeCenter() {
+    final lat = _args?.latitude;
+    final lng = _args?.longitude;
+    if (lat == null || lng == null || !isValidCoordinate(lng, lat)) return null;
+    return transformToGCJ02(lng, lat);
+  }
+
+  /// 缓存键：优先设备号，回退设备 ID。
+  String? get _positionCacheKey {
+    final no = device?.deviceNo;
+    if (no != null && no.isNotEmpty) return no;
+    final id = device?.deviceId;
+    return (id != null && id.isNotEmpty) ? id : null;
+  }
+
+  /// 车标位置与地图初始中心：
+  /// 路由参数带坐标时直接用；否则先读缓存，再用接口拉取最新定位。
+  /// 之前「围栏页缩小后没有车标」就是因为路由参数没有经纬度且从未拉取位置。
+  Future<void> _loadDevicePosition() async {
+    final model = device;
+    if (model == null) return;
+    if (model.hasLocation) {
+      _applyDevicePosition(
+        transformToGCJ02(model.longitude!, model.latitude!),
+      );
+      return;
+    }
+    final key = _positionCacheKey;
+    if (key != null) {
+      final cached = await DevicePositionCache.read(key);
+      if (cached != null && !isClosed) _applyDevicePosition(cached);
+    }
+    try {
+      final response = await _repository.getDeviceLastPosition(
+        <String, dynamic>{
+          'deviceId': model.deviceId,
+          if (model.deviceNo != null && model.deviceNo!.isNotEmpty)
+            'deviceids': model.deviceNo,
+        },
+      );
+      if (isClosed) return;
+      final result = ApiResponse<List<Object?>>.fromJson(
+        response.data,
+        dataParser: jsonListFrom,
+      );
+      final raw = result.data?.whereType<Map>().firstOrNull;
+      if (!result.isSuccess || raw == null) return;
+      final longitude = nullableDoubleValue(raw['longitude']);
+      final latitude = nullableDoubleValue(raw['latitude']);
+      if (longitude == null ||
+          latitude == null ||
+          !isValidCoordinate(longitude, latitude)) {
+        return;
+      }
+      _applyDevicePosition(transformToGCJ02(longitude, latitude));
+    } catch (_) {
+      // 拉取车辆位置失败不影响围栏本身的绘制与编辑。
+    }
+  }
+
+  /// 记录车辆位置：写入缓存，并在未选中围栏时把镜头居中一次。
+  void _applyDevicePosition(LatLng point) {
+    if (isClosed) return;
+    devicePosition.value = point;
+    initialCenter.value = point;
+    final key = _positionCacheKey;
+    if (key != null) unawaited(DevicePositionCache.save(key, point));
+    _centerMapOnce(point);
+  }
+
+  /// 只在首次拿到车辆位置时居中一次（且未选中围栏），
+  /// 避免打断用户后续的拖动/缩放，或把镜头从正在查看的围栏上拽走。
+  void _centerMapOnce(LatLng point) {
+    if (_didCenterMap || selectedFence.value != null) return;
+    try {
+      mapController.move(point, mapController.camera.zoom);
+      _didCenterMap = true;
+    } catch (_) {
+      // MapController 尚未挂载（首帧），等 onMapReady 再补一次。
+    }
+  }
+
+  /// 地图就绪回调：补做一次居中，覆盖「首帧控制器未挂载」的情况。
+  void handleMapReady() {
+    final point = devicePosition.value;
+    if (point != null) _centerMapOnce(point);
+  }
+
   void setDrawingMode(String mode) {
     if (mode != 'circle' && mode != 'polygon') return;
     drawingMode.value = mode;
@@ -132,6 +234,12 @@ class GeofenceController extends GetxController {
   void startDrawing() {
     selectedFence.value = null;
     isDrawing.value = true;
+    clearDraft();
+  }
+
+  /// 取消本次编辑/绘制：放弃草稿并退出绘制态，不改动已保存的围栏数据。
+  void cancelDrawing() {
+    isDrawing.value = false;
     clearDraft();
   }
 
@@ -170,8 +278,7 @@ class GeofenceController extends GetxController {
     clearDraft();
     boundDevices.clear();
     unboundDevices.clear();
-    selectedBoundDeviceNos.clear();
-    selectedUnboundDeviceNos.clear();
+    pendingDeviceNos.clear();
     loadFenceDevices();
   }
 
@@ -202,35 +309,28 @@ class GeofenceController extends GetxController {
     fallback: '未命名设备',
   );
 
-  void toggleDeviceSelection(
+  /// 单个设备的绑定开关：开启即绑定、关闭即解绑，操作即时生效（无需批量按钮）。
+  Future<void> setDeviceBound(
     Map<String, dynamic> device, {
     required bool bound,
-  }) {
+  }) async {
+    final fence = selectedFence.value;
     final deviceNo = deviceNoOf(device);
-    if (deviceNo.isEmpty) return;
-    final target = bound ? selectedBoundDeviceNos : selectedUnboundDeviceNos;
-    if (target.contains(deviceNo)) {
-      target.remove(deviceNo);
-    } else {
-      target.add(deviceNo);
+    if (fence == null || deviceNo.isEmpty) return;
+    // 提交期间先按目标状态显示，避免开关在列表刷新完成前弹回原状态。
+    pendingDeviceNos.add(deviceNo);
+    pendingDeviceNos.refresh();
+    try {
+      if (bound) {
+        await bindDevices(fenceId: fence.id, deviceNos: <String>[deviceNo]);
+      } else {
+        await unbindDevices(fenceId: fence.id, deviceNos: <String>[deviceNo]);
+      }
+      await loadFenceDevices();
+    } finally {
+      pendingDeviceNos.remove(deviceNo);
+      pendingDeviceNos.refresh();
     }
-    target.refresh();
-  }
-
-  Future<void> bindSelectedDevices() async {
-    final fence = selectedFence.value;
-    if (fence == null || selectedUnboundDeviceNos.isEmpty) return;
-    await bindDevices(fenceId: fence.id, deviceNos: selectedUnboundDeviceNos.toList());
-    selectedUnboundDeviceNos.clear();
-    await loadFenceDevices();
-  }
-
-  Future<void> unbindSelectedDevices() async {
-    final fence = selectedFence.value;
-    if (fence == null || selectedBoundDeviceNos.isEmpty) return;
-    await unbindDevices(fenceId: fence.id, deviceNos: selectedBoundDeviceNos.toList());
-    selectedBoundDeviceNos.clear();
-    await loadFenceDevices();
   }
 
   void editSelectedFence() {
@@ -545,15 +645,20 @@ class GeofenceController extends GetxController {
   /// 地图标记：设备当前位置车标 + 绘制中的草稿点。
   List<Marker> get mapMarkers {
     final result = <Marker>[];
-    final model = device;
-    if (model != null && model.hasLocation) {
+    // 车标统一取 devicePosition（路由参数带坐标时用它，否则用接口拉取的结果），
+    // 避免路由参数没有经纬度时地图上完全没有车标。
+    final point = devicePosition.value;
+    if (point != null) {
       result.add(
         Marker(
           width: 40,
           height: 40,
-          point: transformToGCJ02(model.longitude!, model.latitude!),
+          point: point,
           child: Image.asset(
-            deviceIconPath(online: model.isOnline, carType: model.carType),
+            deviceIconPath(
+              online: device?.isOnline ?? false,
+              carType: device?.carType,
+            ),
             width: 32,
             height: 32,
             fit: BoxFit.contain,

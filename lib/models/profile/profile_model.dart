@@ -64,5 +64,13 @@ class UserProfileModel {
   /// 用户来源渠道的中文名（按文档 §3.3 字典映射，未知编码返回 '--'）。
   String get userSourceTypeName =>
       UserSourceType.fromCode(userSourceType)?.label ?? '--';
+
+  /// 用于本地缓存：个人中心首屏先展示上次成功获取的资料，避免占位文案闪现。
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'userName': userName,
+    'phoneNumber': phoneNumber,
+    'userSourceType': userSourceType,
+    'createTime': createTime,
+  };
 }
 

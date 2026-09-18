@@ -10,6 +10,10 @@ class SessionKeys {
   static const String userType = 'user.type';
   static const String selectedDeviceInfo = 'selected_device_info';
   static const String selectedDeviceIndex = 'selected_device_index';
+  /// 个人中心「我的车辆」数量缓存：首屏直接展示上次数值，避免 0 跳成真实数量。
+  static const String profileVehicleCount = 'profile.vehicle_count';
+  /// 各设备最近一次成功获取的定位（JSON：设备号 -> {latitude, longitude}）。
+  static const String deviceLastPositions = 'device.last_positions';
   static const String pushRegistrationId = 'push.registration_id.jpush';
   static const String pushSession = 'push.session.jpush';
   static const String pendingPushMessageId = 'push.pending_message_id.jpush';
@@ -21,6 +25,7 @@ class SessionKeys {
     userType,
     selectedDeviceInfo,
     selectedDeviceIndex,
+    profileVehicleCount,
     pushSession,
     pendingPushMessageId,
     pushMessageStale,

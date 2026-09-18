@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:get/get.dart';
 
@@ -7,6 +8,7 @@ import '../../models/api_response.dart';
 import '../../services/auth_session_service.dart';
 import '../../services/session_expiry_coordinator.dart';
 import '../../utils/logger.dart';
+import '../../utils/session.dart';
 import '../../models/profile/profile_model.dart';
 import 'profile_repository.dart';
 
@@ -31,7 +33,56 @@ class ProfileController extends GetxController
   }
 
   Future<void> _initialize() async {
+    // 先用本地缓存渲染首屏，再点亮登录态：避免「车主用户 / 0」这类占位文案
+    // 闪一下才跳成真实用户名与车辆数；随后仍由接口静默刷新为最新数据。
+    await _restoreCached();
     if (await isLogin()) await fetchProfile();
+  }
+
+  /// 读取上次成功请求后缓存的资料与车辆数，用于首屏即时展示。
+  Future<void> _restoreCached() async {
+    final raw = await getSession(SessionKeys.userProfile);
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final cached = UserProfileModel.fromJson(jsonMapFrom(jsonDecode(raw)));
+        if (!_isClosed) profile.value = cached;
+      } catch (_) {
+        // 缓存结构异常时忽略，等接口返回覆盖。
+      }
+    }
+    final parsed = int.tryParse(
+      await getSession(SessionKeys.profileVehicleCount) ?? '',
+    );
+    if (parsed != null && !_isClosed) vehicleCount.value = parsed;
+  }
+
+  /// 接口获取成功后回写缓存，保证下次进入首屏即为最新数据。
+  Future<void> _persistCached() async {
+    try {
+      final current = profile.value;
+      if (current != null) {
+        await setSession(
+          SessionKeys.userProfile,
+          jsonEncode(current.toJson()),
+        );
+      }
+      await setSession(
+        SessionKeys.profileVehicleCount,
+        '${vehicleCount.value}',
+      );
+    } catch (_) {
+      // 缓存写入失败不影响页面展示，忽略。
+    }
+  }
+
+  /// 退出登录时清掉本地缓存，避免下个账号进入时先闪出上一个账号的资料。
+  Future<void> _clearCached() async {
+    try {
+      await deleteSession(SessionKeys.userProfile);
+      await deleteSession(SessionKeys.profileVehicleCount);
+    } catch (_) {
+      // 缓存清理失败不影响退出流程。
+    }
   }
 
   Future<void> fetchProfile() async {
@@ -82,6 +133,8 @@ class ProfileController extends GetxController
           fallback: list.length,
         );
       }
+      // 成功后回写缓存：下次进入首屏直接展示本次的最新数据。
+      await _persistCached();
     } catch (error, stackTrace) {
       if (!_isClosed) {
         errorMessage.value = '获取用户信息失败，请稍后重试';
@@ -108,6 +161,7 @@ class ProfileController extends GetxController
     isLoading.value = true;
     try {
       await _authSessionService.logout();
+      await _clearCached();
       if (!_isClosed) {
         profile.value = null;
         vehicleCount.value = 0;

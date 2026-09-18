@@ -96,36 +96,14 @@ class GeofenceView extends GetView<GeofenceController> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!expanded)
-            // 收起态：底部只显示一个圆形向上箭头按钮，点击即展开。
+            // 收起态：底部只显示一个圆形向上箭头按钮，点击即展开；
+            // 箭头带上下跳动动画，引导用户点击查看更多内容。
             Padding(
               // 收起态的圆形箭头贴底显示，留出底部安全区（iOS Home Indicator）
               // 的高度，避免与系统返回横线重叠。
               padding: const EdgeInsets.only(top: 8, bottom: 28),
               child: Center(
-                child: GestureDetector(
-                  onTap: controller.toggleFenceList,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.divider),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x14000000),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.chevron_up,
-                      size: 24,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                ),
+                child: _BouncingArrowButton(onTap: controller.toggleFenceList),
               ),
             )
           else ...[
@@ -159,12 +137,21 @@ class GeofenceView extends GetView<GeofenceController> {
   }
 
   Widget _buildMap() {
+    final center = _mapCenter;
+    // 坐标未就绪时不创建地图（等价于参考项目的 v-if 门控），
+    // 避免先渲染默认坐标（北京）再跳到真实位置。
+    if (center == null) {
+      return const ColoredBox(
+        color: Color(0xFFF2F4F8),
+        child: Center(child: AppLoadingIndicator()),
+      );
+    }
     return MapTile(
       isLoading: controller.isLoading.value,
       // 页面提示统一改为从顶部向下弹出的 AppToast，不再用地图浮层展示。
       errMsg: '',
-      latitude: _mapCenter.latitude,
-      longitude: _mapCenter.longitude,
+      latitude: center.latitude,
+      longitude: center.longitude,
       initialZoom: 12,
       mapController: controller.mapController,
       clusterMarkers: false,
@@ -172,10 +159,13 @@ class GeofenceView extends GetView<GeofenceController> {
       circles: controller.circles,
       markers: controller.mapMarkers,
       onMapTap: controller.handleMapTap,
+      onMapReady: controller.handleMapReady,
     );
   }
 
-  LatLng get _mapCenter {
+  /// 地图中心：没有任何可用坐标时返回 null —— 此时**不创建地图**，
+  /// 避免用默认坐标（北京）先渲染出来再跳到真实位置。
+  LatLng? get _mapCenter {
     final fence = controller.selectedFence.value;
     if (fence != null) {
       final points = controller.parseArea(fence.area, fence.isCircle);
@@ -183,79 +173,114 @@ class GeofenceView extends GetView<GeofenceController> {
     }
     final points = controller.draftPoints;
     if (points.isNotEmpty) return points.first;
-    final initial = controller.initialCenter.value;
-    if (initial != null) return initial;
-    return const LatLng(39.9042, 116.4074);
+    return controller.initialCenter.value ?? controller.devicePosition.value;
   }
 
   Widget _buildToolbar(BuildContext context) {
     final isCircle = controller.drawingMode.value == 'circle';
     return ReferenceCard(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: CupertinoSlidingSegmentedControl<String>(
-                  groupValue: controller.drawingMode.value,
-                  children: const {
-                    'polygon': Text('多边形'),
-                    'circle': Text('圆形'),
-                  },
-                  onValueChanged: (value) {
-                    if (value != null) controller.setDrawingMode(value);
-                  },
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: controller.isDrawing.value
+          ? _buildEditingPanel(context, isCircle)
+          : Row(
+              children: [
+                Expanded(
+                  child: CupertinoSlidingSegmentedControl<String>(
+                    groupValue: controller.drawingMode.value,
+                    children: const {
+                      'polygon': Text('多边形'),
+                      'circle': Text('圆形'),
+                    },
+                    onValueChanged: (value) {
+                      if (value != null) controller.setDrawingMode(value);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // 绘制过程中禁用，避免与下方的「重置 / 保存」操作混淆。
-              ReferenceButton(
-                label: '绘制',
-                onPressed: controller.isDrawing.value
-                    ? null
-                    : controller.startDrawing,
-              ),
-            ],
-          ),
-          if (controller.isDrawing.value)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      isCircle
-                          ? controller.circleCenter.value == null
-                                ? '点击地图确定圆心，再点击确定半径'
-                                : '半径 ${controller.circleRadius.value.toStringAsFixed(0)} 米'
-                          : '已添加 ${controller.draftPoints.length} 个顶点，至少需要 3 个',
-                      style: const TextStyle(
-                        color: AppColors.secondaryText,
-                        fontSize: 12,
+                const SizedBox(width: 10),
+                // 绘制按钮改为紧凑小尺寸，避免大号填充按钮在工具栏中显得突兀。
+                SizedBox(
+                  height: 32,
+                  child: CupertinoButton.filled(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    minimumSize: Size.zero,
+                    borderRadius: BorderRadius.circular(10),
+                    onPressed: controller.startDrawing,
+                    child: const Text(
+                      '绘制',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    onPressed: controller.clearDraft,
-                    child: const Text('重置'),
-                  ),
-                  CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    onPressed: controller.canFinishDrawing
-                        ? () => _save(context)
-                        : null,
-                    child: const Text('保存'),
-                  ),
-                ],
+                ),
+              ],
+            ),
+    );
+  }
+
+  /// 编辑/绘制态面板：标题行（含取消）+ 状态提示 + 重置/保存操作，
+  /// 分区清晰，避免与上方工具栏的操作混淆。
+  Widget _buildEditingPanel(BuildContext context, bool isCircle) {
+    final editing = controller.selectedFence.value != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(CupertinoIcons.pencil, size: 15, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                editing ? '正在编辑围栏' : '正在绘制围栏',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
               ),
             ),
-        ],
-      ),
+            // 新增取消：放弃本次修改并退出编辑态。
+            _SmallTextButton(label: '取消', onPressed: controller.cancelDrawing),
+          ],
+        ),
+        const SizedBox(height: 9),
+        Container(height: 1, color: AppColors.divider),
+        const SizedBox(height: 9),
+        Text(
+          isCircle
+              ? controller.circleCenter.value == null
+                    ? '点击地图确定圆心，再点击确定半径'
+                    : '半径 ${controller.circleRadius.value.toStringAsFixed(0)} 米'
+              : '已添加 ${controller.draftPoints.length} 个顶点，至少需要 3 个',
+          style: const TextStyle(
+            color: AppColors.secondaryText,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 11),
+        Row(
+          children: [
+            Expanded(
+              child: _SmallActionButton(
+                label: '重置',
+                onPressed: controller.clearDraft,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SmallActionButton(
+                label: '保存',
+                filled: true,
+                onPressed: controller.canFinishDrawing
+                    ? () => _save(context)
+                    : null,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -526,7 +551,8 @@ class _DeviceManagerSheet extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * .7,
+            // 最多半屏：设备较多时列表在内部上下滚动，弹框不再撑得过高。
+            height: MediaQuery.sizeOf(context).height * .5,
             child: Column(
               children: [
                 Padding(
@@ -572,18 +598,15 @@ class _DeviceManagerSheet extends StatelessWidget {
                       ? const Center(child: AppLoadingIndicator())
                       : _buildDeviceList(),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: ReferenceButton(
-                    label: controller.deviceTab.value == 0 ? '批量解绑' : '批量绑定',
-                    expand: true,
-                    onPressed: controller.deviceTab.value == 0
-                        ? controller.selectedBoundDeviceNos.isEmpty
-                              ? null
-                              : controller.unbindSelectedDevices
-                        : controller.selectedUnboundDeviceNos.isEmpty
-                        ? null
-                        : controller.bindSelectedDevices,
+                // 开关切换即时生效，不再需要批量按钮；此处仅保留一行操作说明。
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(
+                    '开关开启表示已绑定，关闭表示未绑定，切换后即时生效',
+                    style: TextStyle(
+                      color: AppColors.secondaryText,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -597,32 +620,24 @@ class _DeviceManagerSheet extends StatelessWidget {
   Widget _buildDeviceList() {
     final bound = controller.deviceTab.value == 0;
     final devices = bound ? controller.boundDevices : controller.unboundDevices;
-    final selected = bound
-        ? controller.selectedBoundDeviceNos
-        : controller.selectedUnboundDeviceNos;
     if (devices.isEmpty) {
       return EmptyState(message: bound ? '暂无已绑定设备' : '暂无可绑定设备');
     }
-    return ListView.builder(
+    return ListView.separated(
       itemCount: devices.length,
+      // 相邻设备之间用淡灰色横线分割，列表层次更清晰。
+      separatorBuilder: (_, _) => Container(
+        height: 1,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        color: const Color(0xFFEDEFF3),
+      ),
       itemBuilder: (_, index) {
         final device = devices[index];
         final deviceNo = controller.deviceNoOf(device);
-        final checked = selected.contains(deviceNo);
-        return CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          minimumSize: Size.zero,
-          onPressed: () =>
-              controller.toggleDeviceSelection(device, bound: bound),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           child: Row(
             children: [
-              Icon(
-                checked
-                    ? CupertinoIcons.check_mark_circled_solid
-                    : CupertinoIcons.circle,
-                color: checked ? AppColors.primary : AppColors.secondaryText,
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,6 +657,21 @@ class _DeviceManagerSheet extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 12),
+              // 开关与设备信息分居左右两侧：开=已绑定，关=未绑定，切换即时生效。
+              Transform.scale(
+                scale: .85,
+                child: CupertinoSwitch(
+                  // 提交中先显示目标状态，完成后由刷新后的列表接管。
+                  value: controller.pendingDeviceNos.contains(deviceNo)
+                      ? !bound
+                      : bound,
+                  onChanged: controller.pendingDeviceNos.contains(deviceNo)
+                      ? null
+                      : (value) =>
+                            controller.setDeviceBound(device, bound: value),
+                ),
+              ),
             ],
           ),
         );
@@ -651,3 +681,136 @@ class _DeviceManagerSheet extends StatelessWidget {
 }
 
 const List<String> _alarmTypeLabels = ['不告警', '出入告警', '出告警', '入告警'];
+
+/// 编辑面板顶部的小号文字按钮（如「取消」）。
+class _SmallTextButton extends StatelessWidget {
+  const _SmallTextButton({required this.label, this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => CupertinoButton(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    minimumSize: Size.zero,
+    onPressed: onPressed,
+    child: Text(
+      label,
+      style: const TextStyle(fontSize: 13, color: AppColors.secondaryText),
+    ),
+  );
+}
+
+/// 编辑面板底部的小号操作按钮（重置 / 保存），比通用大按钮更协调。
+class _SmallActionButton extends StatelessWidget {
+  const _SmallActionButton({
+    required this.label,
+    required this.onPressed,
+    this.filled = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 34,
+    child: filled
+        ? CupertinoButton.filled(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            borderRadius: BorderRadius.circular(10),
+            onPressed: onPressed,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          )
+        : CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFF2F4F8),
+            onPressed: onPressed,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 14, color: AppColors.text),
+            ),
+          ),
+  );
+}
+
+/// 收起态底部的圆形向上箭头：持续上下轻微跳动，引导用户点击展开更多信息。
+///
+/// 自带 AnimationController（仅在收起态挂载，展开后自动销毁），
+/// 不给 GeofenceController 增加额外的生命周期负担。
+class _BouncingArrowButton extends StatefulWidget {
+  const _BouncingArrowButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_BouncingArrowButton> createState() => _BouncingArrowButtonState();
+}
+
+class _BouncingArrowButtonState extends State<_BouncingArrowButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    // 向上 7px 的往复位移：幅度克制，只做引导，不喧宾夺主。
+    _offset = Tween<double>(begin: 0, end: -7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _offset,
+      builder: (context, child) =>
+          Transform.translate(offset: Offset(0, _offset.value), child: child),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: CupertinoColors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.divider),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(
+            CupertinoIcons.chevron_up,
+            size: 24,
+            color: AppColors.secondaryText,
+          ),
+        ),
+      ),
+    );
+  }
+}

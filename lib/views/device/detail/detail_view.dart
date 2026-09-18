@@ -44,16 +44,11 @@ class DetailView extends GetView<DetailController> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildMapCard(),
-                      // 设备状态紧随地图下方展示
+                      _buildDeviceInfoCard(),
+                      // 设备状态放在「展示 ID」模块下方
                       if (controller.detail.value != null)
                         _buildStatusCard(controller.detail.value!),
-                      _buildDeviceInfoCard(),
                       _buildFeatureCard(),
-                      if (controller.isLoading.value)
-                        const Padding(
-                          padding: EdgeInsets.all(18),
-                          child: Center(child: AppLoadingIndicator()),
-                        ),
                     ]),
                   ),
                 ),
@@ -89,7 +84,8 @@ class DetailView extends GetView<DetailController> {
       );
 
   Widget _buildMapCard() {
-    final point = controller.mapPosition;
+    // 接口返回前先用缓存位置（无缓存时才回退默认坐标），避免地图先落在北京。
+    final point = controller.mapPosition ?? controller.initialCenter.value;
     final title = controller.device?.deviceName?.isNotEmpty == true
         ? controller.device!.deviceName!
         : controller.device?.plateNo?.isNotEmpty == true
@@ -110,19 +106,20 @@ class DetailView extends GetView<DetailController> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: MapTile(
-                      latitude: point?.latitude ?? 39.9042,
-                      longitude: point?.longitude ?? 116.4074,
-                      mapController: controller.mapController,
-                      initialZoom: 14,
-                      clusterMarkers: false,
-                      isLoading: controller.isRefreshing.value,
-                      errMsg: point == null
-                          ? '设备暂无有效定位'
-                          : controller.errorMessage.value,
-                      markers: point == null
-                          ? const []
-                          : [
+                    // 还没有任何可用坐标时显示占位加载，而不是先用默认坐标
+                    // （北京）构建地图、等到接口返回再跳过去。
+                    child: point == null
+                        ? _buildMapPlaceholder()
+                        : MapTile(
+                            latitude: point.latitude,
+                            longitude: point.longitude,
+                            mapController: controller.mapController,
+                            onMapReady: controller.handleMapReady,
+                            initialZoom: 14,
+                            clusterMarkers: false,
+                            isLoading: controller.isRefreshing.value,
+                            errMsg: controller.errorMessage.value,
+                            markers: [
                               Marker(
                                 width: 38,
                                 height: 38,
@@ -139,7 +136,7 @@ class DetailView extends GetView<DetailController> {
                                 ),
                               ),
                             ],
-                    ),
+                          ),
                   ),
                   Positioned(
                     top: 12,
@@ -220,6 +217,21 @@ class DetailView extends GetView<DetailController> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 还没有可用坐标时的占位：加载中显示指示器，加载完成仍无坐标则提示无定位，
+  /// 避免先渲染默认坐标（北京）再跳到真实位置。
+  Widget _buildMapPlaceholder() {
+    if (controller.isLoading.value) {
+      return const ColoredBox(
+        color: Color(0xFFF2F4F8),
+        child: Center(child: AppLoadingIndicator()),
+      );
+    }
+    return const ColoredBox(
+      color: Color(0xFFF2F4F8),
+      child: EmptyState(message: '设备暂无有效定位', icon: CupertinoIcons.location),
     );
   }
 
@@ -307,7 +319,8 @@ class DetailView extends GetView<DetailController> {
                 CupertinoIcons.wifi,
                 '信号',
                 controller.signalStrength,
-                AppColors.primary,
+                // 与首页「设备状态（在线）」图标一致，统一用绿色。
+                AppColors.success,
               ),
               _statusItem(
                 CupertinoIcons.location,
@@ -516,7 +529,12 @@ class DetailView extends GetView<DetailController> {
         ? null
         : () => Get.toNamed(
             route,
-            arguments: DeviceRouteArgs(controller.device!),
+            arguments: DeviceRouteArgs(
+              controller.device!,
+              // 带上本页已获取的原始坐标：下游页面首帧即可居中到车辆位置。
+              latitude: controller.rawPosition?.latitude,
+              longitude: controller.rawPosition?.longitude,
+            ),
           ),
   );
 }

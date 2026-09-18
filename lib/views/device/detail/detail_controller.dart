@@ -12,6 +12,7 @@ import 'package:car/models/api_response.dart';
 import 'package:car/widgets/app_toast.dart';
 import 'package:car/utils/coord_transform.dart';
 import 'package:car/utils/logger.dart';
+import 'package:car/services/device_position_cache.dart';
 import 'detail_repository.dart';
 import 'package:car/utils/time_utils.dart';
 
@@ -20,7 +21,8 @@ class DetailController extends GetxController {
     : _detailRepository = repository ?? DetailRepository();
 
   final DetailRepository _detailRepository;
-  final DeviceModel? device = DeviceRouteArgs.deviceFrom(Get.arguments);
+  final DeviceRouteArgs? _args = DeviceRouteArgs.parse(Get.arguments);
+  DeviceModel? get device => _args?.device;
   final MapController mapController = MapController();
   final detail = Rxn<DeviceDetailModel>();
   final position = Rxn<JsonMap>();
@@ -31,6 +33,8 @@ class DetailController extends GetxController {
   final isLoadingAddress = false.obs;
   /// 上一次成功解析中文地址时所用的坐标；用于判断是否需要再次展示「解析中文地址」。
   final resolvedPosition = Rxn<LatLng>();
+  /// 地图初始中心：接口返回前先用上次缓存的车辆位置，避免先落到默认的北京坐标。
+  final initialCenter = Rxn<LatLng>();
   final isLoading = false.obs;
   final isRefreshing = false.obs;
   final errorMessage = ''.obs;
@@ -38,6 +42,7 @@ class DetailController extends GetxController {
 
   Timer? _refreshTimer;
   int _requestGeneration = 0;
+  bool _didCenterMap = false;
 
   /// 在线状态：优先以最近一次详情接口返回的 connectionStatus 为准。
   ///
@@ -95,6 +100,12 @@ class DetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // 同步取中心：优先用上游页面随路由传入的坐标，其次才是缓存；
+    // onInit 早于首帧 build，可让地图第一帧就落在车辆位置。
+    // （异步读取 SharedPreferences 赶不上首帧，那时地图已用默认坐标构建完成。）
+    initialCenter.value =
+        _routeCenter() ?? DevicePositionCache.peek(_positionCacheKey ?? '');
+    unawaited(_restoreCachedCenter());
     unawaited(loadDetails());
   }
 
@@ -152,6 +163,58 @@ class DetailController extends GetxController {
     } catch (error, stackTrace) {
       Log.e('地图移动失败', error: error, stackTrace: stackTrace);
     }
+  }
+
+  /// 路由参数携带的车辆坐标（已转 GCJ-02）：由上游页面传入，首帧即可用，
+  /// 不依赖设备列表接口是否下发经纬度。
+  LatLng? _routeCenter() {
+    final lat = _args?.latitude;
+    final lng = _args?.longitude;
+    if (lat == null || lng == null || !isValidCoordinate(lng, lat)) return null;
+    return transformToGCJ02(lng, lat);
+  }
+
+  /// 缓存键：优先设备号，回退设备 ID。
+  String? get _positionCacheKey {
+    final no = device?.deviceNo;
+    if (no != null && no.isNotEmpty) return no;
+    final id = device?.deviceId;
+    return (id != null && id.isNotEmpty) ? id : null;
+  }
+
+  /// 进入页面时先读取缓存位置，作为地图初始中心（避免先显示默认坐标）。
+  Future<void> _restoreCachedCenter() async {
+    final key = _positionCacheKey;
+    if (key == null) return;
+    final cached = await DevicePositionCache.read(key);
+    if (cached != null && !isClosed) initialCenter.value = cached;
+  }
+
+  /// 取到（或刷新到）有效坐标：写入缓存，并在首次成功时把镜头移到车辆上。
+  void _onPositionUpdated() {
+    final point = mapPosition;
+    final key = _positionCacheKey;
+    if (point == null || key == null) return;
+    unawaited(DevicePositionCache.save(key, point));
+    _centerMapOnce(point);
+  }
+
+  /// 只在首次拿到位置时居中一次：后续自动刷新不再移动镜头，
+  /// 避免打断用户手动拖动/缩放后的视角。
+  void _centerMapOnce(LatLng point) {
+    if (_didCenterMap) return;
+    try {
+      mapController.move(point, mapController.camera.zoom);
+      _didCenterMap = true;
+    } catch (_) {
+      // MapController 尚未挂载（首帧），等 onMapReady 再补一次。
+    }
+  }
+
+  /// 地图就绪回调：补做一次居中，覆盖「首帧时控制器未挂载」的情况。
+  void handleMapReady() {
+    final point = mapPosition;
+    if (point != null) _centerMapOnce(point);
   }
 
   /// 手动解析中文地址。
@@ -242,6 +305,7 @@ class DetailController extends GetxController {
     final raw = result.data?.whereType<Map>().firstOrNull;
     if (result.isSuccess && raw != null) {
       position.value = jsonMapFrom(raw);
+      _onPositionUpdated();
     } else if (result.isSuccess) {
       // 仅在从未获取到位置时置空；刷新空数据时保留上一次有效坐标，
       // 避免车标在自动刷新瞬间消失。
@@ -285,6 +349,10 @@ class DetailController extends GetxController {
     if (latitude == null || longitude == null) return null;
     return LatLng(latitude, longitude);
   }
+
+  /// 当前原始经纬度（WGS-84，未做偏移转换）：随路由传给下游页面，
+  /// 使其首帧即可居中到真实位置。
+  LatLng? get rawPosition => _currentRawPosition;
 
   /// 是否展示「解析中文地址」按钮：
   /// - 从未解析过 → 展示；

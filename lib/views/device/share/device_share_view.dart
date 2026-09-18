@@ -17,7 +17,9 @@ class DeviceShareView extends GetView<DeviceShareController> {
       showBottomNavBar: false,
       body: Obx(
         () => ReferencePage(
-          child: controller.isLoading.value
+          // 仅首次加载（还没有分享数据）时显示居中指示器；下拉刷新的反馈由
+          // AppRefreshControl 自己呈现，与消息页保持一致。
+          child: controller.isLoading.value && controller.shares.isEmpty
               ? const Center(child: AppLoadingIndicator())
               : !controller.enabled.value
               ? EmptyState(
