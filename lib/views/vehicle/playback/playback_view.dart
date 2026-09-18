@@ -39,8 +39,16 @@ class PlaybackView extends GetView<PlaybackController> {
   }
 
   Widget _buildTopBar() {
-    final plate =
-        controller.device?.plateNo ?? controller.device?.deviceId ?? '未命名设备';
+    final device = controller.device;
+    final plate = <String?>[
+      device?.deviceName,
+      device?.plateNo,
+      device?.deviceNo,
+      device?.deviceId,
+    ].firstWhere(
+      (value) => value != null && value.trim().isNotEmpty,
+      orElse: () => null,
+    ) ?? '未命名设备';
     final status = controller.device?.deviceStatus ?? '';
     final online = status.toLowerCase() == 'online';
     return Positioned(

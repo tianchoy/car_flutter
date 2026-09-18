@@ -27,6 +27,9 @@ class CustomAppBar extends StatelessWidget
       backgroundColor: backgroundColor.withValues(alpha: .96),
       border: const Border(bottom: BorderSide(color: AppColors.divider)),
       automaticallyImplyLeading: false,
+      // 关闭导航栏在路由切换时的标题滑动/淡入动画，使 tab 切换（noTransition）
+      // 时标题与页面同步瞬时切换，不再出现从右往左滑动的情况。
+      transitionBetweenRoutes: false,
       // CupertinoNavigationBar 默认左右内边距为 16，会让返回键/功能键偏向中间；
       // 收窄到 8 使其向屏幕两侧靠拢。
       padding: const EdgeInsetsDirectional.only(start: 8, end: 8),

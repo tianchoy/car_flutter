@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../app/routes/router_instance.dart';
 import '../../services/app_links.dart';
+import '../../services/url.dart';
 import '../../widgets/main_scaffold.dart';
 import '../../widgets/reference_ui.dart';
 import 'profile_controller.dart';
@@ -33,9 +34,9 @@ class ProfileView extends GetView<ProfileController> {
                   ] else
                     _buildLoginHint(),
                   const SizedBox(height: 40),
-                  const Center(
+                  Center(
                     child: Text(
-                      '中导物联 v1.0.0',
+                      AppConfig.appVersionLabel,
                       style: TextStyle(
                         color: AppColors.secondaryText,
                         fontSize: 12,

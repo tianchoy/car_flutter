@@ -94,7 +94,13 @@ class HomeView extends GetView<HomeController> {
   Widget _buildDeviceHeader(BuildContext context, DeviceModel? device) {
     final isLoggedIn = controller.isLoggedIn.value;
     final title = isLoggedIn
-        ? device?.plateNo ?? device?.deviceName ?? device?.deviceNo ?? '暂无设备'
+        ? (device?.deviceName?.isNotEmpty == true
+            ? device!.deviceName!
+            : device?.plateNo?.isNotEmpty == true
+                ? device!.plateNo!
+                : device?.deviceNo?.isNotEmpty == true
+                    ? device!.deviceNo!
+                    : '暂无设备')
         : '暂未登录';
     return ReferenceCard(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
@@ -236,6 +242,8 @@ class HomeView extends GetView<HomeController> {
     );
     return ReferenceCard(
       child: Row(
+        // 四项信息两端对齐铺满卡片宽度，避免左右两侧出现过大留白。
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _infoItem(
             CupertinoIcons.battery_full,
@@ -243,21 +251,18 @@ class HomeView extends GetView<HomeController> {
             '${battery.toStringAsFixed(0)}%',
             AppColors.success,
           ),
-          _infoDivider(),
           _infoItem(
             CupertinoIcons.bolt_fill,
             '电压',
             '${(detail?.status.voltage ?? 0).toStringAsFixed(1)}V',
             AppColors.warning,
           ),
-          _infoDivider(),
           _infoItem(
             CupertinoIcons.wifi,
             '设备状态',
             online ? '在线' : '离线',
             online ? AppColors.success : AppColors.secondaryText,
           ),
-          _infoDivider(),
           _infoItem(CupertinoIcons.time, '最后定位', lastLoc, AppColors.primary),
         ],
       ),
@@ -265,14 +270,11 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _infoItem(IconData icon, String label, String value, Color color) {
-    return Expanded(
-      child: Padding(
-        // 不再叠加竖向内边距：否则卡片实际上下留白变成 16+8=24，比其他模块更空。
-        // 现在上下仅由 ReferenceCard 的 16 决定，与其他模块统一。
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 6),
             Text(
@@ -296,12 +298,8 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
-      ),
     );
   }
-
-  Widget _infoDivider() =>
-      Container(width: 1, height: 44, color: AppColors.divider);
 
   Widget _buildLocationCard() {
     final device = controller.selectedDevice.value;

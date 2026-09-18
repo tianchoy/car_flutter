@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 /// Configuration shared by the mobile App targets.
 ///
@@ -11,6 +12,28 @@ class AppConfig {
   static const String clientId = '428a8310cd442757ae699df5d894f051';
   static const String tenantId = '000000';
   static const String androidPackageName = 'com.example.car';
+
+  /// 展示在「个人中心」等处的软件名称（品牌名，不随发版变化，保留在代码里）。
+  static const String appName = '中导物联';
+
+  /// 版本号与构建号，均由 [initAppInfo] 在启动时从 pubspec.yaml 的
+  /// `version` 字段读取，确保与提交到应用商店的版本完全一致。
+  /// 你只需修改 pubspec.yaml 的 version（如 `1.0.0+1` → `1.1.0+2`），
+  /// 商店更新提示与 app 内展示即可同步，无需再维护此处硬编码。
+  static String appVersion = '1.0.0';
+  static String appBuildNumber = '1';
+  static String get appVersionLabel => '$appName v$appVersion ($appBuildNumber)';
+
+  /// 在 main() 中 runApp 之前调用，加载真实版本信息。
+  static Future<void> initAppInfo() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      appVersion = info.version;
+      appBuildNumber = info.buildNumber;
+    } catch (_) {
+      // 读取失败时保留默认值，避免展示空白
+    }
+  }
 
   static const String amapTileUrl =
       'https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7';

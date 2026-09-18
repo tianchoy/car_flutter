@@ -59,7 +59,7 @@ class AddDeviceView extends GetView<AddDeviceController> {
                   ReferenceInput(
                     controller: controller.plateController,
                     hint: '请输入车牌号（选填）',
-                    prefix: const Icon(CupertinoIcons.car_detailed),
+                    prefix: const Icon(CupertinoIcons.car),
                   ),
                   const SizedBox(height: 13),
                   Obx(
@@ -71,8 +71,10 @@ class AddDeviceView extends GetView<AddDeviceController> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: CupertinoColors.white,
-                          borderRadius: BorderRadius.circular(10),
+                          // 与「设备 ID」输入框（ReferenceInput）保持完全一致的观感：
+                          // 浅灰底 + 12 圆角，校验失败时边框标红。
+                          color: const Color(0xFFF7F9FC),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: controller.carTypeError.value.isNotEmpty
                                 ? AppColors.danger
@@ -89,13 +91,15 @@ class AddDeviceView extends GetView<AddDeviceController> {
                             Expanded(
                               child: Text(
                                 controller.selectedCarType.value.isEmpty
-                                    ? '请选择设备图标(必选)'
-                                    : carIconLabel(controller.selectedCarType.value),
+                                    ? '请选择设备图标'
+                                    : carIconLabel(
+                                        controller.selectedCarType.value,
+                                      ),
                                 style: TextStyle(
                                   color:
                                       controller.selectedCarType.value.isEmpty
-                                          ? AppColors.secondaryText
-                                          : AppColors.text,
+                                      ? AppColors.secondaryText
+                                      : AppColors.text,
                                 ),
                               ),
                             ),

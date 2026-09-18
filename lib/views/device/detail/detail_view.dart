@@ -90,8 +90,13 @@ class DetailView extends GetView<DetailController> {
 
   Widget _buildMapCard() {
     final point = controller.mapPosition;
-    final title =
-        controller.device?.plateNo ?? controller.device?.deviceName ?? '当前车辆';
+    final title = controller.device?.deviceName?.isNotEmpty == true
+        ? controller.device!.deviceName!
+        : controller.device?.plateNo?.isNotEmpty == true
+            ? controller.device!.plateNo!
+            : controller.device?.deviceNo?.isNotEmpty == true
+                ? controller.device!.deviceNo!
+                : '当前车辆';
     return ReferenceCard(
       padding: EdgeInsets.zero,
       child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
+import 'package:car/utils/car_icon.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'vehicle_list_controller.dart';
@@ -16,7 +17,7 @@ class VehicleListView extends GetView<VehicleListController> {
       showBottomNavBar: false,
       actions: [
         ReferenceIconButton(
-          icon: CupertinoIcons.add,
+          icon: CupertinoIcons.add_circled,
           color: AppColors.text,
           onPressed: controller.openAddDevice,
         ),
@@ -26,9 +27,7 @@ class VehicleListView extends GetView<VehicleListController> {
           controller: controller.scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            AppRefreshControl(
-              onRefresh: () => controller.load(reset: true),
-            ),
+            AppRefreshControl(onRefresh: () => controller.load(reset: true)),
             if (controller.devices.isEmpty && controller.isLoading.value)
               const SliverFillRemaining(
                 child: Center(child: AppLoadingIndicator()),
@@ -97,7 +96,12 @@ class VehicleListView extends GetView<VehicleListController> {
                 color: color.withValues(alpha: .1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(CupertinoIcons.car_detailed, color: color),
+              child: Image.asset(
+                deviceIconPath(online: online, carType: device.carType),
+                width: 30,
+                height: 30,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
