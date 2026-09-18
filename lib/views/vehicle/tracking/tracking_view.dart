@@ -149,7 +149,7 @@ class TrackingView extends GetView<TrackingController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          device?.plateNo ?? device?.deviceName ?? device?.deviceNo ?? '当前车辆',
+          device?.deviceName ?? device?.plateNo ?? device?.deviceNo ?? '当前车辆',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),

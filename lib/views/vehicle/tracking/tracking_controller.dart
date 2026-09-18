@@ -37,6 +37,8 @@ class TrackingController extends GetxController
   late final AnimationController _animationController;
   LatLng? _animationStart;
   LatLng? _animationEnd;
+  // 最近一次有效的车辆坐标，用作车标兜底：刷新空数据/异常瞬间不丢车标。
+  LatLng? _lastKnownPosition;
   int _requestGeneration = 0;
   double _bearing = 0;
   double _targetBearing = 0;
@@ -44,7 +46,8 @@ class TrackingController extends GetxController
   bool get isOnline => connectionStatus.value.toLowerCase() == 'online';
 
   List<Marker> get markers {
-    final point = currentPosition.value;
+    // 优先用实时坐标，缺失时回退到最后已知点，避免刷新瞬间车标消失。
+    final point = currentPosition.value ?? _lastKnownPosition;
     if (point == null) return const <Marker>[];
     return [
       Marker(
@@ -58,6 +61,8 @@ class TrackingController extends GetxController
             width: 36,
             height: 36,
             fit: BoxFit.contain,
+            // 每帧重建 marker 时保留旧图，避免图片解析间隙导致车标闪白/丢失。
+            gaplessPlayback: true,
           ),
         ),
       ),
@@ -207,6 +212,7 @@ class TrackingController extends GetxController
     final longitude = nullableDoubleValue(data['longitude'])!;
     final latitude = nullableDoubleValue(data['latitude'])!;
     final next = transformToGCJ02(longitude, latitude);
+    _lastKnownPosition = next;
     final nextSpeed = nullableDoubleValue(data['speed']) ?? 0;
     final direction =
         nullableDoubleValue(
@@ -240,22 +246,21 @@ class TrackingController extends GetxController
     }
 
     final distance = GeoUtils.distanceMeters(previous, next);
-    if (distance > 500 || distance < 1) {
+    // GPS 异常造成的极端跳变直接落位，避免拉出长线。
+    if (distance > 500) {
       _animationController.stop();
       currentPosition.value = next;
       _bearing = _targetBearing;
-      if (distance > 500) _appendRoutePoint(next, reset: true);
+      _appendRoutePoint(next, reset: true);
       _moveMap(next);
       return;
     }
 
+    // 以轮询间隔为动画时长，让车标在「上一个点 → 下一个点」之间匀速移动，
+    // 恰好在下次刷新到达时到位：既不会提前到位后空等，也不会瞬移。
     _animationStart = previous;
     _animationEnd = next;
-    _animationController.duration = Duration(
-      milliseconds: (distance / ((nextSpeed > 0 ? nextSpeed : 20) / 3.6) * 1000)
-          .clamp(500, 2800)
-          .round(),
-    );
+    _animationController.duration = Duration(seconds: pollIntervalSeconds.value);
     _animationController.forward(from: 0);
     _appendRoutePoint(next);
   }
