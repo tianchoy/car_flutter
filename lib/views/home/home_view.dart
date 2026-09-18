@@ -356,6 +356,7 @@ class HomeView extends GetView<HomeController> {
                             width: 32,
                             height: 32,
                             fit: BoxFit.contain,
+                            gaplessPlayback: true,
                           )
                         : _myLocationMarker(),
                   ),

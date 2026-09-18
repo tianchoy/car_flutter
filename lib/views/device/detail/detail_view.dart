@@ -135,6 +135,7 @@ class DetailView extends GetView<DetailController> {
                                   width: 34,
                                   height: 34,
                                   fit: BoxFit.contain,
+                                  gaplessPlayback: true,
                                 ),
                               ),
                             ],

@@ -76,7 +76,9 @@ class AddDeviceView extends GetView<AddDeviceController> {
                           color: const Color(0xFFF7F9FC),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: controller.carTypeError.value.isNotEmpty
+                            // 未选择设备图标或校验失败时为红色边框，与「设备 ID」必填项提示一致。
+                            color: controller.carTypeError.value.isNotEmpty ||
+                                    controller.selectedCarType.value.isEmpty
                                 ? AppColors.danger
                                 : AppColors.divider,
                           ),
@@ -120,12 +122,16 @@ class AddDeviceView extends GetView<AddDeviceController> {
                   Obx(
                     () => controller.carTypeError.value.isNotEmpty
                         ? Padding(
-                            padding: const EdgeInsets.only(left: 8, top: 6),
-                            child: Text(
-                              controller.carTypeError.value,
-                              style: const TextStyle(
-                                color: AppColors.danger,
-                                fontSize: 12,
+                            padding: const EdgeInsets.only(left: 12, top: 6),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                controller.carTypeError.value,
+                                textAlign: TextAlign.left,
+                                style: const TextStyle(
+                                  color: AppColors.danger,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           )

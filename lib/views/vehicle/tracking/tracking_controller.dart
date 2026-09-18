@@ -29,6 +29,8 @@ class TrackingController extends GetxController
   final address = ''.obs;
   final connectionStatus = ''.obs;
   final isLoading = false.obs;
+  // 跟踪中后台轮询的刷新状态：不驱动 loading 浮层与按钮禁用，避免每秒闪动。
+  final isRefreshing = false.obs;
   final isTracking = false.obs;
   final errorMessage = ''.obs;
   final pollIntervalSeconds = 1.obs;
@@ -39,6 +41,8 @@ class TrackingController extends GetxController
   LatLng? _animationEnd;
   // 最近一次有效的车辆坐标，用作车标兜底：刷新空数据/异常瞬间不丢车标。
   LatLng? _lastKnownPosition;
+  // 最近一次成功取到「新位置」的本地时间，用于推算动画时长（≈设备上报间隔）。
+  DateTime? _lastReceivedAt;
   int _requestGeneration = 0;
   double _bearing = 0;
   double _targetBearing = 0;
@@ -122,12 +126,13 @@ class TrackingController extends GetxController
     _pollTimer?.cancel();
     _pollTimer = null;
     _animationController.stop();
+    _lastReceivedAt = null;
   }
 
   Future<void> refreshPosition() async {
     final currentDevice = device;
-    if (currentDevice == null || isLoading.value) return;
-    isLoading.value = true;
+    if (currentDevice == null || isRefreshing.value) return;
+    isRefreshing.value = true;
     final generation = ++_requestGeneration;
     try {
       final position = await _fetchPosition(currentDevice);
@@ -144,7 +149,7 @@ class TrackingController extends GetxController
       }
     } finally {
       if (!isClosed && generation == _requestGeneration) {
-        isLoading.value = false;
+        isRefreshing.value = false;
       }
     }
   }
@@ -242,10 +247,15 @@ class TrackingController extends GetxController
       _bearing = _targetBearing;
       _appendRoutePoint(next, reset: previous == null);
       _moveMap(next);
+      _lastReceivedAt = DateTime.now();
       return;
     }
 
     final distance = GeoUtils.distanceMeters(previous, next);
+    // 与上一点几乎重合（设备重复上报）：仅更新上面已赋值的元数据即可，
+    // 不重启动画、不重置计时，避免无意义的零距离重绘与闪烁。
+    if (distance < 1) return;
+
     // GPS 异常造成的极端跳变直接落位，避免拉出长线。
     if (distance > 500) {
       _animationController.stop();
@@ -253,14 +263,23 @@ class TrackingController extends GetxController
       _bearing = _targetBearing;
       _appendRoutePoint(next, reset: true);
       _moveMap(next);
+      _lastReceivedAt = DateTime.now();
       return;
     }
 
-    // 以轮询间隔为动画时长，让车标在「上一个点 → 下一个点」之间匀速移动，
-    // 恰好在下次刷新到达时到位：既不会提前到位后空等，也不会瞬移。
+    // 动画时长 = 本次与上次「取位成功」的实测时间差（≈设备上报间隔，本例约 5s）。
+    // 车标用整段间隔匀速走完两点，速度=真实速度：平滑、不瞬移；
+    // 位置始终落在车辆真实经过的轨迹上（仅有时延，不会几何偏移/跑偏）。
+    final gap = _lastReceivedAt == null
+        ? Duration(seconds: pollIntervalSeconds.value)
+        : DateTime.now().difference(_lastReceivedAt!);
+    final durationMs = gap.inMilliseconds.clamp(800, 10000);
+    final duration = Duration(milliseconds: durationMs);
+    _lastReceivedAt = DateTime.now();
+
     _animationStart = previous;
     _animationEnd = next;
-    _animationController.duration = Duration(seconds: pollIntervalSeconds.value);
+    _animationController.duration = duration;
     _animationController.forward(from: 0);
     _appendRoutePoint(next);
   }

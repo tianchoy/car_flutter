@@ -266,8 +266,9 @@ class HomeController extends GetxController {
       );
       final raw = result.data?.whereType<Map>().firstOrNull;
       if (!result.isSuccess || raw == null) {
-        positionState.value = 'empty';
-        devicePosition.value = null;
+        // 仅在从未成功获取过位置时置空；刷新空数据/失败时保留上一次有效坐标，
+        // 避免车标在刷新瞬间消失。
+        if (devicePosition.value == null) positionState.value = 'empty';
         return;
       }
       final longitude = nullableDoubleValue(raw['longitude']);
@@ -275,8 +276,7 @@ class HomeController extends GetxController {
       if (longitude == null ||
           latitude == null ||
           !isValidCoordinate(longitude, latitude)) {
-        positionState.value = 'invalid';
-        devicePosition.value = null;
+        if (devicePosition.value == null) positionState.value = 'invalid';
         return;
       }
       devicePosition.value = transformToGCJ02(longitude, latitude);

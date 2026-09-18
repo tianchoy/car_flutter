@@ -243,8 +243,9 @@ class DetailController extends GetxController {
     if (result.isSuccess && raw != null) {
       position.value = jsonMapFrom(raw);
     } else if (result.isSuccess) {
-      position.value = null;
-      errorMessage.value = '暂无设备定位数据';
+      // 仅在从未获取到位置时置空；刷新空数据时保留上一次有效坐标，
+      // 避免车标在自动刷新瞬间消失。
+      if (position.value == null) errorMessage.value = '暂无设备定位数据';
     }
   }
 
