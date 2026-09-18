@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../app/routes/router_instance.dart';
 import '../../utils/session.dart';
 import 'api_service.dart';
+import 'push/push_binding_service.dart';
+import 'push/push_service.dart';
 
 /// Owns the irreversible local part of logout.
 ///
@@ -16,10 +18,13 @@ class AuthSessionService {
 
   Future<void> logout() async {
     try {
+      // 先解绑推送设备：解绑需要业务 token，必须在本地会话清理之前发出。
+      await PushBindingService.to.unbindOnLogout();
       await _apiService.logout();
     } catch (_) {
       // Local credentials must still be cleared when the backend is unavailable.
     } finally {
+      await PushService.to.clearSessionState();
       await clearAuthenticatedSession();
     }
   }

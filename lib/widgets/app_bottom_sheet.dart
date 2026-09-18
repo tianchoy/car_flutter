@@ -9,6 +9,7 @@ class AppSheetAction<T> {
     this.value,
     this.isDefault = false,
     this.isDestructive = false,
+    this.trailing,
   });
 
   /// 点击后通过 [showAppActionSheet] 返回的值。
@@ -22,6 +23,10 @@ class AppSheetAction<T> {
 
   /// 是否为危险操作：以红色展示。
   final bool isDestructive;
+
+  /// 选项右侧的附加内容（如设备在线/离线状态标识）。
+  /// 提供时，行内改为「左文案 + 右附加」的两端对齐布局。
+  final Widget? trailing;
 }
 
 /// 全宽底部弹框：左右与底部均铺满屏幕，仅顶部圆角。
@@ -107,6 +112,7 @@ Future<T?> showAppActionSheet<T>({
                           ? AppColors.primary
                           : null,
                       bold: actions[i].isDefault,
+                      trailing: actions[i].trailing,
                       onTap: () =>
                           Navigator.pop(sheetContext, actions[i].value),
                     ),
@@ -135,33 +141,46 @@ class _SheetRow extends StatelessWidget {
     required this.onTap,
     this.color,
     this.bold = false,
+    this.trailing,
   });
 
   final String label;
   final VoidCallback onTap;
   final Color? color;
   final bool bold;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final text = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 16,
+        color: color ?? AppColors.text,
+        fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+      ),
+    );
     return CupertinoButton(
       padding: EdgeInsets.zero,
       minimumSize: Size.zero,
       onPressed: onTap,
       child: Container(
         height: 52,
-        alignment: Alignment.center,
+        alignment:
+            trailing == null ? Alignment.center : Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 16,
-            color: color ?? AppColors.text,
-            fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
+        child: trailing == null
+            ? text
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: text),
+                  const SizedBox(width: 8),
+                  trailing!,
+                ],
+              ),
       ),
     );
   }

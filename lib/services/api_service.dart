@@ -218,6 +218,19 @@ class ApiService {
         : _httpService.post<dynamic>(ApiEndpoints.commandSend, data: data);
   }
 
+  /// 绑定 JPush RegistrationID 到当前登录账号（POST /app/push/bind）。
+  Future<Response<dynamic>> bindPushDevice(Map<String, dynamic> data) {
+    return _httpService.post<dynamic>(ApiEndpoints.pushBind, data: data);
+  }
+
+  /// 退出登录时解绑当前设备的 RegistrationID（POST /app/push/unbind）。
+  Future<Response<dynamic>> unbindPushDevice(String registrationId) {
+    return _httpService.post<dynamic>(
+      ApiEndpoints.pushUnbind,
+      queryParameters: <String, dynamic>{'registrationId': registrationId},
+    );
+  }
+
   Future<Response<dynamic>> sendAppCommand(Map<String, dynamic> data) {
     return _httpService.post<dynamic>(ApiEndpoints.sendAppCommand, data: data);
   }

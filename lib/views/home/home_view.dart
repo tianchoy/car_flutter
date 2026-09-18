@@ -178,6 +178,7 @@ class HomeView extends GetView<HomeController> {
       displayText: _deviceDisplayName,
       isShowMessage: false,
       selectedOption: controller.selectedDevice.value,
+      trailingBuilder: _deviceStatusTrailing,
     );
     if (device != null) controller.selectDevice(device);
   }
@@ -188,6 +189,30 @@ class HomeView extends GetView<HomeController> {
     final plate = (device.plateNo ?? '').trim();
     if (plate.isNotEmpty) return plate;
     return device.deviceNo ?? device.deviceId;
+  }
+
+  /// 设备选择弹框右侧的在线/离线状态标识。
+  Widget _deviceStatusTrailing(DeviceModel device) {
+    final online = device.isOnline;
+    final statusColor = online ? AppColors.success : AppColors.secondaryText;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: statusColor,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          online ? '在线' : '离线',
+          style: TextStyle(fontSize: 13, color: statusColor),
+        ),
+      ],
+    );
   }
 
   Future<void> _startFindCarForDevice(

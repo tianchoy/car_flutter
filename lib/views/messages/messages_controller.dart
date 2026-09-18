@@ -6,7 +6,9 @@ import 'package:car/widgets/app_toast.dart';
 
 import '../../models/message/msg_model.dart';
 import '../../models/api_response.dart';
+import '../../services/push/push_service.dart';
 import '../../utils/logger.dart';
+import 'message_detail_dialog.dart';
 import 'messages_repository.dart';
 
 class MessagesController extends GetxController {
@@ -34,6 +36,7 @@ class MessagesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    PushService.to.addEventListener(_onPushEvent);
     unawaited(_initialize());
   }
 
@@ -41,7 +44,14 @@ class MessagesController extends GetxController {
     if (await checkLoginStatus()) {
       await refreshMessages();
       _startNewMessageCheck();
+      // 进入消息页时消费推送带来的待处理消息（冷启动点击通知的场景）。
+      await openPendingPushMessage();
     }
+  }
+
+  void _onPushEvent(PushEventKind kind, String messageId) {
+    // 推送已在 PushService 中落盘，此处只负责刷新列表并打开对应详情。
+    unawaited(openPendingPushMessage());
   }
 
   Future<bool> checkLoginStatus() async {
@@ -231,6 +241,34 @@ class MessagesController extends GetxController {
     }
   }
 
+  /// 消费推送带来的待处理消息：先刷新列表，再在第一页定位同一 `messageId`
+  /// 并自动打开详情（对齐源工程 `openPendingPushMessage`）。
+  Future<void> openPendingPushMessage({int attempt = 0}) async {
+    if (_isClosed) return;
+    if (isLoading.value || isLoadingMore.value || isCheckingNewMessages.value) {
+      if (attempt >= 20) return;
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      return openPendingPushMessage(attempt: attempt + 1);
+    }
+    final messageId = await PushService.to.consumePendingMessageId();
+    final shouldRefresh = await PushService.to.consumeStaleFlag();
+    if (messageId.isEmpty && !shouldRefresh) return;
+    await refreshMessages();
+    if (_isClosed || messageId.isEmpty) return;
+    final target = _findById(messageId);
+    if (target == null) return;
+    await markAsRead(target);
+    if (_isClosed) return;
+    await MessageDetailDialog.show(target);
+  }
+
+  MessageModel? _findById(String messageId) {
+    for (final message in messages) {
+      if (message.messageId == messageId) return message;
+    }
+    return null;
+  }
+
   /// 定时检查：只暂存新消息，避免打断用户当前的阅读位置。
   Future<void> checkNewMessages() async {
     final latest = await _findLatestMessages();
@@ -263,6 +301,7 @@ class MessagesController extends GetxController {
   @override
   void onClose() {
     _isClosed = true;
+    PushService.to.removeEventListener(_onPushEvent);
     _newMessageTimer?.cancel();
     scrollController.dispose();
     messages.clear();

@@ -1,0 +1,23 @@
+{
+  "pins" : [
+    {
+      "identity" : "jcore-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpush/jcore-sdk.git",
+      "state" : {
+        "revision" : "4d386ef9c1cb1c53a001530db08d59a96dbac654",
+        "version" : "5.5.3"
+      }
+    },
+    {
+      "identity" : "jpush-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpush/jpush-sdk.git",
+      "state" : {
+        "revision" : "38d3b86d606749418396cf391ddcdf7c27e0a0d8",
+        "version" : "6.2.6"
+      }
+    }
+  ],
+  "version" : 2
+}

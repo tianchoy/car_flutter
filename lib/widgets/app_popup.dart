@@ -22,6 +22,7 @@ class AppPopup {
     bool isShowMessage = true,
     bool isShowCancel = true,
     T? selectedOption,
+    Widget Function(T option)? trailingBuilder,
   }) async {
     assert(options.isNotEmpty, 'options cannot be empty');
 
@@ -35,6 +36,7 @@ class AppPopup {
               label: displayText(option),
               value: option,
               isDefault: option == selectedOption,
+              trailing: trailingBuilder?.call(option),
             ),
           )
           .toList(),

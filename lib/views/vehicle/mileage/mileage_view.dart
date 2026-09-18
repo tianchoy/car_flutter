@@ -71,9 +71,12 @@ class MileageView extends GetView<MileageController> {
         const SizedBox(height: 5),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: AppColors.text,
+            fontSize: 14,
           ),
         ),
       ],
@@ -113,14 +116,26 @@ class MileageView extends GetView<MileageController> {
               Expanded(
                 child: Text(
                   group.date,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  // 限定单行：安卓端字号/字体缩放较大时日期不应折行。
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
-              Text(
-                '${group.trips.length} 段 · ${(group.totalDistanceMeters / 1000).toStringAsFixed(2)} km',
-                style: const TextStyle(
-                  color: AppColors.secondaryText,
-                  fontSize: 12,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '${group.trips.length} 段 · ${(group.totalDistanceMeters / 1000).toStringAsFixed(2)} km',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: AppColors.secondaryText,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -148,12 +163,12 @@ class MileageView extends GetView<MileageController> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 26,
+              height: 26,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 color: AppColors.primary,
@@ -168,15 +183,37 @@ class MileageView extends GetView<MileageController> {
               ),
             ),
             const SizedBox(width: 10),
+            // 时间一行、里程/时长一行：各自限定单行并省略，
+            // 避免安卓端因字号或系统字体缩放把三项内容都挤到折行。
             Expanded(
-              child: Text(
-                '${_clock(trip.startTime)} - ${_clock(trip.endTime)}\n${(trip.distanceMeters / 1000).toStringAsFixed(2)} km · ${_duration(trip.durationMilliseconds)}',
-                style: const TextStyle(height: 1.5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_clock(trip.startTime)} - ${_clock(trip.endTime)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, height: 1.35),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${(trip.distanceMeters / 1000).toStringAsFixed(2)} km · ${_duration(trip.durationMilliseconds)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                ],
               ),
             ),
             const Icon(
               CupertinoIcons.chevron_right,
               color: AppColors.secondaryText,
+              size: 18,
             ),
           ],
         ),

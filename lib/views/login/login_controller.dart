@@ -6,6 +6,7 @@ import 'package:car/widgets/app_toast.dart';
 
 import '../../app/routes/router_instance.dart';
 import '../../models/api_response.dart';
+import '../../services/push/push_bootstrap.dart';
 import 'login_repository.dart';
 
 class LoginController extends GetxController {
@@ -105,6 +106,7 @@ class LoginController extends GetxController {
       await _loginRepository.login(normalizedUsername, password.value);
       _showMessage('成功', '登录成功');
       Get.offAllNamed(Routes.home);
+      _schedulePushInitialization();
     } on ApiBusinessException catch (error) {
       _showMessage('登录失败', error.message);
     } catch (_) {
@@ -129,6 +131,7 @@ class LoginController extends GetxController {
       await _loginRepository.smsLogin(phone.value, smsCode.value);
       _showMessage('成功', '登录成功');
       Get.offAllNamed(Routes.home);
+      _schedulePushInitialization();
     } on ApiBusinessException catch (error) {
       _showMessage('登录失败', error.message);
     } catch (_) {
@@ -140,6 +143,11 @@ class LoginController extends GetxController {
 
   void clearUsername() => usernameController.clear();
   void clearPassword() => passwordController.clear();
+
+  /// 登录成功并完成首页跳转后再初始化推送，避免与登录、首屏数据请求争抢资源。
+  void _schedulePushInitialization() {
+    unawaited(PushBootstrap.schedulePostLoginInitialization());
+  }
 
   void _showMessage(String title, String message) {
     AppToast.show(title, message, duration: const Duration(seconds: 2));

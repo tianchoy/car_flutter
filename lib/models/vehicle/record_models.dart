@@ -65,6 +65,16 @@ class StopRecord {
   final double? longitude;
   final String address;
 
+  /// 解析到中文地址后生成新实例（记录本身不可变）。
+  StopRecord copyWith({String? address}) => StopRecord(
+    startTime: startTime,
+    endTime: endTime,
+    durationMilliseconds: durationMilliseconds,
+    latitude: latitude,
+    longitude: longitude,
+    address: address ?? this.address,
+  );
+
   factory StopRecord.fromJson(Object? value) {
     final data = jsonMapFrom(value);
     return StopRecord(

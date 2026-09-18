@@ -13,6 +13,7 @@ import '../../widgets/app_toast.dart';
 import '../../utils/coord_transform.dart';
 import '../../utils/logger.dart';
 import '../../utils/session.dart';
+import '../../services/push/push_bootstrap.dart';
 import 'home_repository.dart';
 import 'package:car/utils/time_utils.dart';
 
@@ -59,7 +60,11 @@ class HomeController extends GetxController {
     await restoreSelectionState();
     await _loadCurrentLocation();
     if (_isClosed) return;
-    if (await _checkLoginStatus()) await loadDeviceList();
+    if (await _checkLoginStatus()) {
+      // 已登录用户冷启动时兜底触发推送初始化（登录页路径之外的唯一入口）。
+      unawaited(PushBootstrap.schedulePostLoginInitialization());
+      await loadDeviceList();
+    }
   }
 
   Future<bool> _checkLoginStatus() async {

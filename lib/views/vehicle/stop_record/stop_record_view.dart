@@ -36,8 +36,6 @@ class StopRecordView extends GetView<StopRecordController> {
     );
   }
 
-
-
   Widget _buildList() {
     if (controller.isLoading.value) {
       return const Center(child: AppLoadingIndicator());
@@ -76,11 +74,40 @@ class StopRecordView extends GetView<StopRecordController> {
           if (record.address.isNotEmpty)
             _row(CupertinoIcons.location, '停车位置', record.address)
           else if (record.latitude != null && record.longitude != null)
-            _row(
-              CupertinoIcons.location,
-              '停车位置',
-              '${record.latitude}, ${record.longitude}',
+            _locationRow(record),
+        ],
+      ),
+    );
+  }
+
+  /// 停车位置：还没有中文地址时展示「解析中文地址」，点击后调用逆地理接口，
+  /// 解析成功即把结果回填到该条记录、原地展示为中文地址。
+  Widget _locationRow(StopRecord record) {
+    final parsing = controller.isParsing(record);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            CupertinoIcons.location,
+            color: AppColors.primary,
+            size: 18,
+          ),
+          const SizedBox(width: 9),
+          const Text(
+            '停车位置：',
+            style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: parsing ? null : () => controller.parseAddress(record),
+              child: Text(
+                parsing ? '解析中…' : '解析中文地址',
+                style: const TextStyle(color: AppColors.primary, fontSize: 13),
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -92,14 +119,23 @@ class StopRecordView extends GetView<StopRecordController> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.primary, size: 20),
+          Icon(icon, color: AppColors.primary, size: 18),
           const SizedBox(width: 9),
           Text(
             '$label：',
-            style: const TextStyle(color: AppColors.secondaryText),
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 13,
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: AppColors.text)),
+            child: Text(
+              value,
+              // 地址可能较长，允许两行并在超长时省略，避免撑破卡片。
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.text, fontSize: 13),
+            ),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:car/app/routes/route_arguments.dart';
 import 'package:car/models/home/device_model.dart';
 import 'package:car/models/api_response.dart';
 import 'package:car/widgets/reference_date_time_picker.dart';
+import 'package:car/widgets/app_toast.dart';
 import 'package:car/models/vehicle/record_models.dart';
 import 'stop_record_repository.dart';
 import 'package:car/utils/time_utils.dart';
@@ -21,6 +22,8 @@ class StopRecordController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final records = <StopRecord>[].obs;
+  /// 正在解析中文地址的记录 key（避免重复点击、用于显示「解析中…」）。
+  final parsingKeys = <String>{}.obs;
 
   @override
   void onInit() {
@@ -69,6 +72,50 @@ class StopRecordController extends GetxController {
       records.clear();
     } finally {
       if (!isClosed) isLoading.value = false;
+    }
+  }
+
+  /// 记录唯一 key：用于定位列表中的条目与去重。
+  String _keyOf(StopRecord record) => '${record.startTime}|${record.endTime}';
+
+  bool isParsing(StopRecord record) => parsingKeys.contains(_keyOf(record));
+
+  /// 解析某条停车记录的中文地址（与「设备详情」用的是同一个逆地理接口）。
+  /// 成功后把结果写回该条记录，列表中直接展示中文地址。
+  Future<void> parseAddress(StopRecord record) async {
+    final latitude = record.latitude;
+    final longitude = record.longitude;
+    if (latitude == null || longitude == null) {
+      AppToast.show('提示', '该记录无经纬度，无法解析');
+      return;
+    }
+    final key = _keyOf(record);
+    if (parsingKeys.contains(key)) return;
+    parsingKeys.add(key);
+    parsingKeys.refresh();
+    try {
+      final value = await _repository.fetchAddress(<String, dynamic>{
+        'latitude': latitude,
+        'longitude': longitude,
+        'deviceId': device?.deviceId ?? '',
+        if (device?.deviceNo != null && device!.deviceNo!.isNotEmpty)
+          'deviceNo': device!.deviceNo,
+      });
+      if (isClosed) return;
+      final index = records.indexWhere((item) => _keyOf(item) == key);
+      if (index < 0) return;
+      final text = (value ?? '').trim();
+      if (text.isEmpty) {
+        AppToast.show('提示', '未解析到中文地址');
+        return;
+      }
+      records[index] = records[index].copyWith(address: text);
+      records.refresh();
+    } catch (_) {
+      if (!isClosed) AppToast.show('提示', '解析失败，请稍后重试');
+    } finally {
+      parsingKeys.remove(key);
+      parsingKeys.refresh();
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../models/message/msg_model.dart';
 import '../../widgets/main_scaffold.dart';
 import '../../widgets/reference_ui.dart';
+import 'message_detail_dialog.dart';
 import 'messages_controller.dart';
 
 class MessagesView extends GetView<MessagesController> {
@@ -294,40 +295,6 @@ class MessagesView extends GetView<MessagesController> {
   Future<void> _showDetail(BuildContext context, MessageModel message) async {
     await controller.markAsRead(message);
     if (!context.mounted) return;
-    await showCupertinoDialog<void>(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(_typeName(message.messageType)),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  message.content.isEmpty ? '暂无消息内容' : message.content,
-                  style: const TextStyle(height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '时间：${message.createTime.isEmpty ? '--' : message.createTime}',
-                  style: const TextStyle(
-                    color: AppColors.secondaryText,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
-    );
+    await MessageDetailDialog.show(message, context: context);
   }
 }
