@@ -163,22 +163,38 @@ class HomeController extends GetxController {
     }
   }
 
+  /// 重新解析应选中的设备，优先级：
+  /// 1) 当前已选中的设备（刷新/下拉不应跳回其它设备）；
+  /// 2) 持久化缓存（退出 App 再进入仍保留）；
+  /// 3) 列表第一个设备。
   DeviceModel? _restoreSelectedDevice(List<DeviceModel> devices) {
+    if (devices.isEmpty) return null;
+    final current = selectedDevice.value;
+    if (current != null) {
+      final matched = _findMatchingDevice(devices, current);
+      if (matched != null) {
+        _persistSelectedDevice(matched);
+        return matched;
+      }
+    }
     final savedJson = _sessionJsonValue;
     DeviceModel? device;
     if (savedJson != null) {
-      final saved = DeviceModel.fromJson(savedJson);
-      device = _findMatchingDevice(devices, saved);
+      device = _findMatchingDevice(devices, DeviceModel.fromJson(savedJson));
     }
     device ??= devices.firstOrNull;
-    if (device != null) {
-      unawaited(
-        setSession(SessionKeys.selectedDeviceInfo, jsonEncode(device.toJson())),
-      );
-      final index = devices.indexOf(device);
-      unawaited(setSession(SessionKeys.selectedDeviceIndex, '$index'));
-    }
+    if (device != null) _persistSelectedDevice(device);
     return device;
+  }
+
+  /// 同时更新内存缓存与本地持久化，保证刷新与退出 App 后选中状态一致。
+  void _persistSelectedDevice(DeviceModel device) {
+    _savedDeviceJson = device.toJson();
+    unawaited(
+      setSession(SessionKeys.selectedDeviceInfo, jsonEncode(device.toJson())),
+    );
+    final index = deviceList.indexOf(device);
+    unawaited(setSession(SessionKeys.selectedDeviceIndex, '$index'));
   }
 
   JsonMap? get _sessionJsonValue => _savedDeviceJson;
@@ -322,6 +338,8 @@ class HomeController extends GetxController {
     final index = deviceList.indexOf(device);
     if (index < 0) return;
     selectedDevice.value = device;
+    // 同步内存缓存，避免刷新时 _savedDeviceJson 仍是进入页面时的旧值而跳回其它设备。
+    _savedDeviceJson = device.toJson();
     await setSession(
       SessionKeys.selectedDeviceInfo,
       jsonEncode(device.toJson()),
