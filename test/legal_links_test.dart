@@ -21,6 +21,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('用户协议'), findsOneWidget);
+    final agreementText = tester.widget<Text>(
+      find.text(LegalLinks.userAgreement),
+    );
+    expect(agreementText.textAlign, TextAlign.left);
     expect(find.textContaining('服务条款的确认和接纳'), findsOneWidget);
 
     await tester.tap(find.text('知道了'));
@@ -47,6 +51,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('隐私政策'), findsOneWidget);
+    final privacyText = tester.widget<Text>(
+      find.text(LegalLinks.privacyPolicy),
+    );
+    expect(privacyText.textAlign, TextAlign.left);
     expect(find.textContaining('信息收集'), findsOneWidget);
 
     await tester.tap(find.text('知道了'));

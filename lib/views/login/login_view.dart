@@ -59,10 +59,13 @@ class LoginView extends GetView<LoginController> {
             color: AppColors.primary.withValues(alpha: .1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            CupertinoIcons.location_solid,
-            color: AppColors.primary,
-            size: 48,
+          child: Center(
+            child: Image.asset(
+              'assets/static/logo.png',
+              width: 64,
+              height: 64,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const SizedBox(height: 15),
@@ -85,42 +88,14 @@ class LoginView extends GetView<LoginController> {
 
   Widget _buildModeSwitch() {
     return Obx(
-      () => Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => controller.useSmsLogin.value = false,
-              child: _modeTab('密码登录', !controller.useSmsLogin.value),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => controller.useSmsLogin.value = true,
-              child: _modeTab('验证码登录', controller.useSmsLogin.value),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _modeTab(String text, bool selected) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 11),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: selected ? AppColors.primary : AppColors.divider,
-            width: selected ? 2 : 1,
-          ),
-        ),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: selected ? AppColors.primary : AppColors.secondaryText,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+      () => SizedBox(
+        width: double.infinity,
+        child: CupertinoSlidingSegmentedControl<bool>(
+          groupValue: controller.useSmsLogin.value,
+          children: const {false: Text('密码登录'), true: Text('验证码登录')},
+          onValueChanged: (value) {
+            if (value != null) controller.useSmsLogin.value = value;
+          },
         ),
       ),
     );
@@ -260,7 +235,7 @@ class LoginView extends GetView<LoginController> {
 
   Widget _buildLinks() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         CupertinoButton(
           padding: EdgeInsets.zero,

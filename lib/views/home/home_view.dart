@@ -27,18 +27,27 @@ class HomeView extends GetView<HomeController> {
       showBackButton: false,
       showBottomNavBar: true,
       actions: [
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
-          onPressed: () => Get.toNamed(Routes.deviceList),
-          child: const Icon(CupertinoIcons.globe, size: 19),
-        ),
-        const SizedBox(width: 12),
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
-          onPressed: () => Get.toNamed(Routes.addDevice),
-          child: const Icon(CupertinoIcons.add_circled, size: 19),
+        SizedBox(
+          width: 65,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _topNavAction(
+                icon: CupertinoIcons.globe,
+                onPressed: () {
+                  if (!_requireLogin()) return;
+                  Get.toNamed(Routes.deviceList);
+                },
+              ),
+              _topNavAction(
+                icon: CupertinoIcons.add_circled,
+                onPressed: () {
+                  if (!_requireLogin()) return;
+                  Get.toNamed(Routes.addDevice);
+                },
+              ),
+            ],
+          ),
         ),
       ],
       // 刷新/加载的反馈统一由 AppRefreshControl 展示（与消息页保持一致）：
@@ -47,15 +56,26 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
+  Widget _topNavAction({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(32, 32),
+      onPressed: onPressed,
+      child: Icon(icon, size: 19),
+    );
+  }
+
   Widget _buildHomeContent(BuildContext context) {
     final device = controller.selectedDevice.value;
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        AppRefreshControl(onRefresh: controller.loadDeviceList),
+        if (controller.isLoggedIn.value)
+          AppRefreshControl(onRefresh: controller.loadDeviceList),
         SliverPadding(
-          // 服务中心为页面最后一个模块，需与底部导航栏保留一段可见间距，
-          // 避免模块底部紧贴/被导航栏「吃掉」空白。
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
@@ -75,15 +95,15 @@ class HomeView extends GetView<HomeController> {
     final isLoggedIn = controller.isLoggedIn.value;
     final title = isLoggedIn
         ? (device?.deviceName?.isNotEmpty == true
-            ? device!.deviceName!
-            : device?.plateNo?.isNotEmpty == true
-                ? device!.plateNo!
-                : device?.deviceNo?.isNotEmpty == true
-                    ? device!.deviceNo!
-                    : '暂无设备')
-        : '暂未登录';
+              ? device!.deviceName!
+              : device?.plateNo?.isNotEmpty == true
+              ? device!.plateNo!
+              : device?.deviceNo?.isNotEmpty == true
+              ? device!.deviceNo!
+              : '暂无设备')
+        : '点击登录';
     return ReferenceCard(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: EdgeInsets.fromLTRB(16, 12, isLoggedIn ? 8 : 16, 12),
       child: Row(
         children: [
           Container(
@@ -116,14 +136,16 @@ class HomeView extends GetView<HomeController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '当前车辆',
-                    style: TextStyle(
-                      color: AppColors.secondaryText,
-                      fontSize: 12,
+                  if (isLoggedIn) ...[
+                    const Text(
+                      '当前车辆',
+                      style: TextStyle(
+                        color: AppColors.secondaryText,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
+                    const SizedBox(height: 3),
+                  ],
                   Row(
                     children: [
                       // 用 Flexible（松约束）而非 Expanded（紧约束）：
@@ -154,15 +176,16 @@ class HomeView extends GetView<HomeController> {
               ),
             ),
           ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: controller.refreshAll,
-            child: const Icon(
-              CupertinoIcons.refresh_circled,
-              color: AppColors.primary,
-              size: 24,
+          if (isLoggedIn)
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: controller.refreshAll,
+              child: const Icon(
+                CupertinoIcons.refresh_circled,
+                color: AppColors.primary,
+                size: 24,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -201,10 +224,7 @@ class HomeView extends GetView<HomeController> {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: statusColor,
-          ),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: statusColor),
         ),
         const SizedBox(width: 6),
         Text(
@@ -237,7 +257,11 @@ class HomeView extends GetView<HomeController> {
     final battery = (detail?.status.batteryPercent ?? 0)
         .clamp(0, 100)
         .toDouble();
-    final online = detail?.isOnline == true || device?.isOnline == true;
+    // 选中设备离线时，即使详情数据尚未刷新，也不能显示为在线。
+    final online = device?.isOnline == true && detail?.isOnline != false;
+    // 未登录、暂无设备或设备离线时，定位相关数据统一以设备状态的深灰色展示。
+    final hasOnlineDevice = controller.isLoggedIn.value && device != null && online;
+    final inactiveColor = AppColors.secondaryText;
     // 最后定位：按接口返回的最后更新时间做相对展示
     // （刚刚 / x分钟前 / x小时前 / x天前 / x个月前 / x年前）；
     // 接口没给时间但有定位时才兜底为「刚刚」。
@@ -254,21 +278,26 @@ class HomeView extends GetView<HomeController> {
             CupertinoIcons.battery_full,
             '电量',
             '${battery.toStringAsFixed(0)}%',
-            AppColors.success,
+            hasOnlineDevice ? AppColors.success : inactiveColor,
           ),
           _infoItem(
             CupertinoIcons.bolt_fill,
             '电压',
             '${(detail?.status.voltage ?? 0).toStringAsFixed(1)}V',
-            AppColors.warning,
+            hasOnlineDevice ? AppColors.warning : inactiveColor,
           ),
           _infoItem(
             CupertinoIcons.wifi,
             '设备状态',
             online ? '在线' : '离线',
-            online ? AppColors.success : AppColors.secondaryText,
+            online ? AppColors.success : inactiveColor,
           ),
-          _infoItem(CupertinoIcons.time, '最后定位', lastLoc, AppColors.primary),
+          _infoItem(
+            CupertinoIcons.time,
+            '最后定位',
+            lastLoc,
+            hasOnlineDevice ? AppColors.primary : inactiveColor,
+          ),
         ],
       ),
     );
@@ -280,44 +309,44 @@ class HomeView extends GetView<HomeController> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.secondaryText,
-                fontSize: 12,
-              ),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 12,
             ),
-            const SizedBox(height: 3),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildLocationCard() {
     final device = controller.selectedDevice.value;
+    final isLoggedIn = controller.isLoggedIn.value;
     final hasDeviceMarker =
-        device != null && controller.devicePosition.value != null;
-    // 有设备：仅展示选中设备的位置；暂无设备：展示用户当前位置（带 marker）。
-    // 既无设备位置、也没拿到「我的位置」时为 null：此时不渲染地图，
-    // 避免用默认坐标（北京）兜底。
+        isLoggedIn && device != null && controller.devicePosition.value != null;
+    final shouldShowUserLocation = !isLoggedIn || device == null;
+    // 未登录或暂无设备时展示手机当前位置；已登录且有设备时只展示车辆位置。
     final point = hasDeviceMarker
         ? controller.devicePosition.value!
-        : (controller.hasUserLocation.value
-            ? controller.currentPosition.value
-            : null);
+        : (shouldShowUserLocation && controller.hasUserLocation.value
+              ? controller.currentPosition.value
+              : null);
     return ReferenceCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -331,7 +360,10 @@ class HomeView extends GetView<HomeController> {
             child: SectionTitle(
               '车辆定位',
               action: '刷新位置',
-              onTap: controller.refreshAll,
+              onTap: () {
+                if (!_requireLogin()) return;
+                controller.refreshAll();
+              },
             ),
           ),
           SizedBox(
@@ -349,32 +381,26 @@ class HomeView extends GetView<HomeController> {
                       // 刷新反馈统一由 AppRefreshControl 展示（与消息页一致），
                       // 此处不再叠加地图内的第二个指示器。
                       isLoading: false,
-                errMsg: _positionMessage(),
-                latitude: point.latitude,
-                longitude: point.longitude,
-                mapController: controller.mapController,
-                initialZoom: 15,
-                clusterMarkers: false,
-                markers: [
-                  Marker(
-                    width: 36,
-                    height: 36,
-                    point: point,
-                    child: hasDeviceMarker
-                        ? Image.asset(
-                            deviceIconPath(
-                              online: device.isOnline,
-                              carType: device.carType,
-                            ),
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.contain,
-                            gaplessPlayback: true,
-                          )
-                        : _myLocationMarker(),
-                  ),
-                ],
-              ),
+                      errMsg: _positionMessage(),
+                      latitude: point.latitude,
+                      longitude: point.longitude,
+                      mapController: controller.mapController,
+                      initialZoom: 15,
+                      clusterMarkers: false,
+                      markers: [
+                        Marker(
+                          // 定位点与车标中心重合；名称气泡只向上延伸，
+                          // 不再因整个标记以底部为锚点而把车标顶偏。
+                          width: 144,
+                          height: 88,
+                          alignment: Alignment.center,
+                          point: point,
+                          child: hasDeviceMarker
+                              ? _deviceLocationMarker(device)
+                              : _myLocationMarker(),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -390,19 +416,24 @@ class HomeView extends GetView<HomeController> {
           SectionTitle(
             '轨迹记录',
             action: '更多轨迹',
-            onTap: device == null
-                ? () => AppToast.show('提示', '暂无可查看的设备')
-                : () => Get.toNamed(
-                    Routes.playback,
-                    arguments: PlaybackRouteArgs(
-                      device,
-                      startTime: _todayStart(),
-                      endTime: DateTime.now(),
-                      // 带上已获取的原始坐标：回放页首帧即可居中到车辆位置。
-                      latitude: controller.deviceRawPosition.value?.latitude,
-                      longitude: controller.deviceRawPosition.value?.longitude,
-                    ),
-                  ),
+            onTap: () {
+              if (!_requireLogin()) return;
+              if (device == null) {
+                AppToast.show('提示', '暂无可查看的设备');
+                return;
+              }
+              Get.toNamed(
+                Routes.playback,
+                arguments: PlaybackRouteArgs(
+                  device,
+                  startTime: _todayStart(),
+                  endTime: DateTime.now(),
+                  // 带上已获取的原始坐标：回放页首帧即可居中到车辆位置。
+                  latitude: controller.deviceRawPosition.value?.latitude,
+                  longitude: controller.deviceRawPosition.value?.longitude,
+                ),
+              );
+            },
           ),
           // 与「服务中心」模块保持一致：标题与内容间距 10。
           const SizedBox(height: 10),
@@ -449,43 +480,56 @@ class HomeView extends GetView<HomeController> {
                 icon: CupertinoIcons.car_detailed,
                 assetName: 'car',
                 title: '设备详情',
-                onTap: device == null
-                    ? () => AppToast.show('提示', '暂无可查看的设备')
-                    : () => Get.toNamed(
-                        Routes.detail,
-                        arguments: DeviceRouteArgs(
-                          device,
-                          // 带上已获取的原始坐标：详情页首帧即可居中到车辆位置。
-                          latitude: controller.deviceRawPosition.value?.latitude,
-                          longitude: controller.deviceRawPosition.value
-                              ?.longitude,
-                        ),
-                      ),
+                onTap: () {
+                  if (!_requireLogin()) return;
+                  if (device == null) {
+                    AppToast.show('提示', '暂无可查看的设备');
+                    return;
+                  }
+                  Get.toNamed(
+                    Routes.detail,
+                    arguments: DeviceRouteArgs(
+                      device,
+                      // 带上已获取的原始坐标：详情页首帧即可居中到车辆位置。
+                      latitude: controller.deviceRawPosition.value?.latitude,
+                      longitude: controller.deviceRawPosition.value?.longitude,
+                    ),
+                  );
+                },
               ),
               FeatureTile(
                 icon: CupertinoIcons.chat_bubble_2,
                 assetName: 'msg',
                 title: '在线客服',
                 color: AppColors.primary,
-                onTap: () => LegalLinks.showCustomerService(context),
+                onTap: () {
+                  if (!_requireLogin()) return;
+                  LegalLinks.showCustomerService(context);
+                },
               ),
               FeatureTile(
                 icon: CupertinoIcons.location,
                 assetName: 'pos',
                 title: '一键寻车',
                 color: AppColors.success,
-                onTap: () => _startFindCarForDevice(
-                  context,
-                  device,
-                  controller.devicePosition.value,
-                ),
+                onTap: () {
+                  if (!_requireLogin()) return;
+                  _startFindCarForDevice(
+                    context,
+                    device,
+                    controller.devicePosition.value,
+                  );
+                },
               ),
               FeatureTile(
                 icon: CupertinoIcons.delete,
                 assetName: 'del',
                 title: '删除设备',
                 color: AppColors.danger,
-                onTap: () => _confirmDeleteDevice(context),
+                onTap: () {
+                  if (!_requireLogin()) return;
+                  _confirmDeleteDevice(context);
+                },
               ),
             ],
           ),
@@ -527,9 +571,18 @@ class HomeView extends GetView<HomeController> {
     if (confirmed == true) await controller.deleteDevice(device);
   }
 
+  bool _requireLogin() {
+    if (controller.isLoggedIn.value) return true;
+    AppToast.show('提示', '请去登录');
+    return false;
+  }
+
   String _positionMessage() {
-    // 暂无设备时地图展示用户当前位置（含 marker），不再提示「暂无车辆定位数据」。
-    if (controller.selectedDevice.value == null) return '';
+    // 未登录或暂无设备时地图展示用户当前位置，不显示车辆定位错误。
+    if (!controller.isLoggedIn.value ||
+        controller.selectedDevice.value == null) {
+      return '';
+    }
     switch (controller.positionState.value) {
       case 'empty':
         return '暂无车辆定位数据';
@@ -542,19 +595,68 @@ class HomeView extends GetView<HomeController> {
     }
   }
 
-  /// 暂无设备时，地图中心展示的用户当前位置标记（蓝点 + 定位图标）。
-  Widget _myLocationMarker() {
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBlue.withValues(alpha: .25),
-        shape: BoxShape.circle,
-        border: Border.all(color: CupertinoColors.systemBlue, width: 2),
-      ),
-      child: const Icon(
-        CupertinoIcons.location_fill,
-        color: CupertinoColors.systemBlue,
-        size: 18,
-      ),
+  /// 未登录或暂无设备时，地图中心展示的小尺寸用户当前位置图钉。
+  Widget _myLocationMarker() => _mapMarker(
+    label: '您的位置',
+    icon: const Icon(
+      CupertinoIcons.location_solid,
+      color: CupertinoColors.systemBlue,
+      size: 24,
+    ),
+  );
+
+  Widget _deviceLocationMarker(DeviceModel device) => _mapMarker(
+    label: _deviceLocationLabel(device),
+    icon: Image.asset(
+      deviceIconPath(online: device.isOnline, carType: device.carType),
+      width: 32,
+      height: 32,
+      fit: BoxFit.contain,
+      gaplessPlayback: true,
+    ),
+  );
+
+  String _deviceLocationLabel(DeviceModel device) {
+    for (final value in [device.deviceName, device.plateNo, device.deviceNo]) {
+      final label = value?.trim() ?? '';
+      if (label.isNotEmpty) return label;
+    }
+    return '当前设备';
+  }
+
+  Widget _mapMarker({required String label, required Widget icon}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          constraints: const BoxConstraints(maxWidth: 128),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: CupertinoColors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0x1A000000)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        icon,
+      ],
     );
   }
 }

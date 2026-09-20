@@ -128,23 +128,11 @@ class ProfileView extends GetView<ProfileController> {
     return ReferenceCard(
       child: Column(
         children: [
-          const Icon(
-            CupertinoIcons.lock_open,
-            color: AppColors.primary,
-            size: 34,
-          ),
+          const Icon(CupertinoIcons.lock, color: AppColors.primary, size: 34),
           const SizedBox(height: 10),
           const Text(
             '登录后查看我的车辆',
             style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: CupertinoButton.filled(
-              onPressed: _goLogin,
-              child: const Text('立即登录'),
-            ),
           ),
         ],
       ),

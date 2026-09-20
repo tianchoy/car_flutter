@@ -87,13 +87,20 @@ class LegalLinks {
         title: Text(title),
         content: SizedBox(
           height: MediaQuery.sizeOf(dialogContext).height * .55,
-          child: SingleChildScrollView(
-            child: Text(
-              content,
-              style: const TextStyle(
-                color: AppColors.text,
-                fontSize: 14,
-                height: 1.55,
+          child: Align(
+            alignment: AlignmentDirectional.topStart,
+            child: SingleChildScrollView(
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  content,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 14,
+                    height: 1.55,
+                  ),
+                ),
               ),
             ),
           ),

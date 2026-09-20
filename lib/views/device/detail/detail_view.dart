@@ -255,8 +255,10 @@ class DetailView extends GetView<DetailController> {
               ),
               Text(
                 controller.mapPosition == null ? '暂无定位' : '已定位',
-                style: const TextStyle(
-                  color: AppColors.secondaryText,
+                style: TextStyle(
+                  color: controller.mapPosition == null
+                      ? AppColors.text
+                      : AppColors.success,
                   fontSize: 12,
                 ),
               ),
@@ -307,6 +309,8 @@ class DetailView extends GetView<DetailController> {
       );
 
   Widget _buildStatusCard(DeviceDetailModel detail) {
+    final hasOnlineDevice = controller.isOnline;
+    final inactiveColor = AppColors.secondaryText;
     return ReferenceCard(
       child: Column(
         children: [
@@ -319,26 +323,25 @@ class DetailView extends GetView<DetailController> {
                 CupertinoIcons.wifi,
                 '信号',
                 controller.signalStrength,
-                // 与首页「设备状态（在线）」图标一致，统一用绿色。
-                AppColors.success,
+                hasOnlineDevice ? AppColors.success : inactiveColor,
               ),
               _statusItem(
                 CupertinoIcons.location,
                 '卫星',
                 controller.satelliteCount,
-                AppColors.primaryDark,
+                hasOnlineDevice ? AppColors.primaryDark : inactiveColor,
               ),
               _statusItem(
                 CupertinoIcons.bolt_fill,
                 '电压',
                 '${controller.voltage}V',
-                AppColors.warning,
+                hasOnlineDevice ? AppColors.warning : inactiveColor,
               ),
               _statusItem(
                 CupertinoIcons.battery_full,
                 '电量',
                 '${controller.batteryPercent}%',
-                AppColors.success,
+                hasOnlineDevice ? AppColors.success : inactiveColor,
               ),
             ],
           ),
@@ -352,7 +355,10 @@ class DetailView extends GetView<DetailController> {
         children: [
           Icon(icon, color: color),
           const SizedBox(height: 5),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: TextStyle(color: color, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 2),
           Text(
             label,
