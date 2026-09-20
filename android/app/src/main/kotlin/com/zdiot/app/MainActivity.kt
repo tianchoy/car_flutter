@@ -1,4 +1,4 @@
-package uni.app.UNI662B0B4
+package com.zdiot.app
 
 import io.flutter.embedding.android.FlutterActivity
 

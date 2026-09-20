@@ -13,7 +13,7 @@ class AppConfig {
   static const String tenantId = '000000';
   /// Android 应用 ID：与 android/app/build.gradle.kts 的 applicationId 保持一致，
   /// 用于地图 SDK 的 userAgent（高德/腾讯地图要求传应用包名）。
-  static const String androidPackageName = 'uni.app.UNI662B0B4';
+  static const String androidPackageName = 'com.zdiot.app';
 
   /// 展示在「个人中心」等处的软件名称（品牌名，不随发版变化，保留在代码里）。
   static const String appName = '中导物联';

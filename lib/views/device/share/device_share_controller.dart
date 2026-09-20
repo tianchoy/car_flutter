@@ -132,7 +132,7 @@ class DeviceShareController extends GetxController {
       final response = await _repository.createShare(<String, dynamic>{
         'deviceId': deviceId,
         'targetPhone': phone,
-        'role': 'view',
+        'roleName': 'view',
         if (expire != null)
           'expireTime':
               DateTime(

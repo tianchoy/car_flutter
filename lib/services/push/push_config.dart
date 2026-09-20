@@ -13,7 +13,11 @@ class PushConfig {
   PushConfig._();
 
   /// JPush 应用 AppKey（Android / iOS 共用同一个极光应用）。
-  static const String appKey = 'a53c28d734057573f67e16f7';
+  ///
+  /// 该 AppKey 在极光控制台绑定包名 `com.zdiot.app`；若再次更换包名，必须先在
+  /// 极光控制台登记新包名并取新 AppKey，再同步修改此处与
+  /// `android/app/build.gradle.kts` 的 `manifestPlaceholders["JPUSH_APPKEY"]`。
+  static const String appKey = '0ee065e1a4024ce1801fa6d3';
 
   /// 下发渠道，沿用原工程的 `developer-default`。
   static const String channel = 'developer-default';

@@ -30,7 +30,7 @@ class DetailView extends GetView<DetailController> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () => _showRefreshOptions(context),
-              child: const Icon(CupertinoIcons.refresh_circled, size: 19),
+              child: const Icon(CupertinoIcons.timer, size: 19),
             ),
           ],
           body: Obx(
@@ -89,10 +89,10 @@ class DetailView extends GetView<DetailController> {
     final title = controller.device?.deviceName?.isNotEmpty == true
         ? controller.device!.deviceName!
         : controller.device?.plateNo?.isNotEmpty == true
-            ? controller.device!.plateNo!
-            : controller.device?.deviceNo?.isNotEmpty == true
-                ? controller.device!.deviceNo!
-                : '当前车辆';
+        ? controller.device!.plateNo!
+        : controller.device?.deviceNo?.isNotEmpty == true
+        ? controller.device!.deviceNo!
+        : '当前车辆';
     return ReferenceCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -115,7 +115,7 @@ class DetailView extends GetView<DetailController> {
                             longitude: point.longitude,
                             mapController: controller.mapController,
                             onMapReady: controller.handleMapReady,
-                            initialZoom: 14,
+                            initialZoom: 15,
                             clusterMarkers: false,
                             isLoading: controller.isRefreshing.value,
                             errMsg: controller.errorMessage.value,
@@ -253,27 +253,27 @@ class DetailView extends GetView<DetailController> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              if (controller.refreshIntervalSeconds.value > 0)
-                Text(
-                  '${controller.refreshIntervalSeconds.value}s 自动刷新',
-                  style: const TextStyle(
-                    color: AppColors.secondaryText,
-                    fontSize: 11,
-                  ),
+              Text(
+                controller.mapPosition == null ? '暂无定位' : '已定位',
+                style: const TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 12,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          // 通信时间靠左、当前位置靠右，同一行两端对齐
+          // 通信时间靠左、定位时间靠右，同一行两端对齐。
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(child: _infoItem('通信时间', controller.positionUpdateTime)),
-              _infoItem(
-                '当前位置',
-                controller.mapPosition == null ? '暂无' : '已定位',
-                alignRight: true,
+              Expanded(child: _infoItem('通信时间', controller.communicationTime)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _infoItem(
+                  '定位时间',
+                  controller.locationTime,
+                  alignRight: true,
+                ),
               ),
             ],
           ),

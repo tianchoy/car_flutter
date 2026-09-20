@@ -16,7 +16,7 @@ Flutter 工程（`car_flutter`）的推送实现，行为对齐 uni-app X 源工
 
 | 项 | 位置 | 值 |
 | --- | --- | --- |
-| AppKey（Dart） | `lib/services/push/push_config.dart` | `a53c28d734057573f67e16f7` |
+| AppKey（Dart） | `lib/services/push/push_config.dart` | `0ee065e1a4024ce1801fa6d3`（Android / iOS 共用） |
 | Channel | `lib/services/push/push_config.dart` | `developer-default` |
 | AppKey（Android） | `android/app/build.gradle.kts` → `manifestPlaceholders["JPUSH_APPKEY"]` | 同上 |
 | Android Manifest | `android/app/src/main/AndroidManifest.xml` | `JPUSH_APPKEY` / `JPUSH_CHANNEL` meta-data |
@@ -25,7 +25,11 @@ Flutter 工程（`car_flutter`）的推送实现，行为对齐 uni-app X 源工
 | iOS 推送能力 | `ios/Runner/Runner.entitlements` + `project.pbxproj` 的 `SystemCapabilities` | `aps-environment = production` |
 
 Android 端 JPush SDK 从 Manifest 的 meta-data 读取 AppKey，因此 Dart 侧传空串
-（`PushConfig.setupAppKey`），避免两处配置不一致；iOS 由 Dart 传入。
+（`PushConfig.setupAppKey`）；iOS 由 Dart 传入。
+
+Channel 不同：插件在 `setup()` 里对两端都调用 `JPushInterface.setChannel(context, channel)`，
+所以 Android 运行时以 Dart 的 `PushConfig.channel` 为准，Manifest 的 `JPUSH_CHANNEL`
+只是初始值。改渠道号只需改 `push_config.dart` 一处。
 
 ## 3. 代码结构
 
@@ -103,10 +107,13 @@ POST /app/push/bind
 
 ## 7. 待确认事项
 
-1. **包名 / Bundle ID（已确认）**：Android 包名与 iOS Bundle ID 均为
-   `uni.app.UNI662B0B4`（见 `docs/packaging.md`），与极光 AppKey
-   `a53c28d734057573f67e16f7` 在极光控制台绑定。若更换包名，必须先在极光控制台登记，否则两端收不到推送。
-2. **iOS APNs 证书**：`uni.app.UNI662B0B4` 的生产环境 APNs 推送证书需已上传到极光控制台。
+1. **包名 / Bundle ID（已确认）**：Android 包名与 iOS Bundle ID 均已统一为 `com.zdiot.app`
+   （见 `docs/packaging.md`），极光 AppKey `0ee065e1a4024ce1801fa6d3`（Android / iOS 共用）
+   已在极光控制台绑定到该包名。再次换包名时必须先在极光控制台登记新包名，并同步修改
+   `lib/services/push/push_config.dart` 与 `android/app/build.gradle.kts` 两处 AppKey，
+   否则两端收不到推送。
+2. **iOS APNs 证书**：`com.zdiot.app` 的生产环境 APNs 推送证书需已上传到极光控制台
+   （旧 Bundle ID 的证书不可复用，需按新 Bundle ID 重新生成 Push 证书 / p8）。
 3. **厂商通道**：源工程 Android 启用了华为厂商通道（`jg-jpush-u-huawei`），本 Flutter 工程
    只接入了 JPush 核心 SDK，未接入华为/小米/OPPO/vivo 等厂商通道；如需提升离线送达率，
    需在 `android/app/build.gradle.kts` 增加对应厂商依赖并在极光控制台配置。

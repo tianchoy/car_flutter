@@ -73,11 +73,13 @@ class DetailController extends GetxController {
     return transformToGCJ02(rawLongitude, rawLatitude);
   }
 
-  String get positionUpdateTime =>
-      _stringFromPosition('positionUpdateTime') ??
-      _stringFromPosition('lastUpdateTime') ??
-      detail.value?.lastUpdateTime ??
-      '暂无位置';
+  /// 设备与平台最近一次通信时间。
+  String get communicationTime =>
+      _stringFromPosition('signalUpdateTime') ?? '暂无通信时间';
+
+  /// 设备最近一次有效定位的上报时间。
+  String get locationTime =>
+      _stringFromPosition('positionUpdateTime') ?? '暂无定位时间';
 
   String get signalStrength => _numberText(
     _attributeValue('rssi') ??

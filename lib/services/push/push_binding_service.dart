@@ -101,12 +101,23 @@ class PushBindingService {
   Future<void> _requestBind(String registrationId, String platform) async {
     Log.d('开始绑定推送设备，platform=$platform');
     try {
-      final response = await _apiService.bindPushDevice(<String, dynamic>{
+      final deviceName = await _deviceName();
+      // 与登录/短信等接口保持一致，body 带上 tenantId（其它接口都传，bind 之前漏了，
+      // 后端若按 body 取租户可能 NPE 导致 500）。
+      final body = <String, dynamic>{
         'registrationId': registrationId,
         'platform': platform,
-        'deviceName': await _deviceName(),
+        'deviceName': deviceName,
         'appVersion': AppConfig.appVersion,
-      });
+        'tenantId': AppConfig.tenantId,
+      };
+      // 调试用：RegistrationID 属隐私不打印，其余字段全打，便于和 uniapp 联调时的请求体核对。
+      Log.d(
+        '绑定请求体: platform=$platform, deviceName=$deviceName, '
+        'appVersion=${AppConfig.appVersion}, tenantId=${AppConfig.tenantId}',
+      );
+      final response = await _apiService.bindPushDevice(body);
+      Log.d('绑定响应原文: ${response.data}');
       final result = ApiResponse<Object?>.fromJson(response.data);
       if (result.isSuccess) {
         _boundSessionKey = _bindingSessionKey;

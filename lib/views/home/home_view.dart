@@ -353,7 +353,7 @@ class HomeView extends GetView<HomeController> {
                 latitude: point.latitude,
                 longitude: point.longitude,
                 mapController: controller.mapController,
-                initialZoom: 14,
+                initialZoom: 15,
                 clusterMarkers: false,
                 markers: [
                   Marker(

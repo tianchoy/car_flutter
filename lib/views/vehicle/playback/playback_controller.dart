@@ -439,33 +439,14 @@ class PlaybackController extends GetxController
 
   void _fitTrack() {
     if (points.isEmpty) return;
-    double minLat = points.first.latitude;
-    double maxLat = points.first.latitude;
-    double minLng = points.first.longitude;
-    double maxLng = points.first.longitude;
-    for (final point in points) {
-      minLat = minLat < point.latitude ? minLat : point.latitude;
-      maxLat = maxLat > point.latitude ? maxLat : point.latitude;
-      minLng = minLng < point.longitude ? minLng : point.longitude;
-      maxLng = maxLng > point.longitude ? maxLng : point.longitude;
-    }
-    final latDiff = maxLat - minLat;
-    final lngDiff = maxLng - minLng;
-    final maxDiff = latDiff > lngDiff ? latDiff : lngDiff;
-    double zoom;
-    if (maxDiff > 0.1) {
-      zoom = 10;
-    } else if (maxDiff > 0.05) {
-      zoom = 12;
-    } else if (maxDiff > 0.02) {
-      zoom = 15;
-    } else {
-      zoom = 16;
-    }
-    // The source centres the map on the first track point.
-    final target = points.first.latLng;
     try {
-      mapController.move(target, zoom);
+      final fit = CameraFit.coordinates(
+        coordinates: points.map((point) => point.latLng).toList(),
+        padding: const EdgeInsets.all(48),
+        maxZoom: 16,
+      );
+      final cam = fit.fit(mapController.camera);
+      mapController.move(cam.center, cam.zoom);
     } catch (_) {
       // Map is not attached yet.
     }

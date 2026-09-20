@@ -38,15 +38,16 @@ class DeviceShareView extends GetView<DeviceShareController> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        AppRefreshControl(
-          onRefresh: () => controller.loadShares(reset: true),
-        ),
+        AppRefreshControl(onRefresh: () => controller.loadShares(reset: true)),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildForm(context),
-              SectionTitle('我发起的分享', action: '${controller.totalCount.value} 条'),
+              SectionTitle(
+                '我发起的分享',
+                action: '${controller.totalCount.value} 条',
+              ),
               const SizedBox(height: 8),
               if (controller.shares.isEmpty && !controller.isLoadingMore.value)
                 ReferenceCard(
@@ -130,11 +131,16 @@ class DeviceShareView extends GetView<DeviceShareController> {
                   ? null
                   : controller.createShare,
               child: controller.isSubmitting.value
-                  ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                  ? const CupertinoActivityIndicator(
+                      color: CupertinoColors.white,
+                    )
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(CupertinoIcons.share, color: CupertinoColors.white),
+                        Icon(
+                          CupertinoIcons.share,
+                          color: CupertinoColors.white,
+                        ),
                         SizedBox(width: 8),
                         Text('确认分享'),
                       ],
@@ -196,7 +202,7 @@ class DeviceShareView extends GetView<DeviceShareController> {
             child: ColoredBox(color: AppColors.divider),
           ),
           const SizedBox(height: 8),
-          _detailRow('角色', stringValue(share['role'], fallback: 'view')),
+          _detailRow('角色', stringValue(share['roleName'], fallback: 'view')),
           _detailRow('分享时间', controller.formatTime(share['shareTime'])),
           _detailRow(
             '到期时间',

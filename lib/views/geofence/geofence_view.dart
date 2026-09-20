@@ -155,6 +155,7 @@ class GeofenceView extends GetView<GeofenceController> {
       initialZoom: 12,
       mapController: controller.mapController,
       clusterMarkers: false,
+      fitToBounds: true,
       polygons: controller.polygons,
       circles: controller.circles,
       markers: controller.mapMarkers,

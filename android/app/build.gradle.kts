@@ -17,7 +17,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "uni.app.UNI662B0B4"
+    namespace = "com.zdiot.app"
     // permission_handler_android 要求 compileSdk >= 37；AGP 9.0 会给出推荐值 36 的
     // 警告，但 37 可正常编译，因此保持在 37。
     compileSdk = 37
@@ -41,10 +41,10 @@ android {
     }
 
     defaultConfig {
-        // 与 uni-app X 离线工程（car/app/build.gradle）保持一致的包名：
+        // 统一包名 com.zdiot.app：
         // - 极光推送 AppKey 与包名一一对应，改包名必须同步在极光控制台登记；
-        // - 沿用线上包名，保证覆盖安装与第三方 SDK（厂商推送等）配置一致。
-        val appId = "uni.app.UNI662B0B4"
+        // - 换包名后无法覆盖安装旧包（旧包 uni.app.UNI662B0B4 需单独卸载）。
+        val appId = "com.zdiot.app"
         applicationId = appId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -55,7 +55,8 @@ android {
         versionName = flutter.versionName
 
         manifestPlaceholders["JPUSH_PKGNAME"] = appId
-        manifestPlaceholders["JPUSH_APPKEY"] = "a53c28d734057573f67e16f7"
+        // AppKey 需与 lib/services/push/push_config.dart 的 appKey 保持一致（两端共用）。
+        manifestPlaceholders["JPUSH_APPKEY"] = "0ee065e1a4024ce1801fa6d3"
         manifestPlaceholders["JPUSH_CHANNEL"] = "developer-default"
     }
 

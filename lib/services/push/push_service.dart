@@ -92,6 +92,9 @@ class PushService {
       if (Platform.isAndroid) {
         // Android 13+ 需要 POST_NOTIFICATIONS 才能弹出通知。
         _jpush.requestRequiredPermission();
+      } else if (Platform.isIOS) {
+        // iOS 不会自动弹框，必须显式申请通知权限（系统只弹一次，拒绝后只能去设置页开启）。
+        _jpush.applyPushAuthority();
       }
     } catch (error, stackTrace) {
       Log.e('初始化 JPush 失败', error: error, stackTrace: stackTrace);

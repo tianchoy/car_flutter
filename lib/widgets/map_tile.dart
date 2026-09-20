@@ -20,6 +20,14 @@ class MapTile extends StatelessWidget {
   final List<Polygon> polygons;
   final List<Polyline> polylines;
   final bool clusterMarkers;
+
+  /// 进入地图时是否依据传入的标记/图形自动计算缩放，使内容完整可见。
+  /// 仅在点数 >= 2 时生效，否则回退到 [initialZoom]。
+  final bool fitToBounds;
+
+  /// 自适应缩放允许的最大层级，避免少量邻近点被放大到街道级。
+  final double maxFitZoom;
+
   final void Function(LatLng)? onMapTap;
   final VoidCallback? onMapReady;
 
@@ -37,6 +45,8 @@ class MapTile extends StatelessWidget {
     this.polygons = const [],
     this.polylines = const [],
     this.clusterMarkers = true,
+    this.fitToBounds = false,
+    this.maxFitZoom = 16,
     this.onMapTap,
     this.onMapReady,
   });
@@ -59,7 +69,21 @@ class MapTile extends StatelessWidget {
                   InteractiveFlag.doubleTapZoom,
             ),
             onTap: onMapTap != null ? (_, point) => onMapTap!(point) : null,
-            onMapReady: onMapReady,
+            onMapReady: () {
+              onMapReady?.call();
+              if (fitToBounds && mapController != null) {
+                final pts = _collectPoints();
+                if (pts.length >= 2) {
+                  final fit = CameraFit.coordinates(
+                    coordinates: pts,
+                    padding: const EdgeInsets.all(48),
+                    maxZoom: maxFitZoom,
+                  );
+                  final cam = fit.fit(mapController!.camera);
+                  mapController!.move(cam.center, cam.zoom);
+                }
+              }
+            },
           ),
           children: [
             TileLayer(
@@ -105,6 +129,16 @@ class MapTile extends StatelessWidget {
         if (errMsg.isNotEmpty) MapInfoHint(message: errMsg),
       ],
     );
+  }
+
+  List<LatLng> _collectPoints() {
+    final pts = <LatLng>[];
+    for (final m in markers) pts.add(m.point);
+    for (final m in regularMarkers) pts.add(m.point);
+    for (final p in polygons) pts.addAll(p.points);
+    for (final c in circles) pts.add(c.point);
+    for (final p in polylines) pts.addAll(p.points);
+    return pts;
   }
 
   Widget _buildClusterMarker(BuildContext context, List<Marker> markers) {

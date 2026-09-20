@@ -8,7 +8,7 @@
 | 项 | 值 |
 | --- | --- |
 | 应用名称 | 中导物联 |
-| Android 包名 / iOS Bundle ID | `uni.app.UNI662B0B4` |
+| Android 包名 / iOS Bundle ID | `com.zdiot.app` |
 | 版本号 | `1.0.5` |
 | 构建号 | `105` |
 | 版本来源 | `pubspec.yaml` 的 `version: 1.0.5+105`（同时驱动 Android `versionName/versionCode` 与 iOS `CFBundleShortVersionString/CFBundleVersion`） |
@@ -61,15 +61,17 @@ flutter build appbundle --release
 
 | 参数 | 值 | 说明 |
 | --- | --- | --- |
-| `namespace` / `applicationId` | `uni.app.UNI662B0B4` | 与极光推送 AppKey 绑定 |
+| `namespace` / `applicationId` | `com.zdiot.app` | 与极光推送 AppKey 绑定 |
 | `minSdk` | `24` | 与源工程一致 |
 | `targetSdk` | `36` | 与源工程一致 |
 | `compileSdk` | `37` | `permission_handler` 要求 ≥37（AGP 9.0 会提示推荐 36，但可正常编译） |
 
 ### 2.4 极光推送占位符
 
-`manifestPlaceholders`：`JPUSH_PKGNAME` = applicationId、`JPUSH_APPKEY` = `a53c28d734057573f67e16f7`、`JPUSH_CHANNEL` = `developer-default`，
-并在 `AndroidManifest.xml` 注入 `JPUSH_APPKEY` / `JPUSH_CHANNEL` 的 meta-data。
+`manifestPlaceholders`：`JPUSH_PKGNAME` = applicationId（自动跟随新包名）、
+`JPUSH_APPKEY` = `0ee065e1a4024ce1801fa6d3`（需与 `push_config.dart` 的 `appKey` 一致）、
+`JPUSH_CHANNEL` = `developer-default`，并在 `AndroidManifest.xml`
+注入 `JPUSH_APPKEY` / `JPUSH_CHANNEL` 的 meta-data。
 
 ## 3. iOS
 
@@ -77,7 +79,7 @@ flutter build appbundle --release
 
 | 项 | 值 |
 | --- | --- |
-| Bundle ID | `uni.app.UNI662B0B4` |
+| Bundle ID | `com.zdiot.app` |
 | Team | `4JXH4CSXJ2` |
 | 签名方式 | Automatic（Xcode 自动管理证书与描述文件） |
 | Push 能力 | 已在 `project.pbxproj` 的 `SystemCapabilities` 开启 `com.apple.Push` |
@@ -110,8 +112,15 @@ flutter build ipa --export-options-plist=ios/ExportOptions.plist
 
 ## 4. 与推送的耦合（重要）
 
-- **包名即推送身份**：`uni.app.UNI662B0B4` 与极光 AppKey `a53c28d734057573f67e16f7`
-  在极光控制台一一绑定。若要换包名，必须先在极光控制台登记新包名，否则两端收不到推送。
+- **包名即推送身份**：包名已由 `uni.app.UNI662B0B4` 统一改为 `com.zdiot.app`，
+  极光 AppKey `0ee065e1a4024ce1801fa6d3`（Android / iOS 共用）已绑定到该包名。
+  今后若再换包名，必须先在极光控制台登记新包名，取得新 AppKey 后回填
+  `lib/services/push/push_config.dart`（iOS + Dart）与
+  `android/app/build.gradle.kts` 的 `manifestPlaceholders["JPUSH_APPKEY"]`（Android），
+  否则两端收不到推送；同时 iOS 需按新 Bundle ID 重新制作生产 APNs 证书并上传极光控制台。
+- **渠道号**：`JPUSH_CHANNEL` 仅为初始值，Android 运行时会被 Dart 的
+  `PushConfig.channel` 覆盖（插件 `setup()` 中调用 `setChannel`）；改渠道号只需改
+  `push_config.dart` 一处。
 - **iOS APNs 环境**：`lib/services/push/push_config.dart` 的 `iosProduction = true`，
   对应生产环境；打包时 `Runner.entitlements` 的 `aps-environment = production`。
 - 详见 `docs/jpush-integration.md`。
