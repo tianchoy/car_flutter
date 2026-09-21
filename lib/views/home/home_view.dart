@@ -313,14 +313,6 @@ class HomeView extends GetView<HomeController> {
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 6),
           Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -329,6 +321,14 @@ class HomeView extends GetView<HomeController> {
               color: color,
               fontSize: 13,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.secondaryText,
+              fontSize: 12,
             ),
           ),
         ],

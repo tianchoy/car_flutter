@@ -1,6 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
@@ -19,12 +22,7 @@ class TrackingView extends GetView<TrackingController> {
       body: ReferencePage(
         child: Stack(
           children: [
-            Column(
-              children: [
-                Expanded(child: _buildMap()),
-                _buildToolsPanel(),
-              ],
-            ),
+            Positioned.fill(child: _buildMap()),
             // 与地理围栏 / 设备详情 / 轨迹回放保持一致：地图顶部浮动显示
             // 设备名称 + 在线状态。
             Obx(
@@ -44,10 +42,65 @@ class TrackingView extends GetView<TrackingController> {
                 ),
               ),
             ),
+            // 开始/停止跟踪改为地图上的悬浮按钮（底部面板已移除）。
+            _buildTrackingFab(),
           ],
         ),
       ),
     );
+  }
+
+  /// 悬浮在地图右下角的跟踪开关：不再占用底部面板，地图可视区域最大化。
+  Widget _buildTrackingFab() {
+    return Obx(() {
+      final tracking = controller.isTracking.value;
+      final disabled = controller.isLoading.value;
+      return Positioned(
+        right: 16,
+        // 留出底部安全区（iOS Home Indicator）高度，避免被系统横线压住。
+        bottom: 28,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            minimumSize: Size.zero,
+            borderRadius: BorderRadius.circular(24),
+            color: tracking ? AppColors.danger : AppColors.primary,
+            onPressed: disabled ? null : controller.toggleTracking,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  tracking
+                      ? CupertinoIcons.stop_fill
+                      : CupertinoIcons.play_fill,
+                  size: 17,
+                  color: CupertinoColors.white,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  tracking ? '停止跟踪' : '开始跟踪',
+                  style: const TextStyle(
+                    color: CupertinoColors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildMap() {
@@ -77,10 +130,31 @@ class TrackingView extends GetView<TrackingController> {
         initialZoom: 15,
         mapController: controller.mapController,
         clusterMarkers: false,
-        markers: controller.markers,
+        markers: _mapMarkers(point),
         polylines: _routePolylines,
       );
     });
+  }
+
+  /// 车标 + 车标上方的时速气泡（底部面板移除后，时速改由地图气泡承载）。
+  List<Marker> _mapMarkers(LatLng point) {
+    final carMarkers = controller.markers;
+    // 车标尚未就绪（只有缓存中心）时不画气泡，避免气泡悬空。
+    if (carMarkers.isEmpty) return carMarkers;
+    return <Marker>[
+      ...carMarkers,
+      Marker(
+        point: point,
+        // 顶部对齐到车辆坐标：整个气泡框落在车标上方，不遮挡车标。
+        alignment: Alignment.topCenter,
+        width: 140,
+        height: 54,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: _SpeedBubble(speed: controller.speed.value),
+        ),
+      ),
+    ];
   }
 
   /// 与轨迹播放保持一致：已行驶=蓝色实线，未行驶=淡灰色虚线。
@@ -109,166 +183,93 @@ class TrackingView extends GetView<TrackingController> {
     }
     return polylines;
   }
+}
 
-  /// 底部面板仅展示时速、定位时间与跟踪开关；设备名称和在线状态已在地图顶部展示。
-  Widget _buildToolsPanel() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-      decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x16000000),
-            blurRadius: 12,
-            offset: Offset(0, -3),
+/// 车标上方的时速气泡：白底圆角 + 向下的小尖角，指向车标。
+class _SpeedBubble extends StatelessWidget {
+  const _SpeedBubble({required this.speed});
+
+  final double speed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          decoration: BoxDecoration(
+            color: CupertinoColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.divider),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 顶部小横条：与地理围栏的底部弹层一致，让面板更像「可拉起的抽屉」。
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Obx(
-            () => Row(
-              children: [
-                Expanded(
-                  child: _InfoItem(
-                    icon: CupertinoIcons.speedometer,
-                    label: '时速',
-                    value: '${controller.speed.value.toStringAsFixed(1)} km/h',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _InfoItem(
-                    icon: CupertinoIcons.time,
-                    label: '定位时间',
-                    value: controller.positionTime.value.isEmpty
-                        ? '暂无'
-                        : controller.positionTime.value,
-                    valueFontSize: 11,
-                    fitValueToSingleLine: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Obx(
-            () => SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: CupertinoButton(
-                padding: EdgeInsets.zero,
-                borderRadius: BorderRadius.circular(12),
-                color: controller.isTracking.value
-                    ? AppColors.danger
-                    : AppColors.primary,
-                onPressed: controller.isLoading.value
-                    ? null
-                    : controller.toggleTracking,
-                child: Text(
-                  controller.isTracking.value ? '停止跟踪' : '开始跟踪',
-                  style: const TextStyle(
-                    color: CupertinoColors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                CupertinoIcons.speedometer,
+                size: 13,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${speed.toStringAsFixed(0)} km/h',
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+        const _BubbleTail(),
+      ],
+    );
+  }
+}
+
+/// 气泡底部的小尖角：上移 3px 压住气泡下沿，避免出现接缝。
+class _BubbleTail extends StatelessWidget {
+  const _BubbleTail();
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: const Offset(0, -3),
+      child: const CustomPaint(
+        size: Size(10, 6),
+        painter: _BubbleTailPainter(),
       ),
     );
   }
 }
 
-class _InfoItem extends StatelessWidget {
-  const _InfoItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueFontSize = 13,
-    this.fitValueToSingleLine = false,
-  });
+class _BubbleTailPainter extends CustomPainter {
+  const _BubbleTailPainter();
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final double valueFontSize;
-  final bool fitValueToSingleLine;
+  // latlong2 也导出了 Path，这里用 ui. 前缀取 dart:ui 的绘制 Path。
+  @override
+  void paint(ui.Canvas canvas, ui.Size size) {
+    final paint = ui.Paint()
+      ..color = CupertinoColors.white
+      ..style = ui.PaintingStyle.fill;
+    final path = ui.Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final valueText = Text(
-      value,
-      maxLines: fitValueToSingleLine ? 1 : 2,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color: AppColors.text,
-        fontWeight: FontWeight.w700,
-        fontSize: valueFontSize,
-      ),
-    );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 16),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.secondaryText,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                if (fitValueToSingleLine)
-                  SizedBox(
-                    width: double.infinity,
-                    child: FittedBox(
-                      alignment: Alignment.centerLeft,
-                      fit: BoxFit.scaleDown,
-                      child: valueText,
-                    ),
-                  )
-                else
-                  valueText,
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  bool shouldRepaint(covariant _BubbleTailPainter oldDelegate) => false;
 }

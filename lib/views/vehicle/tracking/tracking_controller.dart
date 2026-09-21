@@ -30,7 +30,6 @@ class TrackingController extends GetxController
   final initialCenter = Rxn<LatLng>();
   final routePoints = <LatLng>[].obs;
   final speed = 0.0.obs;
-  final positionTime = ''.obs;
   final address = ''.obs;
   final connectionStatus = ''.obs;
   final isLoading = false.obs;
@@ -49,6 +48,8 @@ class TrackingController extends GetxController
   LatLng? _lastKnownPosition;
   // 最近一次成功取到「新位置」的本地时间，用于推算动画时长（≈设备上报间隔）。
   DateTime? _lastReceivedAt;
+  // 更新车头朝向所需的最小位移（米）：小于该值视为 GPS 漂移，保持原朝向。
+  static const double _minBearingDistanceMeters = 10;
   int _requestGeneration = 0;
   double _bearing = 0;
   double _targetBearing = 0;
@@ -288,28 +289,40 @@ class TrackingController extends GetxController
     _lastKnownPosition = next;
     unawaited(_cachePosition(next));
     final nextSpeed = nullableDoubleValue(data['speed']) ?? 0;
-    final direction =
-        nullableDoubleValue(
-          data['direction'] ?? data['course'] ?? data['heading'],
-        ) ??
-        (currentPosition.value == null
-            ? 0
-            : GeoUtils.bearingDegrees(currentPosition.value!, next));
+
+    final previous = currentPosition.value;
+    final distance = previous == null
+        ? 0.0
+        : GeoUtils.distanceMeters(previous, next);
+
+    // 车头朝向（0~360，正北为 0）：
+    // 1) 设备上报了方向且车辆确有移动（有速度或位移足够大）→ 用上报方向；
+    // 2) 设备未上报方向但位移足够大 → 用相邻点推算方位角；
+    // 3) 其余（静止/仅 GPS 漂移）→ 保持原朝向不动。
+    // 静止设备的漂移只有几米，用漂移方向推算会得到随机朝向，
+    // 导致车标歪着（安卓端漂移通常更大），这就是车标倾斜的根因。
+    final reportedDirection = nullableDoubleValue(
+      data['direction'] ?? data['course'] ?? data['heading'],
+    );
+    final hasMovement =
+        nextSpeed > 0.5 || distance >= _minBearingDistanceMeters;
+    final double resolvedDirection;
+    if (reportedDirection != null && hasMovement) {
+      resolvedDirection = reportedDirection;
+    } else if (reportedDirection == null &&
+        previous != null &&
+        distance >= _minBearingDistanceMeters) {
+      resolvedDirection = GeoUtils.bearingDegrees(previous, next);
+    } else {
+      resolvedDirection = _targetBearing;
+    }
 
     speed.value = nextSpeed;
-    positionTime.value =
-        (data['positionUpdateTime'] ??
-                data['deviceTime'] ??
-                data['gpsTime'] ??
-                data['time'] ??
-                '')
-            .toString();
     address.value = (data['address'] ?? data['location'] ?? '').toString();
     connectionStatus.value = (data['connectionStatus'] ?? data['status'] ?? '')
         .toString();
-    _targetBearing = (direction % 360 + 360) % 360;
+    _targetBearing = (resolvedDirection % 360 + 360) % 360;
 
-    final previous = currentPosition.value;
     if (previous == null || !animate) {
       _animationController.stop();
       currentPosition.value = next;
@@ -320,7 +333,6 @@ class TrackingController extends GetxController
       return;
     }
 
-    final distance = GeoUtils.distanceMeters(previous, next);
     // 与上一点几乎重合（设备重复上报）：仅更新上面已赋值的元数据即可，
     // 不重启动画、不重置计时，避免无意义的零距离重绘与闪烁。
     if (distance < 1) return;

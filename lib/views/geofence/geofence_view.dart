@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/app_bottom_sheet.dart';
+import 'package:car/widgets/map_bottom_drawer.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'geofence_controller.dart';
 
@@ -48,91 +49,24 @@ class GeofenceView extends GetView<GeofenceController> {
     );
   }
 
+  /// 底部围栏列表：与轨迹回放共用 MapBottomDrawer，
+  /// 向上弹出与向下收起共用同一时长（收起不再一闪而过）。
   Widget _buildBottomPanel(BuildContext context) {
-    return Obx(() {
-      final expanded = controller.fenceListExpanded.value;
-      return Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          // 展开面板：收起时整体向下滑出屏幕并淡出，形成「下滑隐藏」的动画，
-          // 而不是瞬间消失；收起后用 IgnorePointer 避免隐形面板截获地图手势。
-          IgnorePointer(
-            ignoring: !expanded,
-            child: AnimatedOpacity(
-              opacity: expanded ? 1 : 0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              child: AnimatedSlide(
-                offset: expanded ? Offset.zero : const Offset(0, 1),
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.page,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(22),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: Color(0x22000000), blurRadius: 12),
-                    ],
-                  ),
-                  child: _buildPanelContent(context),
-                ),
-              ),
-            ),
-          ),
-          // 收起态：底部只保留圆形向上箭头，点击即展开。
-          IgnorePointer(
-            ignoring: expanded,
-            child: AnimatedOpacity(
-              opacity: expanded ? 0 : 1,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              child: Padding(
-                // 留出底部安全区（iOS Home Indicator）高度，避免被系统横线压住。
-                padding: const EdgeInsets.only(top: 8, bottom: 28),
-                child: Center(
-                  child: _BouncingArrowButton(
-                    onTap: controller.toggleFenceList,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    });
+    return Obx(
+      () => MapBottomDrawer(
+        expanded: controller.fenceListExpanded.value,
+        onToggle: controller.toggleFenceList,
+        // 下滑用幂等收起，避免一次手势反复切换。
+        onCollapse: controller.collapseFenceList,
+        child: _buildPanelContent(context),
+      ),
+    );
   }
 
   Widget _buildPanelContent(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        // 顶部短横线：按住下滑即隐藏整个面板。
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onVerticalDragUpdate: (details) {
-            if (details.delta.dy > 4) controller.collapseFenceList();
-          },
-          child: SizedBox(
-            height: 26,
-            width: double.infinity,
-            child: Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-        ),
-        _buildToolbar(context),
-        _buildFenceList(context),
-      ],
+      children: [_buildToolbar(context), _buildFenceList(context)],
     );
   }
 
@@ -794,76 +728,4 @@ class _SmallActionButton extends StatelessWidget {
             ),
           ),
   );
-}
-
-/// 收起态底部的圆形向上箭头：持续上下轻微跳动，引导用户点击展开更多信息。
-///
-/// 自带 AnimationController（仅在收起态挂载，展开后自动销毁），
-/// 不给 GeofenceController 增加额外的生命周期负担。
-class _BouncingArrowButton extends StatefulWidget {
-  const _BouncingArrowButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  State<_BouncingArrowButton> createState() => _BouncingArrowButtonState();
-}
-
-class _BouncingArrowButtonState extends State<_BouncingArrowButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _offset;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-    // 向上 7px 的往复位移：幅度克制，只做引导，不喧宾夺主。
-    _offset = Tween<double>(
-      begin: 0,
-      end: -7,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _offset,
-      builder: (context, child) =>
-          Transform.translate(offset: Offset(0, _offset.value), child: child),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: CupertinoColors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.divider),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(
-            CupertinoIcons.chevron_up,
-            size: 24,
-            color: AppColors.secondaryText,
-          ),
-        ),
-      ),
-    );
-  }
 }

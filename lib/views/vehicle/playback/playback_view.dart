@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:car/services/url.dart';
 import 'package:car/widgets/main_scaffold.dart';
+import 'package:car/widgets/map_bottom_drawer.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'package:car/utils/car_icon.dart';
 import 'playback_controller.dart';
@@ -21,19 +22,16 @@ class PlaybackView extends GetView<PlaybackController> {
       body: ReferencePage(
         child: Stack(
           children: [
-            Column(
-              children: [
-                // The map is built ONCE (outside Obx) so the tile layer and
-                // camera stay stable; only the marker/polyline layers update
-                // per frame via inner Obx. Rebuilding the whole FlutterMap every
-                // frame is what made the car appear to jump instantly.
-                // 用 Obx 包裹：无坐标时显示占位，坐标就绪后再构建地图
-                // （FlutterMap 仍只构建一次，不会每帧重建）。
-                Expanded(child: Obx(() => _buildMap())),
-                Obx(() => _buildPanel(context)),
-              ],
-            ),
+            // 地图铺满整屏：底部面板改为浮在地图之上的可收起抽屉，
+            // 收起后地图的可视区域与地理围栏页保持一致。
+            Positioned.fill(child: Obx(() => _buildMap())),
             _buildTopBar(),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Obx(() => _buildPanel(context)),
+            ),
           ],
         ),
       ),
@@ -205,21 +203,18 @@ class PlaybackView extends GetView<PlaybackController> {
     );
   }
 
+  /// 底部播放面板：与地理围栏共用 MapBottomDrawer，
+  /// 向上弹出 / 向下收起，两个方向动画时长一致。
   Widget _buildPanel(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-      decoration: const BoxDecoration(
-        color: CupertinoColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x16000000),
-            blurRadius: 12,
-            offset: Offset(0, -3),
-          ),
-        ],
-      ),
+    return MapBottomDrawer(
+      expanded: controller.panelExpanded.value,
+      onToggle: controller.togglePanel,
+      // 下滑用幂等收起，避免一次手势反复切换。
+      onCollapse: controller.collapsePanel,
+      backgroundColor: CupertinoColors.white,
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           DateRangeCard(
             startTime: controller.startTime.value,
@@ -313,6 +308,7 @@ class PlaybackView extends GetView<PlaybackController> {
 
   Widget _metric(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,

@@ -43,6 +43,14 @@ class PlaybackController extends GetxController
   final currentTimeStr = ''.obs;
   final initialCenter = Rxn<LatLng>();
 
+  /// 底部播放面板是否展开：进入页面默认收起（只显示向上箭头），
+  /// 与地理围栏一致，先把地图完整露出来。
+  final panelExpanded = false.obs;
+
+  void togglePanel() => panelExpanded.value = !panelExpanded.value;
+
+  void collapsePanel() => panelExpanded.value = false;
+
   late final AnimationController _animationController;
   PlaybackPoint? _startPoint;
   PlaybackPoint? _endPoint;
@@ -52,6 +60,9 @@ class PlaybackController extends GetxController
   static const double _fallbackSpeedKmh = 20;
   static const double _minSegmentMs = 500;
   static const double _maxSegmentMs = 6000;
+  // 更新车头朝向所需的最小位移（米）：小于该值视为停车点的 GPS 漂移。
+  // 静止点的漂移只有几米，若仍按漂移方向推算朝向，播放时车标会乱转。
+  static const double _minBearingDistanceMeters = 10;
 
   double get totalDistanceMeters {
     var total = 0.0;
@@ -72,9 +83,11 @@ class PlaybackController extends GetxController
     if (points.length < 2) return routePoints;
     final isAnimating = activeSegmentTargetIndex > currentIndex.value;
     final played = <LatLng>[];
-    for (var index = 0;
-        index <= currentIndex.value && index < points.length;
-        index++) {
+    for (
+      var index = 0;
+      index <= currentIndex.value && index < points.length;
+      index++
+    ) {
       played.add(points[index].latLng);
     }
     final rendered = currentPoint.value;
@@ -86,8 +99,9 @@ class PlaybackController extends GetxController
   List<LatLng> get unplayedRoutePoints {
     if (points.length < 2) return const [];
     final isAnimating = activeSegmentTargetIndex > currentIndex.value;
-    final startIndex =
-        isAnimating ? activeSegmentTargetIndex : currentIndex.value;
+    final startIndex = isAnimating
+        ? activeSegmentTargetIndex
+        : currentIndex.value;
     final unplayed = <LatLng>[];
     final rendered = currentPoint.value;
     if (isAnimating && rendered != null) unplayed.add(rendered.latLng);
@@ -158,10 +172,7 @@ class PlaybackController extends GetxController
       );
       if (isClosed || session != _sessionId) return;
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '轨迹加载失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '轨迹加载失败' : result.message);
         return;
       }
       final raw = result.data?['positions'];
@@ -202,10 +213,18 @@ class PlaybackController extends GetxController
     }
     // Heading is derived from neighbouring points (mirrors the source project,
     // which ignores the device-reported direction).
+    // 但只有真正位移了（≥ [_minBearingDistanceMeters]）才更新朝向：
+    // 停车点去重后仍剩几米 GPS 漂移，按漂移方向推算会得到随机朝向，
+    // 播放到停车段时车标会乱转/歪着。
     for (var index = 1; index < deduped.length; index++) {
       final previous = deduped[index - 1];
       final current = deduped[index];
-      final rotation = GeoUtils.bearingDegrees(previous.latLng, current.latLng);
+      final moved =
+          GeoUtils.distanceMeters(previous.latLng, current.latLng) >=
+          _minBearingDistanceMeters;
+      final rotation = moved
+          ? GeoUtils.bearingDegrees(previous.latLng, current.latLng)
+          : previous.rotation;
       deduped[index] = PlaybackPoint(
         latitude: current.latitude,
         longitude: current.longitude,
@@ -353,10 +372,14 @@ class PlaybackController extends GetxController
     final recorded = start.speed > 0 && start.speed.isFinite
         ? start.speed
         : target.speed;
-    final speedKmh =
-        recorded > 0 && recorded.isFinite ? recorded : _fallbackSpeedKmh;
-    final durationMs = (distance / (speedKmh / 3.6) * 1000 / playbackSpeed.value)
-        .clamp(_minSegmentMs, _maxSegmentMs);
+    final speedKmh = recorded > 0 && recorded.isFinite
+        ? recorded
+        : _fallbackSpeedKmh;
+    final durationMs =
+        (distance / (speedKmh / 3.6) * 1000 / playbackSpeed.value).clamp(
+          _minSegmentMs,
+          _maxSegmentMs,
+        );
 
     final session = ++_sessionId;
     _animationController.duration = Duration(milliseconds: durationMs.round());
@@ -383,8 +406,10 @@ class PlaybackController extends GetxController
     final t = _animationController.value;
     final latitude = start.latitude + (end.latitude - start.latitude) * t;
     final longitude = start.longitude + (end.longitude - start.longitude) * t;
-    final rotationDiff =
-        GeoUtils.shortestAngleDelta(start.rotation, end.rotation);
+    final rotationDiff = GeoUtils.shortestAngleDelta(
+      start.rotation,
+      end.rotation,
+    );
     final rotation = (start.rotation + rotationDiff * t + 360) % 360;
     // Mirrors the source: position/rotation are interpolated, while speed/time
     // follow the target point (displayed values update at segment boundaries).
