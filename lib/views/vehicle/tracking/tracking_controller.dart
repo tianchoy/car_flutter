@@ -25,6 +25,7 @@ class TrackingController extends GetxController
   final MapController mapController = MapController();
 
   final currentPosition = Rxn<LatLng>();
+
   /// 地图初始中心：首次定位返回前先用缓存位置，避免先显示默认的北京坐标。
   final initialCenter = Rxn<LatLng>();
   final routePoints = <LatLng>[].obs;
@@ -37,7 +38,8 @@ class TrackingController extends GetxController
   final isRefreshing = false.obs;
   final isTracking = false.obs;
   final errorMessage = ''.obs;
-  final pollIntervalSeconds = 1.obs;
+  // 设备在运动中每 5 秒上传一次定位，按相同节奏轮询可及时取到新数据且避免无效请求。
+  final pollIntervalSeconds = 5.obs;
 
   Timer? _pollTimer;
   late final AnimationController _animationController;

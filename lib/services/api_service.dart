@@ -196,6 +196,12 @@ class ApiService {
     return _httpService.get<dynamic>(ApiEndpoints.messageUnreadCount);
   }
 
+  /// 获取平台续费目标微信小程序 AppID（GET /home/platform/app）。
+  /// 该接口为匿名接口，响应 data 是可空字符串。
+  Future<Response<dynamic>> getHomePlatformApp() {
+    return _httpService.get<dynamic>(ApiEndpoints.homePlatformApp);
+  }
+
   Future<Response<dynamic>> markMessageRead(String messageId) {
     return _httpService.get<dynamic>('${ApiEndpoints.messageDetail}$messageId');
   }

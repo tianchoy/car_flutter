@@ -18,27 +18,34 @@ class MessagesView extends GetView<MessagesController> {
         if (controller.isLoading.value && controller.messages.isEmpty) {
           return const Center(child: AppLoadingIndicator());
         }
+        final hasBanner =
+            controller.unreadCount.value > 0 ||
+            controller.newMessageCount.value > 0;
+        final messageStartIndex = hasBanner ? 1 : 0;
         return ReferencePage(
           child: CustomScrollView(
             controller: controller.scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              AppRefreshControl(
-                onRefresh: controller.refreshMessages,
-              ),
+              AppRefreshControl(onRefresh: controller.refreshMessages),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    if (index == 0) return _buildUnreadBanner();
-                    if (index == controller.messages.length + 1) {
-                      return _buildLoadMore();
-                    }
-                    return _buildMessageCard(
-                      context,
-                      controller.messages[index - 1],
-                    );
-                  }, childCount: controller.messages.length + 2),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (hasBanner && index == 0) return _buildUnreadBanner();
+                      if (index ==
+                          controller.messages.length + messageStartIndex) {
+                        return _buildLoadMore();
+                      }
+                      return _buildMessageCard(
+                        context,
+                        controller.messages[index - messageStartIndex],
+                      );
+                    },
+                    childCount:
+                        controller.messages.length + messageStartIndex + 1,
+                  ),
                 ),
               ),
             ],
@@ -61,10 +68,7 @@ class MessagesView extends GetView<MessagesController> {
             padding: EdgeInsets.zero,
             color: const Color(0xFFEAF3FF),
             child: CupertinoButton(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 15,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
               onPressed: controller.loadNewMessages,
               child: Row(
                 children: [
@@ -91,37 +95,33 @@ class MessagesView extends GetView<MessagesController> {
               ),
             ),
           ),
-        ReferenceCard(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-          color: count > 0 ? const Color(0xFFEAF3FF) : CupertinoColors.white,
-          child: Row(
-            children: [
-              Icon(
-                count > 0 ? CupertinoIcons.bell_fill : CupertinoIcons.bell,
-                color: count > 0 ? AppColors.primary : AppColors.secondaryText,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  count > 0 ? '有 $count 条未读消息' : '暂无未读消息',
-                  style: TextStyle(
-                    color: count > 0
-                        ? AppColors.primaryDark
-                        : AppColors.secondaryText,
-                    fontWeight: FontWeight.w600,
+        if (count > 0)
+          ReferenceCard(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            color: const Color(0xFFEAF3FF),
+            child: Row(
+              children: [
+                const Icon(CupertinoIcons.bell_fill, color: AppColors.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '有 $count 条未读消息',
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              if (controller.isLoading.value)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CupertinoActivityIndicator(radius: 8),
-                ),
-            ],
+                if (controller.isLoading.value)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CupertinoActivityIndicator(radius: 8),
+                  ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

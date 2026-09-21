@@ -42,90 +42,30 @@ class PlaybackView extends GetView<PlaybackController> {
 
   Widget _buildTopBar() {
     final device = controller.device;
-    final plate = <String?>[
-      device?.deviceName,
-      device?.plateNo,
-      device?.deviceNo,
-      device?.deviceId,
-    ].firstWhere(
-      (value) => value != null && value.trim().isNotEmpty,
-      orElse: () => null,
-    ) ?? '未命名设备';
+    final plate =
+        <String?>[
+          device?.deviceName,
+          device?.plateNo,
+          device?.deviceNo,
+          device?.deviceId,
+        ].firstWhere(
+          (value) => value != null && value.trim().isNotEmpty,
+          orElse: () => null,
+        ) ??
+        '未命名设备';
     final status = controller.device?.deviceStatus ?? '';
     final online = status.toLowerCase() == 'online';
+    // 与地理围栏 / 设备详情 / 车辆跟踪保持一致：地图顶部浮动标题条
+    //（图标 + 名称 + 在线状态），不再是整条通栏白底。
     return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: const BoxDecoration(
-          color: CupertinoColors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x16000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Row(
-            children: [
-              const Icon(
-                CupertinoIcons.car_detailed,
-                color: AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  plate,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (online ? AppColors.success : AppColors.secondaryText)
-                      .withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: online
-                            ? AppColors.success
-                            : AppColors.secondaryText,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      online ? '在线' : '离线',
-                      style: TextStyle(
-                        color: online
-                            ? AppColors.success
-                            : AppColors.secondaryText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      top: 12,
+      left: 12,
+      right: 12,
+      child: MapTitleBar(
+        icon: CupertinoIcons.car_detailed,
+        title: plate,
+        statusLabel: online ? '在线' : '离线',
+        statusOnline: online,
       ),
     );
   }

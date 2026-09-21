@@ -72,20 +72,22 @@ class GeofenceController extends GetxController {
   final circleRadius = 0.0.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+
   /// 底部围栏列表是否展开：进入页面默认收起，点击箭头展开，向下拖动收起。
   final fenceListExpanded = false.obs;
 
-  void toggleFenceList() =>
-      fenceListExpanded.value = !fenceListExpanded.value;
+  void toggleFenceList() => fenceListExpanded.value = !fenceListExpanded.value;
 
   void collapseFenceList() => fenceListExpanded.value = false;
   final deviceTab = 0.obs;
   final boundDevices = <Map<String, dynamic>>[].obs;
   final unboundDevices = <Map<String, dynamic>>[].obs;
   final isLoadingDevices = false.obs;
+
   /// 正在提交绑定状态变更的设备编号：用于开关的乐观显示，避免提交期间开关回弹。
   final pendingDeviceNos = <String>{}.obs;
   final initialCenter = Rxn<LatLng>();
+
   /// 车辆最新定位：路由参数可能不带坐标，需单独拉取；用于车标与地图居中。
   final devicePosition = Rxn<LatLng>();
   bool _didCenterMap = false;
@@ -124,10 +126,7 @@ class GeofenceController extends GetxController {
               const <GeofenceRecord>[],
         );
       } else {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '获取围栏失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '获取围栏失败' : result.message);
       }
     } catch (_) {
       AppToast.show('提示', '获取围栏失败，请稍后重试');
@@ -159,9 +158,7 @@ class GeofenceController extends GetxController {
     final model = device;
     if (model == null) return;
     if (model.hasLocation) {
-      _applyDevicePosition(
-        transformToGCJ02(model.longitude!, model.latitude!),
-      );
+      _applyDevicePosition(transformToGCJ02(model.longitude!, model.latitude!));
       return;
     }
     final key = _positionCacheKey;
@@ -170,13 +167,12 @@ class GeofenceController extends GetxController {
       if (cached != null && !isClosed) _applyDevicePosition(cached);
     }
     try {
-      final response = await _repository.getDeviceLastPosition(
-        <String, dynamic>{
-          'deviceId': model.deviceId,
-          if (model.deviceNo != null && model.deviceNo!.isNotEmpty)
-            'deviceids': model.deviceNo,
-        },
-      );
+      final response = await _repository
+          .getDeviceLastPosition(<String, dynamic>{
+            'deviceId': model.deviceId,
+            if (model.deviceNo != null && model.deviceNo!.isNotEmpty)
+              'deviceids': model.deviceNo,
+          });
       if (isClosed) return;
       final result = ApiResponse<List<Object?>>.fromJson(
         response.data,
@@ -235,6 +231,17 @@ class GeofenceController extends GetxController {
     selectedFence.value = null;
     isDrawing.value = true;
     clearDraft();
+  }
+
+  /// 根据当前绘制类型生成一个未占用的默认名称，例如「圆形围栏1」。
+  String defaultFenceName() {
+    final typeLabel = drawingMode.value == 'circle' ? '圆形围栏' : '多边形围栏';
+    final existingNames = fences.map((fence) => fence.name).toSet();
+    var sequence = 1;
+    while (existingNames.contains('$typeLabel$sequence')) {
+      sequence++;
+    }
+    return '$typeLabel$sequence';
   }
 
   /// 取消本次编辑/绘制：放弃草稿并退出绘制态，不改动已保存的围栏数据。
@@ -297,8 +304,8 @@ class GeofenceController extends GetxController {
   }
 
   String deviceNoOf(Map<String, dynamic> device) => stringValue(
-        device['deviceNo'] ?? device['imei'] ?? device['deviceId'] ?? device['id'],
-      );
+    device['deviceNo'] ?? device['imei'] ?? device['deviceId'] ?? device['id'],
+  );
 
   String deviceTitle(Map<String, dynamic> device) => stringValue(
     device['deviceName'] ??
@@ -371,10 +378,7 @@ class GeofenceController extends GetxController {
         clearDraft();
         await loadFences();
       } else {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '保存围栏失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '保存围栏失败' : result.message);
       }
     } catch (_) {
       AppToast.show('提示', '保存围栏失败，请稍后重试');
@@ -394,10 +398,7 @@ class GeofenceController extends GetxController {
         // 删除结果统一用顶部弹出提示反馈。
         AppToast.show('成功', '围栏已删除');
       } else {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '删除围栏失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '删除围栏失败' : result.message);
       }
     } catch (_) {
       AppToast.show('提示', '删除围栏失败，请稍后重试');
@@ -415,10 +416,7 @@ class GeofenceController extends GetxController {
         'deviceNos': deviceNos,
       });
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '绑定设备失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '绑定设备失败' : result.message);
       }
     } catch (_) {
       AppToast.show('提示', '绑定设备失败，请稍后重试');
@@ -436,10 +434,7 @@ class GeofenceController extends GetxController {
         'deviceNos': deviceNos,
       });
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '解绑设备失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '解绑设备失败' : result.message);
       }
     } catch (_) {
       AppToast.show('提示', '解绑设备失败，请稍后重试');
@@ -696,41 +691,41 @@ class GeofenceController extends GetxController {
   }
 
   Marker _dotMarker(LatLng point, {bool isCenter = false}) => Marker(
-        point: point,
-        width: 30,
-        height: 30,
-        child: Builder(
-          builder: (context) {
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanUpdate: (details) {
-                final camera = MapCamera.of(context);
-                final updated = _moveByPixels(point, camera, details.delta);
-                if (updated == null) return;
-                if (isCenter) {
-                  circleCenter.value = updated;
-                } else {
-                  updateDraftPoint(point, updated);
-                }
-              },
-              child: Center(
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: isCenter ? AppColors.primary : AppColors.danger,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: CupertinoColors.white, width: 2),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x33000000), blurRadius: 3),
-                    ],
-                  ),
-                ),
-              ),
-            );
+    point: point,
+    width: 30,
+    height: 30,
+    child: Builder(
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanUpdate: (details) {
+            final camera = MapCamera.of(context);
+            final updated = _moveByPixels(point, camera, details.delta);
+            if (updated == null) return;
+            if (isCenter) {
+              circleCenter.value = updated;
+            } else {
+              updateDraftPoint(point, updated);
+            }
           },
-        ),
-      );
+          child: Center(
+            child: Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: isCenter ? AppColors.primary : AppColors.danger,
+                shape: BoxShape.circle,
+                border: Border.all(color: CupertinoColors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x33000000), blurRadius: 3),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 
   List<CircleMarker> get circles {
     final result = <CircleMarker>[];

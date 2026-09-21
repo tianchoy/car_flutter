@@ -11,6 +11,7 @@ class AppConfig {
   static const String defaultApiBaseUrl = 'https://gpsapp.zdiot.cn';
   static const String clientId = '428a8310cd442757ae699df5d894f051';
   static const String tenantId = '000000';
+
   /// Android 应用 ID：与 android/app/build.gradle.kts 的 applicationId 保持一致，
   /// 用于地图 SDK 的 userAgent（高德/腾讯地图要求传应用包名）。
   static const String androidPackageName = 'com.zdiot.app';
@@ -24,7 +25,8 @@ class AppConfig {
   /// 商店更新提示与 app 内展示即可同步，无需再维护此处硬编码。
   static String appVersion = '1.0.0';
   static String appBuildNumber = '1';
-  static String get appVersionLabel => '$appName v$appVersion ($appBuildNumber)';
+  static String get appVersionLabel =>
+      '$appName v$appVersion ($appBuildNumber)';
 
   /// 在 main() 中 runApp 之前调用，加载真实版本信息。
   static Future<void> initAppInfo() async {
@@ -68,6 +70,7 @@ class ApiEndpoints {
   static const String messages = '/usermessage/listForUser';
   static const String messageDetail = '/usermessage/detail/';
   static const String messageUnreadCount = '/app/message/unreadCount';
+  static const String homePlatformApp = '/home/platform/app';
 
   static const String deviceInfo = '/device/info/';
   static const String updateDevice = '/device/update';

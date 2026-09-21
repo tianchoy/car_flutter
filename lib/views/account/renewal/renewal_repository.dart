@@ -11,4 +11,7 @@ class RenewalRepository {
   Future<Response<dynamic>> fetchDevices() => _apiService.getUserDeviceList(
     <String, dynamic>{'page': 1, 'pageNum': 1, 'pageSize': 100},
   );
+
+  Future<Response<dynamic>> fetchPlatformAppId() =>
+      _apiService.getHomePlatformApp();
 }

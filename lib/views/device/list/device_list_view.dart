@@ -131,20 +131,14 @@ class DeviceListView extends GetView<DeviceListController> {
         .where((device) => device.hasLocation)
         .map(
           (device) => Marker(
-            width: 38,
-            height: 38,
+            // 与首页一致：定位点对齐车标区域中心，名称气泡向上延展。
+            width: 144,
+            height: 88,
+            alignment: Alignment.center,
             point: transformToGCJ02(device.longitude!, device.latitude!),
             child: GestureDetector(
               onTap: () => controller.openDevice(device),
-              child: Image.asset(
-                deviceIconPath(
-                  online: device.isOnline,
-                  carType: device.carType,
-                ),
-                width: 30,
-                height: 30,
-                fit: BoxFit.contain,
-              ),
+              child: _deviceLocationMarker(device),
             ),
           ),
         )
@@ -171,6 +165,53 @@ class DeviceListView extends GetView<DeviceListController> {
         ),
       ),
     );
+  }
+
+  Widget _deviceLocationMarker(DeviceModel device) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        constraints: const BoxConstraints(maxWidth: 128),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: CupertinoColors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0x1A000000)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x26000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          _deviceLocationLabel(device),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.text,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      const SizedBox(height: 3),
+      Image.asset(
+        deviceIconPath(online: device.isOnline, carType: device.carType),
+        width: 30,
+        height: 30,
+        fit: BoxFit.contain,
+      ),
+    ],
+  );
+
+  String _deviceLocationLabel(DeviceModel device) {
+    for (final value in [device.deviceName, device.plateNo, device.deviceNo]) {
+      final label = value?.trim() ?? '';
+      if (label.isNotEmpty) return label;
+    }
+    return '当前设备';
   }
 
   Widget _buildList(BuildContext context) {

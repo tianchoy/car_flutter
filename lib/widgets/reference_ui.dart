@@ -88,56 +88,58 @@ class AppRefreshControl extends StatelessWidget {
       onRefresh: onRefresh,
       refreshTriggerPullDistance: refreshTriggerPullDistance,
       refreshIndicatorExtent: refreshIndicatorExtent,
-      builder: (
-        BuildContext context,
-        RefreshIndicatorMode refreshState,
-        double pulledExtent,
-        double triggerDistance,
-        double indicatorExtent,
-      ) {
-        final progress = triggerDistance <= 0
-            ? 0.0
-            : (pulledExtent / triggerDistance).clamp(0.0, 1.0);
-        final refreshing = refreshState == RefreshIndicatorMode.refresh ||
-            refreshState == RefreshIndicatorMode.done;
-        // 刷新控件收起时 indicatorExtent 会趋近 0（例如 1.2），若直接按它约束
-        // 内容就会溢出。这里用固定高度 + OverflowBox 让指示器保持自然尺寸，
-        // 超出部分由 ClipRect 裁掉，形成「随下拉逐步露出」的效果。
-        return SizedBox(
-          height: indicatorExtent,
-          child: ClipRect(
-            child: OverflowBox(
-              maxHeight: refreshIndicatorExtent,
-              alignment: Alignment.bottomCenter,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (refreshing)
-                    const CupertinoActivityIndicator(radius: 14)
-                  else
-                    SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CupertinoActivityIndicator.partiallyRevealed(
-                        progress: progress,
-                        radius: 14,
+      builder:
+          (
+            BuildContext context,
+            RefreshIndicatorMode refreshState,
+            double pulledExtent,
+            double triggerDistance,
+            double indicatorExtent,
+          ) {
+            final progress = triggerDistance <= 0
+                ? 0.0
+                : (pulledExtent / triggerDistance).clamp(0.0, 1.0);
+            final refreshing =
+                refreshState == RefreshIndicatorMode.refresh ||
+                refreshState == RefreshIndicatorMode.done;
+            // 刷新控件收起时 indicatorExtent 会趋近 0（例如 1.2），若直接按它约束
+            // 内容就会溢出。这里用固定高度 + OverflowBox 让指示器保持自然尺寸，
+            // 超出部分由 ClipRect 裁掉，形成「随下拉逐步露出」的效果。
+            return SizedBox(
+              height: indicatorExtent,
+              child: ClipRect(
+                child: OverflowBox(
+                  maxHeight: refreshIndicatorExtent,
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (refreshing)
+                        const CupertinoActivityIndicator(radius: 14)
+                      else
+                        SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CupertinoActivityIndicator.partiallyRevealed(
+                            progress: progress,
+                            radius: 14,
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _hint(refreshState),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText,
+                        ),
                       ),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _hint(refreshState),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.secondaryText,
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
     );
   }
 
@@ -170,11 +172,15 @@ class FeatureGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cellWidth =
-            (constraints.maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
+            (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+            crossAxisCount;
         return Wrap(
           spacing: spacing,
           runSpacing: runSpacing,
-          children: [for (final child in children) SizedBox(width: cellWidth, child: child)],
+          children: [
+            for (final child in children)
+              SizedBox(width: cellWidth, child: child),
+          ],
         );
       },
     );
@@ -295,6 +301,53 @@ class StatusPill extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 地图顶部统一的浮动标题条：图标 + 标题 + 右侧状态胶囊。
+///
+/// 带地图的页面（地理围栏 / 设备详情 / 轨迹回放 / 车辆跟踪）共用同一套样式，
+/// 保证界面风格一致。
+class MapTitleBar extends StatelessWidget {
+  const MapTitleBar({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.statusLabel,
+    this.statusOnline = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? statusLabel;
+  final bool statusOnline;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: BoxDecoration(
+        color: CupertinoColors.white.withValues(alpha: .95),
+        borderRadius: BorderRadius.circular(13),
+        boxShadow: const [BoxShadow(color: Color(0x18000000), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (statusLabel != null)
+            StatusPill(label: statusLabel!, online: statusOnline),
         ],
       ),
     );
@@ -611,7 +664,6 @@ class EmptyState extends StatelessWidget {
   );
 }
 
-
 class ReferenceInput extends StatelessWidget {
   const ReferenceInput({
     super.key,
@@ -892,10 +944,7 @@ class DateRangeCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.secondaryText,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: AppColors.secondaryText, fontSize: 11),
         ),
         const SizedBox(height: 2),
         Text(

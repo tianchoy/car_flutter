@@ -66,10 +66,10 @@ class DetailView extends GetView<DetailController> {
       context: context,
       title: '刷新频率',
       actions: [
-        _refreshAction(0, '停止刷新'),
         _refreshAction(5, '每 5 秒刷新'),
         _refreshAction(10, '每 10 秒刷新'),
         _refreshAction(30, '每 30 秒刷新'),
+        _refreshAction(0, '停止刷新'),
       ],
     );
     if (selected == null) return;
@@ -142,33 +142,11 @@ class DetailView extends GetView<DetailController> {
                     top: 12,
                     left: 12,
                     right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.white.withValues(alpha: .94),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          StatusPill(
-                            label: controller.isOnline ? '在线' : '离线',
-                            online: controller.isOnline,
-                          ),
-                        ],
-                      ),
+                    child: MapTitleBar(
+                      icon: CupertinoIcons.car_detailed,
+                      title: title,
+                      statusLabel: controller.isOnline ? '在线' : '离线',
+                      statusOnline: controller.isOnline,
                     ),
                   ),
                 ],

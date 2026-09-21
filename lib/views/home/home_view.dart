@@ -260,7 +260,8 @@ class HomeView extends GetView<HomeController> {
     // 选中设备离线时，即使详情数据尚未刷新，也不能显示为在线。
     final online = device?.isOnline == true && detail?.isOnline != false;
     // 未登录、暂无设备或设备离线时，定位相关数据统一以设备状态的深灰色展示。
-    final hasOnlineDevice = controller.isLoggedIn.value && device != null && online;
+    final hasOnlineDevice =
+        controller.isLoggedIn.value && device != null && online;
     final inactiveColor = AppColors.secondaryText;
     // 最后定位：按接口返回的最后更新时间做相对展示
     // （刚刚 / x分钟前 / x小时前 / x天前 / x个月前 / x年前）；
@@ -362,7 +363,7 @@ class HomeView extends GetView<HomeController> {
               action: '刷新位置',
               onTap: () {
                 if (!_requireLogin()) return;
-                controller.refreshAll();
+                controller.refreshLocation();
               },
             ),
           ),

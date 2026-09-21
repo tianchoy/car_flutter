@@ -36,103 +36,103 @@ class GeofenceView extends GetView<GeofenceController> {
 
   Widget _buildMapStatus() {
     final selected = controller.selectedFence.value;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-      decoration: BoxDecoration(
-        color: CupertinoColors.white.withValues(alpha: .95),
-        borderRadius: BorderRadius.circular(13),
-        boxShadow: const [BoxShadow(color: Color(0x18000000), blurRadius: 10)],
-      ),
-      child: Row(
-        children: [
-          const Icon(CupertinoIcons.shield, color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              controller.isDrawing.value
-                  ? '正在绘制${controller.drawingMode.value == 'circle' ? '圆形' : '多边形'}围栏'
-                  : selected?.name ?? '选择围栏或开始绘制',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          StatusPill(
-            label: controller.isDrawing.value
-                ? '绘制中'
-                : '${controller.fences.length} 个围栏',
-            online: controller.isDrawing.value,
-          ),
-        ],
-      ),
+    return MapTitleBar(
+      icon: CupertinoIcons.shield,
+      title: controller.isDrawing.value
+          ? '正在绘制${controller.drawingMode.value == 'circle' ? '圆形' : '多边形'}围栏'
+          : selected?.name ?? '选择围栏或开始绘制',
+      statusLabel: controller.isDrawing.value
+          ? '绘制中'
+          : '${controller.fences.length} 个围栏',
+      statusOnline: controller.isDrawing.value,
     );
   }
 
   Widget _buildBottomPanel(BuildContext context) {
     return Obx(() {
       final expanded = controller.fenceListExpanded.value;
-      return Container(
-        // 收起时不展示整行白色圆角面板，只保留圆形向上箭头浮在底部。
-        decoration: expanded
-            ? const BoxDecoration(
-                color: AppColors.page,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                boxShadow: [
-                  BoxShadow(color: Color(0x22000000), blurRadius: 12),
-                ],
-              )
-            : null,
-        child: _buildBottomPanelContent(context, expanded),
-      );
-    });
-  }
-
-  Widget _buildBottomPanelContent(BuildContext context, bool expanded) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      return Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          if (!expanded)
-            // 收起态：底部只显示一个圆形向上箭头按钮，点击即展开；
-            // 箭头带上下跳动动画，引导用户点击查看更多内容。
-            Padding(
-              // 收起态的圆形箭头贴底显示，留出底部安全区（iOS Home Indicator）
-              // 的高度，避免与系统返回横线重叠。
-              padding: const EdgeInsets.only(top: 8, bottom: 28),
-              child: Center(
-                child: _BouncingArrowButton(onTap: controller.toggleFenceList),
-              ),
-            )
-          else ...[
-            // 展开态：不再显示任何箭头，仅保留顶部短横线，按住下滑即全部隐藏。
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onVerticalDragUpdate: (details) {
-                if (details.delta.dy > 4) controller.collapseFenceList();
-              },
-              child: SizedBox(
-                height: 26,
-                width: double.infinity,
-                child: Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.divider,
-                      borderRadius: BorderRadius.circular(4),
+          // 展开面板：收起时整体向下滑出屏幕并淡出，形成「下滑隐藏」的动画，
+          // 而不是瞬间消失；收起后用 IgnorePointer 避免隐形面板截获地图手势。
+          IgnorePointer(
+            ignoring: !expanded,
+            child: AnimatedOpacity(
+              opacity: expanded ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              child: AnimatedSlide(
+                offset: expanded ? Offset.zero : const Offset(0, 1),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.page,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(22),
                     ),
+                    boxShadow: [
+                      BoxShadow(color: Color(0x22000000), blurRadius: 12),
+                    ],
+                  ),
+                  child: _buildPanelContent(context),
+                ),
+              ),
+            ),
+          ),
+          // 收起态：底部只保留圆形向上箭头，点击即展开。
+          IgnorePointer(
+            ignoring: expanded,
+            child: AnimatedOpacity(
+              opacity: expanded ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              child: Padding(
+                // 留出底部安全区（iOS Home Indicator）高度，避免被系统横线压住。
+                padding: const EdgeInsets.only(top: 8, bottom: 28),
+                child: Center(
+                  child: _BouncingArrowButton(
+                    onTap: controller.toggleFenceList,
                   ),
                 ),
               ),
             ),
-            _buildToolbar(context),
-            _buildFenceList(context),
-          ],
+          ),
         ],
-      ),
+      );
+    });
+  }
+
+  Widget _buildPanelContent(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 顶部短横线：按住下滑即隐藏整个面板。
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragUpdate: (details) {
+            if (details.delta.dy > 4) controller.collapseFenceList();
+          },
+          child: SizedBox(
+            height: 26,
+            width: double.infinity,
+            child: Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+        _buildToolbar(context),
+        _buildFenceList(context),
+      ],
     );
   }
 
@@ -230,7 +230,11 @@ class GeofenceView extends GetView<GeofenceController> {
       children: [
         Row(
           children: [
-            const Icon(CupertinoIcons.pencil, size: 15, color: AppColors.primary),
+            const Icon(
+              CupertinoIcons.pencil,
+              size: 15,
+              color: AppColors.primary,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
@@ -242,8 +246,7 @@ class GeofenceView extends GetView<GeofenceController> {
                 ),
               ),
             ),
-            // 新增取消：放弃本次修改并退出编辑态。
-            _SmallTextButton(label: '取消', onPressed: controller.cancelDrawing),
+            _CompactCancelButton(onPressed: controller.cancelDrawing),
           ],
         ),
         const SizedBox(height: 9),
@@ -255,10 +258,7 @@ class GeofenceView extends GetView<GeofenceController> {
                     ? '点击地图确定圆心，再点击确定半径'
                     : '半径 ${controller.circleRadius.value.toStringAsFixed(0)} 米'
               : '已添加 ${controller.draftPoints.length} 个顶点，至少需要 3 个',
-          style: const TextStyle(
-            color: AppColors.secondaryText,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.secondaryText, fontSize: 12),
         ),
         const SizedBox(height: 11),
         Row(
@@ -418,7 +418,7 @@ class GeofenceView extends GetView<GeofenceController> {
   Future<void> _save(BuildContext context) async {
     final selectedFence = controller.selectedFence.value;
     final nameController = TextEditingController(
-      text: selectedFence?.name ?? '',
+      text: selectedFence?.name ?? controller.defaultFenceName(),
     );
     var alarmType = selectedFence?.alarmType ?? 1;
     final name = await showCupertinoDialog<String>(
@@ -462,54 +462,45 @@ class GeofenceView extends GetView<GeofenceController> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                for (var i = 0; i < _alarmTypeLabels.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () => setState(() => alarmType = i),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: i == alarmType
-                              ? AppColors.primary.withValues(alpha: .1)
-                              : const Color(0xFFF7F9FC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: i == alarmType
-                                ? AppColors.primary
-                                : AppColors.divider,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 14,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _alarmTypeLabels[i],
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: i == alarmType
-                                    ? AppColors.primary
-                                    : AppColors.text,
-                                fontWeight: i == alarmType
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            if (i == alarmType)
-                              const Icon(
-                                CupertinoIcons.check_mark,
-                                color: AppColors.primary,
-                                size: 18,
-                              ),
-                          ],
-                        ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _AlarmTypeOption(
+                        label: _alarmTypeLabels[0],
+                        selected: alarmType == 0,
+                        onPressed: () => setState(() => alarmType = 0),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _AlarmTypeOption(
+                        label: _alarmTypeLabels[1],
+                        selected: alarmType == 1,
+                        onPressed: () => setState(() => alarmType = 1),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _AlarmTypeOption(
+                        label: _alarmTypeLabels[2],
+                        selected: alarmType == 2,
+                        onPressed: () => setState(() => alarmType = 2),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _AlarmTypeOption(
+                        label: _alarmTypeLabels[3],
+                        selected: alarmType == 3,
+                        onPressed: () => setState(() => alarmType = 3),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -683,21 +674,84 @@ class _DeviceManagerSheet extends StatelessWidget {
 
 const List<String> _alarmTypeLabels = ['不告警', '出入告警', '出告警', '入告警'];
 
-/// 编辑面板顶部的小号文字按钮（如「取消」）。
-class _SmallTextButton extends StatelessWidget {
-  const _SmallTextButton({required this.label, this.onPressed});
+/// 弹框内的固定高度单选项，避免使用可滚动组件导致 CupertinoAlertDialog 无法测量尺寸。
+class _AlarmTypeOption extends StatelessWidget {
+  const _AlarmTypeOption({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
 
   final String label;
-  final VoidCallback? onPressed;
+  final bool selected;
+  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => CupertinoButton(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    minimumSize: Size.zero,
-    onPressed: onPressed,
-    child: Text(
-      label,
-      style: const TextStyle(fontSize: 13, color: AppColors.secondaryText),
+  Widget build(BuildContext context) => SizedBox(
+    height: 34,
+    child: CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      minimumSize: Size.zero,
+      onPressed: onPressed,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            selected
+                ? CupertinoIcons.check_mark_circled_solid
+                : CupertinoIcons.circle,
+            color: selected ? AppColors.primary : AppColors.secondaryText,
+            size: 15,
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                color: selected ? AppColors.primary : AppColors.text,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// 绘制态的紧凑取消按钮：红色图标与浅色描边保证操作足够醒目。
+class _CompactCancelButton extends StatelessWidget {
+  const _CompactCancelButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 28,
+    child: CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      minimumSize: Size.zero,
+      borderRadius: BorderRadius.circular(8),
+      color: AppColors.danger.withValues(alpha: .08),
+      onPressed: onPressed,
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.xmark, size: 13, color: AppColors.danger),
+          SizedBox(width: 4),
+          Text(
+            '取消',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.danger,
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -725,10 +779,7 @@ class _SmallActionButton extends StatelessWidget {
             onPressed: onPressed,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           )
         : CupertinoButton(
@@ -771,9 +822,10 @@ class _BouncingArrowButtonState extends State<_BouncingArrowButton>
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
     // 向上 7px 的往复位移：幅度克制，只做引导，不喧宾夺主。
-    _offset = Tween<double>(begin: 0, end: -7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _offset = Tween<double>(
+      begin: 0,
+      end: -7,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
