@@ -11,6 +11,7 @@ import '../../services/app_links.dart';
 import '../../utils/car_icon.dart';
 import '../../utils/time_utils.dart';
 import '../../widgets/app_popup.dart';
+import '../../widgets/map_marker_bubble.dart';
 import '../../widgets/map_tile.dart';
 import '../../models/home/device_model.dart';
 import '../../widgets/main_scaffold.dart';
@@ -655,7 +656,7 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
         ),
-        const SizedBox(height: 3),
+        const MapBubbleTail(),
         icon,
       ],
     );

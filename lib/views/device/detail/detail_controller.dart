@@ -31,8 +31,10 @@ class DetailController extends GetxController {
   );
   final address = ''.obs;
   final isLoadingAddress = false.obs;
+
   /// 上一次成功解析中文地址时所用的坐标；用于判断是否需要再次展示「解析中文地址」。
   final resolvedPosition = Rxn<LatLng>();
+
   /// 地图初始中心：接口返回前先用上次缓存的车辆位置，避免先落到默认的北京坐标。
   final initialCenter = Rxn<LatLng>();
   final isLoading = false.obs;
@@ -253,10 +255,7 @@ class DetailController extends GetxController {
       );
       final result = ApiResponse<Object?>.fromJson(response.data);
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '操作失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '操作失败' : result.message);
         return false;
       }
       AppToast.show('提示', restore ? '恢复油电成功' : '断开油电成功');
@@ -426,6 +425,15 @@ class DetailController extends GetxController {
 
   String get displayAddress =>
       address.value.trim().isEmpty ? '暂无中文地址' : address.value.trim();
+
+  /// 当前自动刷新频率文案：在设备信息卡片上直接展示选中的刷新间隔，
+  /// 不用点右上角定时器图标才看得到。
+  String get refreshIntervalLabel => refreshIntervalSeconds.value <= 0
+      ? '已停止刷新'
+      : '${refreshIntervalSeconds.value} 秒刷新一次';
+
+  /// 是否开启了自动刷新（间隔 > 0）。
+  bool get isAutoRefreshEnabled => refreshIntervalSeconds.value > 0;
 
   void _updateRefreshTimer() {
     _refreshTimer?.cancel();

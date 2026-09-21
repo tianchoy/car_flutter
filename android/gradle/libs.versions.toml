@@ -1,0 +1,11 @@
+# 华为 AGC 插件（agcp）在 apply 时会调用 VersionCatalogsExtension.named("libs")，
+# 若工程没有名为 libs 的 Version Catalog，会抛出 "Catalog named libs doesn't exist"
+# 导致 apply 失败。这里声明一个最小 catalog（并在 settings.gradle.kts 显式注册），
+# 仅为满足 agcp 的依赖，不影响其余构建逻辑。
+[versions]
+agcp = "1.9.6.300"
+
+[libraries]
+agcp = { module = "com.huawei.agconnect:agcp", version.ref = "agcp" }
+
+[plugins]

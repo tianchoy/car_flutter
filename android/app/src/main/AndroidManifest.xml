@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Android 13+ 推送通知权限：与源工程 car/app/src/main/AndroidManifest.xml 保持一致 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -45,6 +46,20 @@
         <meta-data
             android:name="JPUSH_CHANNEL"
             android:value="${JPUSH_CHANNEL}" />
+        <!-- 厂商通道 meta-data（HUAWEI_APPID / HONOR_APPID / OPPO_* 等）由极光厂商 SDK AAR 自带，
+             其值取自 app/build.gradle.kts 的 manifestPlaceholders，此处不重复声明，否则会
+             触发 manifest 合并冲突（duplicate meta-data）。
+             例外：极光 6.2.1 的小米 AAR 值模板末尾多了一个反斜杠（"${XIAOMI_APPID}\"），
+             替换后 AppID 会变成 "2882303761520585420\"，导致小米通道注册失败，
+             因此这里用 tools:replace 覆盖为不含反斜杠的正确值。 -->
+        <meta-data
+            android:name="XIAOMI_APPID"
+            android:value="${XIAOMI_APPID}"
+            tools:replace="android:value" />
+        <meta-data
+            android:name="XIAOMI_APPKEY"
+            android:value="${XIAOMI_APPKEY}"
+            tools:replace="android:value" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

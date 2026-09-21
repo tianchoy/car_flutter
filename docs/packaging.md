@@ -66,12 +66,44 @@ flutter build appbundle --release
 | `targetSdk` | `36` | 与源工程一致 |
 | `compileSdk` | `37` | `permission_handler` 要求 ≥37（AGP 9.0 会提示推荐 36，但可正常编译） |
 
-### 2.4 极光推送占位符
+### 2.4 极光推送与厂商通道占位符
 
-`manifestPlaceholders`：`JPUSH_PKGNAME` = applicationId（自动跟随新包名）、
-`JPUSH_APPKEY` = `0ee065e1a4024ce1801fa6d3`（需与 `push_config.dart` 的 `appKey` 一致）、
-`JPUSH_CHANNEL` = `developer-default`，并在 `AndroidManifest.xml`
-注入 `JPUSH_APPKEY` / `JPUSH_CHANNEL` 的 meta-data。
+`android/app/build.gradle.kts` 的 `manifestPlaceholders`：
+
+- 极光核心：`JPUSH_PKGNAME` = applicationId（自动跟随新包名）、
+  `JPUSH_APPKEY` = `0ee065e1a4024ce1801fa6d3`（需与 `push_config.dart` 的 `appKey` 一致）、
+  `JPUSH_CHANNEL` = `developer-default`；
+- 华为：`HUAWEI_APPID` = `119069041`（与 `android/app/agconnect-services.json` 的 `app_id` 一致）；
+- 荣耀：`HONOR_APPID` = `104591945`；
+- 小米：`XIAOMI_APPID` = `2882303761520585420`、`XIAOMI_APPKEY` = `5172058551420`；
+- OPPO：`OPPO_APPID` / `OPPO_APPKEY` / `OPPO_APPSECRET`（三个值都必须带 `OP-` 前缀）。
+
+`AndroidManifest.xml` 只声明 `JPUSH_APPKEY` / `JPUSH_CHANNEL` 与 `XIAOMI_APPID` / `XIAOMI_APPKEY`；
+华为 / 荣耀 / OPPO 的 meta-data 由各厂商 SDK AAR 自带（值取自上面的占位符），重复声明会触发
+manifest 合并冲突。小米需要 `tools:replace` 是因为极光 `xiaomi:6.2.1` AAR 的模板值末尾多一个
+反斜杠，不覆盖会导致 AppID 变成 `2882303761520585420\` 而注册失败。
+
+厂商 SDK 依赖：`cn.jiguang.sdk.plugin:{huawei,honor,xiaomi,oppo}:6.2.1`（与 `jpush:6.2.1` 对齐）。
+
+### 2.5 混淆（release 走 R8）
+
+release 构建会执行 `minifyReleaseWithR8`，`android/app/proguard-rules.pro` 保留极光与
+华为 / 荣耀 / 小米 / OPPO 厂商 SDK 的类（它们依赖反射与 Manifest 组件，被裁剪后通道会**静默**
+注册失败）。该文件在 `android/app/build.gradle.kts` 的 `release` 中通过 `proguardFiles` 引用。
+新增厂商通道或升级极光 SDK 时，需同步检查该文件。
+
+华为厂商通道额外要求：
+
+- `android/app/agconnect-services.json`（AGC 下载，`package_name = com.zdiot.app`、`app_id = 119069041`）；
+- 根 `android/build.gradle.kts` 引入 `com.huawei.agconnect:agcp:1.9.6.300`（华为仓库），
+  app 模块 `apply(plugin = "com.huawei.agconnect")`；
+- `android/gradle/libs.versions.toml` 必须存在且含 `agcp`（agcp 会访问名为 `libs` 的
+  Version Catalog，缺失会抛 `Catalog named libs doesn't exist`）；
+- 根 `buildscript` 需显式声明 `com.android.tools.build:gradle:9.0.1`，压过 agcp 传递依赖的
+  AGP 7.5 时代坐标，否则 `android {}` 会解析为旧 `BaseAppModuleExtension` 导致脚本编译失败。
+
+> 华为/荣耀/小米/OPPO 均校验「包名 + 签名证书指纹」，打包必须使用各厂商后台登记过的**同一本证书**
+> （见 2.1 的 SHA256），否则厂商通道注册失败。
 
 ## 3. iOS
 

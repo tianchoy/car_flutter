@@ -231,12 +231,13 @@ class DetailView extends GetView<DetailController> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
+              // ID 右侧直接展示当前选中的自动刷新频率（右上角定时器图标可切换）。
               Text(
-                controller.mapPosition == null ? '暂无定位' : '已定位',
+                controller.refreshIntervalLabel,
                 style: TextStyle(
-                  color: controller.mapPosition == null
-                      ? AppColors.text
-                      : AppColors.success,
+                  color: controller.isAutoRefreshEnabled
+                      ? AppColors.success
+                      : AppColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -304,7 +305,7 @@ class DetailView extends GetView<DetailController> {
                 hasOnlineDevice ? AppColors.success : inactiveColor,
               ),
               _statusItem(
-                CupertinoIcons.location,
+                CupertinoIcons.antenna_radiowaves_left_right,
                 '卫星',
                 controller.satelliteCount,
                 hasOnlineDevice ? AppColors.primaryDark : inactiveColor,

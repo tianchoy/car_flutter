@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
 import 'package:car/app/routes/router_instance.dart';
+import 'package:car/widgets/map_marker_bubble.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/models/home/device_model.dart';
 import 'package:car/widgets/main_scaffold.dart';
@@ -196,7 +197,7 @@ class DeviceListView extends GetView<DeviceListController> {
           ),
         ),
       ),
-      const SizedBox(height: 3),
+      const MapBubbleTail(),
       Image.asset(
         deviceIconPath(online: device.isOnline, carType: device.carType),
         width: 30,

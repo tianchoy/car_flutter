@@ -1,10 +1,9 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:car/widgets/map_marker_bubble.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/reference_ui.dart';
@@ -231,45 +230,8 @@ class _SpeedBubble extends StatelessWidget {
             ],
           ),
         ),
-        const _BubbleTail(),
+        const MapBubbleTail(),
       ],
     );
   }
-}
-
-/// 气泡底部的小尖角：上移 3px 压住气泡下沿，避免出现接缝。
-class _BubbleTail extends StatelessWidget {
-  const _BubbleTail();
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -3),
-      child: const CustomPaint(
-        size: Size(10, 6),
-        painter: _BubbleTailPainter(),
-      ),
-    );
-  }
-}
-
-class _BubbleTailPainter extends CustomPainter {
-  const _BubbleTailPainter();
-
-  // latlong2 也导出了 Path，这里用 ui. 前缀取 dart:ui 的绘制 Path。
-  @override
-  void paint(ui.Canvas canvas, ui.Size size) {
-    final paint = ui.Paint()
-      ..color = CupertinoColors.white
-      ..style = ui.PaintingStyle.fill;
-    final path = ui.Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _BubbleTailPainter oldDelegate) => false;
 }

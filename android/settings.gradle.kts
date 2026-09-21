@@ -14,6 +14,8 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        // 华为 AGC / HMS Push 插件与依赖仓库
+        maven { url = uri("https://developer.huawei.com/repo/") }
     }
 }
 
