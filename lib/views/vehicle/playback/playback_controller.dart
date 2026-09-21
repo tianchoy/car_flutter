@@ -43,9 +43,8 @@ class PlaybackController extends GetxController
   final currentTimeStr = ''.obs;
   final initialCenter = Rxn<LatLng>();
 
-  /// 底部播放面板是否展开：进入页面默认收起（只显示向上箭头），
-  /// 与地理围栏一致，先把地图完整露出来。
-  final panelExpanded = false.obs;
+  /// 底部播放面板是否展开：进入页面默认展开，可下滑收起。
+  final panelExpanded = true.obs;
 
   void togglePanel() => panelExpanded.value = !panelExpanded.value;
 

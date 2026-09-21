@@ -43,7 +43,9 @@ class VehicleDetailView extends GetView<VehicleDetailController> {
                         child: Text(
                           current.deviceName?.isNotEmpty == true
                               ? current.deviceName!
-                              : current.plateNo ?? '未命名车辆',
+                              : current.plateNo?.isNotEmpty == true
+                              ? current.plateNo!
+                              : '-',
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w700,
@@ -70,7 +72,7 @@ class VehicleDetailView extends GetView<VehicleDetailController> {
                     _iconRow(),
                     const SizedBox(height: 8),
                   ] else ...[
-                    _row('车牌号', current.plateNo ?? '--'),
+                    _row('车牌号', _displayValue(current.plateNo)),
                     // 车标：名称 + 当前车标 icon
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -111,10 +113,10 @@ class VehicleDetailView extends GetView<VehicleDetailController> {
                       ),
                     ),
                   ],
-                  _row('设备 ID', current.deviceId),
-                  _row('设备号', current.deviceNo ?? '--'),
-                  _row('ICCID', current.iccid ?? '--'),
-                  _row('设备类型', current.deviceType ?? '--'),
+                  _row('设备 ID', _displayValue(current.deviceId)),
+                  _row('设备号', _displayValue(current.deviceNo)),
+                  _row('ICCID', _displayValue(current.iccid)),
+                  _row('设备类型', _displayValue(current.deviceType)),
                   _row('更新时间', controller.value(['lastUpdateTime'])),
                 ],
               ),
@@ -158,6 +160,11 @@ class VehicleDetailView extends GetView<VehicleDetailController> {
         );
       }),
     );
+  }
+
+  String _displayValue(String? value) {
+    final normalized = value?.trim() ?? '';
+    return normalized.isEmpty || normalized == '--' ? '-' : normalized;
   }
 
   Widget _row(String label, String value) {

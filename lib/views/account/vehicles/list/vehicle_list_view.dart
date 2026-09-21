@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
+import 'package:car/models/home/device_model.dart';
 import 'package:car/utils/car_icon.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/reference_ui.dart';
@@ -77,9 +78,19 @@ class VehicleListView extends GetView<VehicleListController> {
     );
   }
 
-  Widget _deviceCard(dynamic device) {
+  Widget _deviceCard(DeviceModel device) {
     final online = device.isOnline;
     final color = online ? AppColors.success : AppColors.primary;
+    final title = device.deviceName?.isNotEmpty == true
+        ? device.deviceName!
+        : device.plateNo ?? '未命名车辆';
+    final plate = device.plateNo?.isNotEmpty == true
+        ? device.plateNo!
+        : '未设置车牌';
+    final deviceNumber = device.deviceNo?.isNotEmpty == true
+        ? device.deviceNo!
+        : 'ID：${device.deviceId}';
+
     return ReferenceCard(
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
@@ -108,39 +119,74 @@ class VehicleListView extends GetView<VehicleListController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    device.deviceName?.isNotEmpty == true
-                        ? device.deviceName!
-                        : device.plateNo ?? '未命名车辆',
-                    style: const TextStyle(
-                      color: AppColors.text,
-                      fontWeight: FontWeight.w700,
+                  SizedBox(
+                    height: 20,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    [
-                      if (device.plateNo?.isNotEmpty == true) device.plateNo!,
-                      'ID：${device.deviceId}',
-                      if (device.deviceNo?.isNotEmpty == true)
-                        '设备号：${device.deviceNo}',
-                    ].join(' · '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.secondaryText,
-                      fontSize: 12,
+                  SizedBox(
+                    height: 34,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _subtitleRow(label: '车牌', value: plate),
+                        _subtitleRow(label: '设备', value: deviceNumber),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             const Icon(
               CupertinoIcons.chevron_right,
               color: AppColors.secondaryText,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _subtitleRow({required String label, required String value}) {
+    return SizedBox(
+      height: 16,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.secondaryText,
+                fontSize: 11,
+                height: 1.45,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.secondaryText,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

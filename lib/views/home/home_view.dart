@@ -29,7 +29,7 @@ class HomeView extends GetView<HomeController> {
       showBottomNavBar: true,
       actions: [
         SizedBox(
-          width: 65,
+          width: 88,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -63,9 +63,9 @@ class HomeView extends GetView<HomeController> {
   }) {
     return CupertinoButton(
       padding: EdgeInsets.zero,
-      minimumSize: const Size(32, 32),
+      minimumSize: const Size(44, 44),
       onPressed: onPressed,
-      child: Icon(icon, size: 19),
+      child: Icon(icon, size: 22),
     );
   }
 
@@ -265,7 +265,7 @@ class HomeView extends GetView<HomeController> {
         controller.isLoggedIn.value && device != null && online;
     final inactiveColor = AppColors.secondaryText;
     // 最后定位：按接口返回的最后更新时间做相对展示
-    // （刚刚 / x分钟前 / x小时前 / x天前 / x个月前 / x年前）；
+    // （刚刚 / x小时前 / x天前 / x月前 / x年前）；
     // 接口没给时间但有定位时才兜底为「刚刚」。
     final lastLoc = relativeTime(
       detail?.lastUpdateTime,
@@ -273,32 +273,43 @@ class HomeView extends GetView<HomeController> {
     );
     return ReferenceCard(
       child: Row(
-        // 四项信息两端对齐铺满卡片宽度，避免左右两侧出现过大留白。
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _infoItem(
-            CupertinoIcons.battery_full,
-            '电量',
-            '${battery.toStringAsFixed(0)}%',
-            hasOnlineDevice ? AppColors.success : inactiveColor,
+          Flexible(
+            fit: FlexFit.loose,
+            child: _infoItem(
+              CupertinoIcons.battery_full,
+              '电量',
+              '${battery.toStringAsFixed(0)}%',
+              hasOnlineDevice ? AppColors.success : inactiveColor,
+            ),
           ),
-          _infoItem(
-            CupertinoIcons.bolt_fill,
-            '电压',
-            '${(detail?.status.voltage ?? 0).toStringAsFixed(1)}V',
-            hasOnlineDevice ? AppColors.warning : inactiveColor,
+          Flexible(
+            fit: FlexFit.loose,
+            child: _infoItem(
+              CupertinoIcons.bolt_fill,
+              '电压',
+              '${(detail?.status.voltage ?? 0).toStringAsFixed(1)}V',
+              hasOnlineDevice ? AppColors.warning : inactiveColor,
+            ),
           ),
-          _infoItem(
-            CupertinoIcons.wifi,
-            '设备状态',
-            online ? '在线' : '离线',
-            online ? AppColors.success : inactiveColor,
+          Flexible(
+            fit: FlexFit.loose,
+            child: _infoItem(
+              CupertinoIcons.wifi,
+              '设备状态',
+              online ? '在线' : '离线',
+              online ? AppColors.success : inactiveColor,
+            ),
           ),
-          _infoItem(
-            CupertinoIcons.time,
-            '最后定位',
-            lastLoc,
-            hasOnlineDevice ? AppColors.primary : inactiveColor,
+          Flexible(
+            fit: FlexFit.loose,
+            child: _infoItem(
+              CupertinoIcons.time,
+              '最后定位',
+              lastLoc,
+              hasOnlineDevice ? AppColors.primary : inactiveColor,
+            ),
           ),
         ],
       ),
@@ -306,34 +317,41 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _infoItem(IconData icon, String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 5),
+        Flexible(
+          fit: FlexFit.loose,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -440,21 +458,95 @@ class HomeView extends GetView<HomeController> {
           // 与「服务中心」模块保持一致：标题与内容间距 10。
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              MetricRing(
-                value: '${summary.tripCount}',
-                unit: '条',
-                label: '今日轨迹',
-                color: AppColors.primary,
+              Expanded(
+                child: _trackMetric(
+                  icon: CupertinoIcons.location,
+                  value: '${summary.tripCount}',
+                  unit: '条',
+                  label: '今日轨迹',
+                  color: AppColors.primary,
+                ),
               ),
-              MetricRing(
-                value: (summary.totalDistanceMeters / 1000).toStringAsFixed(1),
-                unit: 'km',
-                label: '今日里程',
-                color: AppColors.warning,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _trackMetric(
+                  icon: CupertinoIcons.speedometer,
+                  value: (summary.totalDistanceMeters / 1000).toStringAsFixed(
+                    1,
+                  ),
+                  unit: 'km',
+                  label: '今日里程',
+                  color: AppColors.warning,
+                ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _trackMetric({
+    required IconData icon,
+    required String value,
+    required String unit,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    text: value,
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: unit,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.secondaryText,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

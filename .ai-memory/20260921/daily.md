@@ -21,5 +21,40 @@ session-id: 20260921-0901
 ## [当前] - Bug 修复: 消除地图气泡箭头与主体间隙
 
 - **文件**: lib/views/home/home_view.dart、lib/views/device/list/device_list_view.dart
-- **决策**: 删除首页和设备列表气泡主体与 MapBubbleTail 之间多余的 3px 间距；公共箭头仍向上重叠主体底边，与车辆跟踪地图保持一致。
 - **验证**: flutter analyze 通过（仅保留既有 info）；flutter test 全量通过（27 个测试）。
+
+## [当前] - UI 优化: 统一我的车辆列表副标题布局
+
+- **文件**: lib/views/account/vehicles/list/vehicle_list_view.dart
+- **决策**: 将原先可能自然换行的拼接 subtitle 改为固定两行元数据：车牌、设备号（缺失时显示明确占位）；标题单行省略，元数据单行省略，确保每张车辆卡片高度一致、字段排列整齐。
+- **验证**: flutter analyze 通过（仅保留既有 info）；flutter test 全量通过（27 个测试）。
+
+## [当前] - Bug 修复: 统一车辆详情页无数据占位符
+
+- **文件**: lib/views/account/vehicles/detail/vehicle_detail_view.dart、lib/views/account/vehicles/detail/vehicle_detail_controller.dart
+- **决策**: 车辆详情字段统一将 null、空字符串和后端返回的 -- 显示为 -；附加信息查询方法默认 fallback 改为 -，更新时间不再显示 --。
+- **验证**: flutter analyze 通过（仅保留既有 info）；flutter test 全量通过（27 个测试）。
+
+## [当前] - 功能实现: 优化首页、设备状态、地图面板与消息展示
+
+- **文件**: lib/views/home/home_view.dart、lib/views/device/detail/detail_view.dart、lib/views/vehicle/playback/playback_controller.dart、lib/views/geofence/geofence_controller.dart、lib/models/message/msg_model.dart、lib/views/messages/messages_view.dart、lib/views/messages/message_detail_dialog.dart
+- **决策**: 放大首页右上角设备列表/添加按钮；将首页轨迹圆环改为紧凑指标卡；设备详情状态改为左图标右数值；轨迹回放和地理围栏面板默认展开；消息标题和正文分别使用后端 title 与 content。
+- **验证**: 目标文件静态诊断无 error/warning；flutter test 全量通过（27 个测试）；flutter analyze 仅报告既有 6 条 info。
+
+## [当前] - UI 优化: 简化设备详情状态横排
+
+- **文件**: lib/views/device/detail/detail_view.dart
+- **决策**: 移除每个状态数值的独立背景框和内边距，保留四项横向自适应分配空间的左图标右数值布局。
+- **验证**: flutter analyze lib/views/device/detail/detail_view.dart 通过；目标文件无 error/warning。
+
+## [当前] - UI 优化: 设备状态改为单行图标与标签数值布局
+
+- **文件**: lib/views/device/detail/detail_view.dart
+- **决策**: 设备状态四项保持同一行，每项左侧显示图标，右侧上下显示标签和数值；ID 模块图标缩小至 18。
+- **验证**: flutter analyze 目标文件通过；git diff --check 通过；目标文件无 error/warning。
+
+## [当前] - UI 优化: 首页信息项与全部设备入口调整
+
+- **文件**: lib/views/home/home_view.dart、lib/views/device/list/device_list_view.dart
+- **决策**: 首页电量、电压等四项信息统一为左图标、右侧标签和数值上下排列；全部设备页面移除顶部添加按钮及其跳转功能，仅保留地图/列表切换。
+- **验证**: 三个目标文件静态分析通过；flutter test 全量通过（27 个测试）。

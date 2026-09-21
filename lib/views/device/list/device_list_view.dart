@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
-import 'package:car/app/routes/router_instance.dart';
 import 'package:car/widgets/map_marker_bubble.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/models/home/device_model.dart';
@@ -31,11 +30,6 @@ class DeviceListView extends GetView<DeviceListController> {
             color: AppColors.text,
             onPressed: controller.toggleView,
           ),
-        ),
-        ReferenceIconButton(
-          icon: CupertinoIcons.add,
-          color: AppColors.text,
-          onPressed: () => Get.toNamed(Routes.addDevice),
         ),
       ],
       body: Obx(

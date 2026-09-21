@@ -1,7 +1,7 @@
 /// 时间格式化工具。
 library;
 
-/// 把时间转成「刚刚 / x分钟前 / x小时前 / x天前 / x个月前 / x年前」的相对描述。
+/// 把时间转成「刚刚 / x小时前 / x天前 / x月前 / x年前」的相对描述。
 ///
 /// 支持两种输入：
 /// - 日期时间字符串，如 `2026-09-17 10:30:00`；
@@ -23,16 +23,15 @@ String relativeTime(String? value, {String fallback = ''}) {
   if (date == null) return fallback;
 
   final difference = DateTime.now().difference(date);
-  // 服务端时间可能略微超前于本地，按「刚刚」处理。
-  if (difference.isNegative || difference.inMinutes < 1) return '刚刚';
-  if (difference.inHours < 1) return '${difference.inMinutes}分钟前';
+  if (difference.isNegative || difference.inHours < 1) return '刚刚';
   if (difference.inDays < 1) return '${difference.inHours}小时前';
 
   final days = difference.inDays;
   if (days < 30) return '$days天前';
   final months = days ~/ 30;
-  if (months < 12) return '$months个月前';
-  return '${days ~/ 365}年前';
+  if (months < 12) return '$months月前';
+  final years = days ~/ 365;
+  return '${years < 1 ? 1 : years}年前';
 }
 
 /// 格式化为 `yyyy-MM-dd HH:mm:ss`（接口通用的时间格式）。

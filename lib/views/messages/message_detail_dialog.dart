@@ -18,7 +18,10 @@ class MessageDetailDialog {
     _ => '系统消息',
   };
 
-  static Future<void> show(MessageModel message, {BuildContext? context}) async {
+  static Future<void> show(
+    MessageModel message, {
+    BuildContext? context,
+  }) async {
     if (context != null) {
       await showCupertinoDialog<void>(
         context: context,
@@ -31,7 +34,7 @@ class MessageDetailDialog {
 
   static CupertinoAlertDialog _build(MessageModel message) {
     return CupertinoAlertDialog(
-      title: Text(typeName(message.messageType)),
+      title: Text(message.title.isEmpty ? '暂无消息标题' : message.title),
       content: Padding(
         padding: const EdgeInsets.only(top: 12),
         child: SingleChildScrollView(

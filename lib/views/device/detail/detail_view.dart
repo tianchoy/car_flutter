@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 
@@ -30,7 +31,7 @@ class DetailView extends GetView<DetailController> {
             CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () => _showRefreshOptions(context),
-              child: const Icon(CupertinoIcons.timer, size: 19),
+              child: const Icon(CupertinoIcons.timer, size: 20),
             ),
           ],
           body: Obx(
@@ -219,12 +220,25 @@ class DetailView extends GetView<DetailController> {
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
-                CupertinoIcons.device_phone_portrait,
-                color: AppColors.primary,
+              SizedBox(
+                width: 20,
+                height: 22,
+                child: Center(
+                  child: Transform.translate(
+                    offset: defaultTargetPlatform == TargetPlatform.android
+                        ? const Offset(0, -3)
+                        : Offset.zero,
+                    child: const Icon(
+                      CupertinoIcons.device_phone_portrait,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 7),
               Expanded(
                 child: Text(
                   'ID：${device?.deviceNo ?? device?.deviceId ?? '--'}',
@@ -294,34 +308,40 @@ class DetailView extends GetView<DetailController> {
       child: Column(
         children: [
           const SectionTitle('设备状态'),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statusItem(
-                CupertinoIcons.wifi,
-                '信号',
-                controller.signalStrength,
-                hasOnlineDevice ? AppColors.success : inactiveColor,
-              ),
-              _statusItem(
-                CupertinoIcons.antenna_radiowaves_left_right,
-                '卫星',
-                controller.satelliteCount,
-                hasOnlineDevice ? AppColors.primaryDark : inactiveColor,
-              ),
-              _statusItem(
-                CupertinoIcons.bolt_fill,
-                '电压',
-                '${controller.voltage}V',
-                hasOnlineDevice ? AppColors.warning : inactiveColor,
-              ),
-              _statusItem(
-                CupertinoIcons.battery_full,
-                '电量',
-                '${controller.batteryPercent}%',
-                hasOnlineDevice ? AppColors.success : inactiveColor,
-              ),
+              for (final item in [
+                (
+                  CupertinoIcons.wifi,
+                  '信号',
+                  controller.signalStrength,
+                  hasOnlineDevice ? AppColors.success : inactiveColor,
+                ),
+                (
+                  CupertinoIcons.antenna_radiowaves_left_right,
+                  '卫星',
+                  controller.satelliteCount,
+                  hasOnlineDevice ? AppColors.primaryDark : inactiveColor,
+                ),
+                (
+                  CupertinoIcons.bolt_fill,
+                  '电压',
+                  '${controller.voltage}V',
+                  hasOnlineDevice ? AppColors.warning : inactiveColor,
+                ),
+                (
+                  CupertinoIcons.battery_full,
+                  '电量',
+                  '${controller.batteryPercent}%',
+                  hasOnlineDevice ? AppColors.success : inactiveColor,
+                ),
+              ])
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: _statusItem(item.$1, item.$2, item.$3, item.$4),
+                ),
             ],
           ),
         ],
@@ -330,20 +350,38 @@ class DetailView extends GetView<DetailController> {
   }
 
   Widget _statusItem(IconData icon, String label, String value, Color color) =>
-      Column(
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.secondaryText,
-              fontSize: 11,
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 5),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.secondaryText,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

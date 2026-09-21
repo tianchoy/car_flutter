@@ -150,7 +150,7 @@ class MessagesView extends GetView<MessagesController> {
                       children: [
                         Expanded(
                           child: Text(
-                            _typeName(message.messageType),
+                            message.title.isEmpty ? '暂无消息标题' : message.title,
                             style: TextStyle(
                               color: AppColors.text,
                               fontWeight: isUnread
@@ -243,13 +243,6 @@ class MessagesView extends GetView<MessagesController> {
       child: Icon(icon, color: color, size: 22),
     );
   }
-
-  String _typeName(int type) => switch (type) {
-    1 => '设备告警',
-    2 => '车辆动态',
-    3 => '服务通知',
-    _ => '系统消息',
-  };
 
   String _relativeTime(String value) {
     final date = DateTime.tryParse(value.replaceFirst(' ', 'T'));

@@ -73,8 +73,8 @@ class GeofenceController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
 
-  /// 底部围栏列表是否展开：进入页面默认收起，点击箭头展开，向下拖动收起。
-  final fenceListExpanded = false.obs;
+  /// 底部围栏列表是否展开：进入页面默认展开，向下拖动可收起。
+  final fenceListExpanded = true.obs;
 
   void toggleFenceList() => fenceListExpanded.value = !fenceListExpanded.value;
 

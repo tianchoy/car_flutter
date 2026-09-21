@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:car/utils/coord_transform.dart';
 import 'package:car/models/api_response.dart';
 import 'package:car/utils/geo_utils.dart';
+import 'package:car/utils/time_utils.dart';
 
 void main() {
   group('ApiResponse', () {
@@ -27,6 +28,42 @@ void main() {
 
       expect(response.isTokenExpired, isTrue);
       expect(response.isSuccess, isFalse);
+    });
+  });
+
+  group('relativeTime', () {
+    test('uses the requested relative time labels', () {
+      final now = DateTime.now();
+
+      expect(relativeTime(now.toIso8601String()), '刚刚');
+      expect(
+        relativeTime(now.subtract(const Duration(hours: 2)).toIso8601String()),
+        '2小时前',
+      );
+      expect(
+        relativeTime(now.subtract(const Duration(days: 2)).toIso8601String()),
+        '2天前',
+      );
+      expect(
+        relativeTime(now.subtract(const Duration(days: 60)).toIso8601String()),
+        '2月前',
+      );
+      expect(
+        relativeTime(now.subtract(const Duration(days: 400)).toIso8601String()),
+        '1年前',
+      );
+    });
+
+    test('falls back for empty or invalid values', () {
+      expect(relativeTime(null, fallback: '暂无位置'), '暂无位置');
+      expect(relativeTime('', fallback: '暂无位置'), '暂无位置');
+      expect(relativeTime('not-a-date', fallback: '暂无位置'), '暂无位置');
+      expect(
+        relativeTime(
+          DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+        ),
+        '刚刚',
+      );
     });
   });
 

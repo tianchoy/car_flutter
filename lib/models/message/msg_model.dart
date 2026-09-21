@@ -3,6 +3,7 @@ import '../api_response.dart';
 
 class MessageModel {
   final String messageId;
+  final String title;
   final String content;
   final int messageType;
   final int status;
@@ -14,6 +15,7 @@ class MessageModel {
 
   MessageModel({
     required this.messageId,
+    required this.title,
     required this.content,
     required this.messageType,
     required this.status,
@@ -27,6 +29,7 @@ class MessageModel {
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
       messageId: stringValue(json['messageId']),
+      title: stringValue(json['title']),
       content: stringValue(json['content']),
       messageType: intValue(json['messageType']),
       status: intValue(json['status']),

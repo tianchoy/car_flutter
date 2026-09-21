@@ -19,6 +19,7 @@ class VehicleDetailController extends GetxController {
   final errorMessage = ''.obs;
   final nameController = TextEditingController();
   final plateController = TextEditingController();
+
   /// 当前选中的车标（carType），编辑态下可更改。
   final carType = ''.obs;
 
@@ -79,10 +80,7 @@ class VehicleDetailController extends GetxController {
         return;
       }
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '保存失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '保存失败' : result.message);
         return;
       }
       current.deviceName = name;
@@ -133,10 +131,10 @@ class VehicleDetailController extends GetxController {
     }
   }
 
-  String value(List<String> keys, {String fallback = '--'}) {
+  String value(List<String> keys, {String fallback = '-'}) {
     for (final key in keys) {
       final value = additionalInfo[key]?.toString().trim() ?? '';
-      if (value.isNotEmpty) return value;
+      if (value.isNotEmpty && value != '--') return value;
     }
     return fallback;
   }
