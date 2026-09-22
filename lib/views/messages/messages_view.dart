@@ -14,6 +14,7 @@ class MessagesView extends GetView<MessagesController> {
   Widget build(BuildContext context) {
     return MainScaffold(
       title: '消息',
+      actions: [_buildMarkAllReadAction()],
       body: Obx(() {
         if (controller.isLoading.value && controller.messages.isEmpty) {
           return const Center(child: AppLoadingIndicator());
@@ -53,6 +54,27 @@ class MessagesView extends GetView<MessagesController> {
         );
       }),
     );
+  }
+
+  /// 标题右侧「一键已读」：有未读时高亮，请求中显示 loading。
+  Widget _buildMarkAllReadAction() {
+    return Obx(() {
+      final busy = controller.isMarkingAllRead.value;
+      final hasUnread = controller.unreadCount.value > 0;
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(36, 44),
+        onPressed: busy ? null : controller.markAllMessagesRead,
+        child: busy
+            ? const CupertinoActivityIndicator(radius: 9)
+            : Icon(
+                // 打开的信封：比「勾选」更直观地表达「全部已读」。
+                CupertinoIcons.envelope_open,
+                size: 18,
+                color: hasUnread ? AppColors.primary : AppColors.secondaryText,
+              ),
+      );
+    });
   }
 
   Widget _buildUnreadBanner() {

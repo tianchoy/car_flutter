@@ -23,7 +23,9 @@ String relativeTime(String? value, {String fallback = ''}) {
   if (date == null) return fallback;
 
   final difference = DateTime.now().difference(date);
-  if (difference.isNegative || difference.inHours < 1) return '刚刚';
+  if (difference.isNegative || difference.inMinutes < 1) return '刚刚';
+  // 1 小时以内按分钟展示：设备离线 10 分钟也要显示「10分钟前」而不是「刚刚」。
+  if (difference.inHours < 1) return '${difference.inMinutes}分钟前';
   if (difference.inDays < 1) return '${difference.inHours}小时前';
 
   final days = difference.inDays;

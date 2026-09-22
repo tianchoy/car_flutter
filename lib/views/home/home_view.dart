@@ -264,12 +264,12 @@ class HomeView extends GetView<HomeController> {
     final hasOnlineDevice =
         controller.isLoggedIn.value && device != null && online;
     final inactiveColor = AppColors.secondaryText;
-    // 最后定位：按接口返回的最后更新时间做相对展示
-    // （刚刚 / x小时前 / x天前 / x月前 / x年前）；
-    // 接口没给时间但有定位时才兜底为「刚刚」。
+    // 最后定位：优先用定位点自带的上报时间，其次用设备详情的最后更新时间。
+    // 设备离线后坐标不再变化，必须按真实上报时间算相对时间，不能兜底成「刚刚」。
+    final positionTime = controller.devicePositionTime.value;
     final lastLoc = relativeTime(
-      detail?.lastUpdateTime,
-      fallback: controller.devicePosition.value == null ? '暂无位置' : '刚刚',
+      positionTime.isNotEmpty ? positionTime : detail?.lastUpdateTime,
+      fallback: controller.devicePosition.value == null ? '暂无位置' : '暂无定位时间',
     );
     return ReferenceCard(
       child: Row(

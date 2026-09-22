@@ -70,6 +70,9 @@ class ApiEndpoints {
   static const String messages = '/usermessage/listForUser';
   static const String messageDetail = '/usermessage/detail/';
   static const String messageUnreadCount = '/app/message/unreadCount';
+
+  /// 一键已读全部消息（POST，幂等：无未读同样返回成功）。
+  static const String messageReadAll = '/usermessage/readAll';
   static const String homePlatformApp = '/home/platform/app';
 
   static const String deviceInfo = '/device/info/';

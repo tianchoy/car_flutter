@@ -39,9 +39,15 @@ class PlaybackController extends GetxController
   final isPlaying = false.obs;
   final isTrackPlayable = false.obs;
   final playbackSpeed = 1.0.obs;
+  final playbackProgress = 0.0.obs;
   final currentSpeed = 0.0.obs;
   final currentTimeStr = ''.obs;
   final initialCenter = Rxn<LatLng>();
+
+  bool _isSeeking = false;
+  bool _wasPlayingBeforeSeek = false;
+  double _segmentStartProgress = 0;
+  double _segmentEndProgress = 0;
 
   /// 底部播放面板是否展开：进入页面默认展开，可下滑收起。
   final panelExpanded = true.obs;
@@ -63,15 +69,101 @@ class PlaybackController extends GetxController
   // 静止点的漂移只有几米，若仍按漂移方向推算朝向，播放时车标会乱转。
   static const double _minBearingDistanceMeters = 10;
 
-  double get totalDistanceMeters {
-    var total = 0.0;
-    for (var index = 1; index < points.length; index++) {
-      total += GeoUtils.distanceMeters(
-        points[index - 1].latLng,
+  double get playbackProgressValue {
+    if (points.length < 2) return 0;
+    if (activeSegmentTargetIndex > currentIndex.value) {
+      final t = _animationController.value;
+      return (_segmentStartProgress +
+              (_segmentEndProgress - _segmentStartProgress) * t)
+          .clamp(0.0, 1.0);
+    }
+    return (currentIndex.value / (points.length - 1)).clamp(0.0, 1.0);
+  }
+
+  void beginSeek() {
+    // 拖动过程中可能重复收到 start（点击按下 + 拖动开始）：
+    // 第一次已经暂停并记录状态，后续重复调用必须忽略，
+    // 否则 _wasPlayingBeforeSeek 会被覆盖成 false，松手后无法续播。
+    if (_isSeeking) return;
+    _isSeeking = true;
+    _wasPlayingBeforeSeek = isPlaying.value;
+    if (_wasPlayingBeforeSeek) pausePlayback();
+  }
+
+  void seekTo(double progress) {
+    if (points.length < 2) return;
+    final normalized = progress.clamp(0.0, 1.0).toDouble();
+    final scaledIndex = normalized * (points.length - 1);
+    final index = scaledIndex.floor().clamp(0, points.length - 1);
+    final fraction = index >= points.length - 1 ? 0.0 : scaledIndex - index;
+    final point = index >= points.length - 1
+        ? points.last
+        : _interpolatePoint(points[index], points[index + 1], fraction);
+
+    _sessionId++;
+    _animationController.stop();
+    isPlaying.value = false;
+    activeSegmentTargetIndex = fraction > 0 ? index + 1 : -1;
+    currentIndex.value = index;
+    currentPoint.value = point;
+    currentSpeed.value = point.speed;
+    currentTimeStr.value = point.time;
+    playbackProgress.value = normalized;
+    _segmentStartProgress = normalized;
+    _segmentEndProgress = index >= points.length - 1
+        ? 1
+        : (index + 1) / (points.length - 1);
+    _moveMap(point.latLng);
+  }
+
+  void endSeek() {
+    if (!_isSeeking) return;
+    _isSeeking = false;
+    final shouldResume = _wasPlayingBeforeSeek;
+    _wasPlayingBeforeSeek = false;
+    if (shouldResume && playbackProgress.value < 1) startPlayback();
+  }
+
+  PlaybackPoint _interpolatePoint(
+    PlaybackPoint start,
+    PlaybackPoint end,
+    double progress,
+  ) {
+    final rotationDiff = GeoUtils.shortestAngleDelta(
+      start.rotation,
+      end.rotation,
+    );
+    return PlaybackPoint(
+      latitude: start.latitude + (end.latitude - start.latitude) * progress,
+      longitude: start.longitude + (end.longitude - start.longitude) * progress,
+      speed: start.speed + (end.speed - start.speed) * progress,
+      rotation: (start.rotation + rotationDiff * progress + 360) % 360,
+      time: progress < .5 ? start.time : end.time,
+      direction: start.direction + (end.direction - start.direction) * progress,
+    );
+  }
+
+  /// 累计里程前缀和：下标即“走到该点已行驶的距离（米）”。
+  /// 用它替代每帧遍历整条轨迹，底部面板/气泡每帧都会读取里程。
+  final List<double> _cumulativeDistance = <double>[0];
+
+  double get totalDistanceMeters =>
+      _cumulativeDistance.isEmpty ? 0 : _cumulativeDistance.last;
+
+  /// 已播放里程（米）：已完成分段的累计 + 当前动画片段走到渲染点的这一小段。
+  double get playedDistanceMeters {
+    if (points.isEmpty || _cumulativeDistance.length != points.length) return 0;
+    final index = currentIndex.value.clamp(0, points.length - 1);
+    var distance = _cumulativeDistance[index];
+    final rendered = currentPoint.value;
+    if (rendered != null && activeSegmentTargetIndex > index) {
+      distance += GeoUtils.distanceMeters(
         points[index].latLng,
+        rendered.latLng,
       );
     }
-    return total;
+    final total = totalDistanceMeters;
+    return distance <= total ? distance : total;
   }
 
   List<LatLng> get routePoints =>
@@ -248,8 +340,12 @@ class PlaybackController extends GetxController
 
     points.assignAll(deduped);
     isTrackPlayable.value = deduped.length > 1;
+    _rebuildCumulativeDistance();
     currentIndex.value = 0;
     activeSegmentTargetIndex = -1;
+    _segmentStartProgress = 0;
+    _segmentEndProgress = 0;
+    playbackProgress.value = 0;
 
     if (deduped.isNotEmpty) {
       currentPoint.value = deduped.first;
@@ -260,8 +356,27 @@ class PlaybackController extends GetxController
     _fitTrack();
   }
 
+  /// 重算累计里程前缀和（轨迹点变化时调用）。
+  void _rebuildCumulativeDistance() {
+    _cumulativeDistance
+      ..clear()
+      ..add(0);
+    for (var index = 1; index < points.length; index++) {
+      _cumulativeDistance.add(
+        _cumulativeDistance[index - 1] +
+            GeoUtils.distanceMeters(
+              points[index - 1].latLng,
+              points[index].latLng,
+            ),
+      );
+    }
+  }
+
   void _clearTrackDisplay() {
     pausePlayback();
+    _cumulativeDistance
+      ..clear()
+      ..add(0);
     points.clear();
     currentPoint.value = null;
     currentIndex.value = 0;
@@ -348,6 +463,7 @@ class PlaybackController extends GetxController
     pausePlayback();
     activeSegmentTargetIndex = -1;
     currentIndex.value = 0;
+    playbackProgress.value = 0;
     if (points.isNotEmpty) {
       currentPoint.value = points.first;
       currentSpeed.value = points.first.speed;
@@ -366,6 +482,14 @@ class PlaybackController extends GetxController
     activeSegmentTargetIndex = currentIndex.value + 1;
     _startPoint = start;
     _endPoint = target;
+    // 片段起止进度必须先算好：播放中每帧按这两个值插值，
+    // 否则进度条会停在 0%，仅到分段结束才跳一下（表现为 0%/1% 闪动）。
+    final lastIndex = points.length - 1;
+    _segmentStartProgress = (currentIndex.value / lastIndex).clamp(0.0, 1.0);
+    _segmentEndProgress = ((currentIndex.value + 1) / lastIndex).clamp(
+      0.0,
+      1.0,
+    );
 
     final distance = GeoUtils.distanceMeters(start.latLng, target.latLng);
     final recorded = start.speed > 0 && start.speed.isFinite
@@ -391,6 +515,7 @@ class PlaybackController extends GetxController
       currentIndex.value = currentIndex.value + 1;
       currentPoint.value = points[currentIndex.value];
       activeSegmentTargetIndex = -1;
+      playbackProgress.value = currentIndex.value / (points.length - 1);
       // renderPlaybackIndex: update displayed speed/time at segment boundary.
       currentSpeed.value = points[currentIndex.value].speed;
       currentTimeStr.value = points[currentIndex.value].time;
@@ -421,6 +546,7 @@ class PlaybackController extends GetxController
       direction: rotation,
     );
     currentPoint.value = rendered;
+    playbackProgress.value = playbackProgressValue;
     // Follow the car every frame so the smooth glide stays on screen.
     _moveMap(rendered.latLng);
   }
@@ -428,6 +554,13 @@ class PlaybackController extends GetxController
   void _finishPlayback() {
     pausePlayback();
     activeSegmentTargetIndex = -1;
+    playbackProgress.value = 1;
+    currentIndex.value = points.length - 1;
+    if (points.isNotEmpty) {
+      currentPoint.value = points.last;
+      currentSpeed.value = points.last.speed;
+      currentTimeStr.value = points.last.time;
+    }
     AppToast.show('提示', '轨迹回放完成');
   }
 

@@ -26,4 +26,8 @@ class MessagesRepository {
 
   Future<Response<dynamic>> fetchUnreadCount() =>
       _apiService.getUnreadMessageCount();
+
+  /// 一键已读全部消息（POST /usermessage/readAll，幂等）。
+  Future<Response<dynamic>> markAllMessagesRead() =>
+      _apiService.markAllMessagesRead();
 }

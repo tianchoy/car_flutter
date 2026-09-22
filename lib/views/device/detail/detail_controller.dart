@@ -426,14 +426,14 @@ class DetailController extends GetxController {
   String get displayAddress =>
       address.value.trim().isEmpty ? '暂无中文地址' : address.value.trim();
 
+  /// 自动刷新实际是否生效：设备离线时不建定时器，等同于「已停止刷新」。
+  bool get isAutoRefreshEnabled => isOnline && refreshIntervalSeconds.value > 0;
+
   /// 当前自动刷新频率文案：在设备信息卡片上直接展示选中的刷新间隔，
   /// 不用点右上角定时器图标才看得到。
-  String get refreshIntervalLabel => refreshIntervalSeconds.value <= 0
-      ? '已停止刷新'
-      : '${refreshIntervalSeconds.value} 秒刷新一次';
-
-  /// 是否开启了自动刷新（间隔 > 0）。
-  bool get isAutoRefreshEnabled => refreshIntervalSeconds.value > 0;
+  /// 设备离线时定时器不会运行，展示需与「停止刷新」一致，避免误导。
+  String get refreshIntervalLabel =>
+      isAutoRefreshEnabled ? '${refreshIntervalSeconds.value} 秒刷新一次' : '已停止刷新';
 
   void _updateRefreshTimer() {
     _refreshTimer?.cancel();

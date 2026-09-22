@@ -196,6 +196,12 @@ class ApiService {
     return _httpService.get<dynamic>(ApiEndpoints.messageUnreadCount);
   }
 
+  /// 一键已读全部消息（POST /usermessage/readAll）。
+  /// 无请求体、幂等：无未读时同样返回成功。
+  Future<Response<dynamic>> markAllMessagesRead() {
+    return _httpService.post<dynamic>(ApiEndpoints.messageReadAll);
+  }
+
   /// 获取平台续费目标微信小程序 AppID（GET /home/platform/app）。
   /// 该接口为匿名接口，响应 data 是可空字符串。
   Future<Response<dynamic>> getHomePlatformApp() {

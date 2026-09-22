@@ -58,3 +58,15 @@ session-id: 20260921-0901
 - **文件**: lib/views/home/home_view.dart、lib/views/device/list/device_list_view.dart
 - **决策**: 首页电量、电压等四项信息统一为左图标、右侧标签和数值上下排列；全部设备页面移除顶部添加按钮及其跳转功能，仅保留地图/列表切换。
 - **验证**: 三个目标文件静态分析通过；flutter test 全量通过（27 个测试）。
+
+## [当前] - 功能实现: 轨迹回放增加可拖动进度条并优化底部面板
+
+- **文件**: lib/views/vehicle/playback/playback_controller.dart、lib/views/vehicle/playback/playback_view.dart
+- **决策**: 进度以轨迹点序列归一化计算，拖动时暂停当前动画并即时更新车标、已播/未播路线和时间/速度信息；松手后若拖动前正在播放则从定位点继续播放。底部面板分层展示时间范围、回放进度、播放控制、倍速和轨迹指标。
+- **验证**: dart format 通过；git diff --check 通过；flutter analyze 目标文件通过；flutter test 全量通过（30 个测试）。
+
+## [当前] - UI 优化: 压缩轨迹回放底部面板
+
+- **文件**: lib/views/vehicle/playback/playback_view.dart
+- **决策**: 移除进度条两侧的当前时间、结束时间和说明文字，进度块改为单行“进度 + 滑块 + 百分比”；隐藏面板标题状态行，时间范围不显示秒；播放按钮、倍速滑块和倍速标签压缩为同一行；速度与里程保留为紧凑指标行，减少地图路线和车标遮挡。
+- **验证**: dart format 通过；git diff --check 通过；flutter analyze 目标文件通过；flutter test 全量通过（30 个测试）。

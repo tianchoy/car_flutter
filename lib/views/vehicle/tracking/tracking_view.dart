@@ -165,7 +165,8 @@ class TrackingView extends GetView<TrackingController> {
         Polyline(
           points: traveled,
           color: const Color(0xFF1890FF),
-          strokeWidth: 6,
+          // 线宽与未行驶的灰色虚线保持一致，避免蓝线过粗压过车标与底图。
+          strokeWidth: 3,
         ),
       );
     }

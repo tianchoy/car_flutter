@@ -36,9 +36,14 @@ class HomeController extends GetxController {
   );
   final currentPosition = const LatLng(39.9042, 116.4074).obs;
   final devicePosition = Rxn<LatLng>();
+
+  /// 最后一次定位的时间（设备上报的 GPS 时间，用于「最后定位」相对时间展示）。
+  final devicePositionTime = ''.obs;
+
   /// 选中设备的原始经纬度（WGS-84，未做偏移转换）：随路由传给下游页面，
   /// 使其首帧即可居中到真实位置，无需等待接口返回。
   final deviceRawPosition = Rxn<LatLng>();
+
   /// 是否已成功获取到「我的位置」（手机 GPS）：未获取到时不渲染地图，
   /// 避免用默认坐标（北京）兜底。
   final hasUserLocation = false.obs;
@@ -309,6 +314,9 @@ class HomeController extends GetxController {
       }
       deviceRawPosition.value = LatLng(latitude, longitude);
       devicePosition.value = transformToGCJ02(longitude, latitude);
+      // 记录定位点自带的时间，供「最后定位」计算相对时间：
+      // 设备离线后坐标不再变化，但时间会持续变旧，不能再显示「刚刚」。
+      devicePositionTime.value = _positionTimeOf(raw);
       positionState.value = 'available';
     } catch (error, stackTrace) {
       if (!_isClosed && generation == _loadGeneration) {
@@ -316,6 +324,23 @@ class HomeController extends GetxController {
         Log.e('加载设备位置失败', error: error, stackTrace: stackTrace);
       }
     }
+  }
+
+  /// 从定位点里取出时间字段：不同接口/设备的字段命名不一致，按常见顺序兜底。
+  String _positionTimeOf(Map raw) {
+    for (final key in const [
+      'deviceTime',
+      'positionUpdateTime',
+      'gpsTime',
+      'locateTime',
+      'updateTime',
+      'lastUpdateTime',
+      'time',
+    ]) {
+      final value = raw[key]?.toString().trim();
+      if (value != null && value.isNotEmpty && value != 'null') return value;
+    }
+    return '';
   }
 
   Future<void> _loadTrackSummary(
@@ -398,10 +423,7 @@ class HomeController extends GetxController {
       final response = await _repository.deleteDevice(device.deviceId);
       final result = ApiResponse<Object?>.fromJson(response.data);
       if (!result.isSuccess) {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '删除失败' : result.message,
-        );
+        AppToast.show('提示', result.message.isEmpty ? '删除失败' : result.message);
         return false;
       }
       AppToast.show('提示', '删除成功');

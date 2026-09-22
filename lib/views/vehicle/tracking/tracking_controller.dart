@@ -51,6 +51,11 @@ class TrackingController extends GetxController
   // 更新车头朝向所需的最小位移（米）：小于该值视为 GPS 漂移，保持原朝向。
   static const double _minBearingDistanceMeters = 10;
   int _requestGeneration = 0;
+
+  /// 车标已抵达的上报点下标（routePoints 内）：未抵达的点一律算未行驶。
+  /// 车标正在 A→B 途中时 C 上报，车标会改为直接插值到 C，此时 B 尚未抵达，
+  /// 已抵达下标仍停在 A，蓝色不会越过车标。
+  int _reachedIndex = 0;
   double _bearing = 0;
   double _targetBearing = 0;
 
@@ -82,14 +87,15 @@ class TrackingController extends GetxController
 
   /// 已行驶部分（蓝色实线）：起点 … 车标当前所在位置。
   ///
-  /// 最后一个点是「设备刚上报、车标尚未抵达」的目标点，先不计入已行驶，
-  /// 于是车标与最后一点之间剩余的路段会显示为未行驶的灰色虚线。
+  /// 以「车标已抵达的第 [_reachedIndex] 个上报点」为界：只有已抵达的点才算已行驶。
+  /// 车标还在 A→B 途中时新点 C 上报，B 仍属于未抵达，因此不会出现 B（甚至 B→C）
+  /// 先于车标被染成蓝色的问题。
   List<LatLng> get traveledRoutePoints {
     if (routePoints.isEmpty) return const <LatLng>[];
     final current = currentPosition.value;
     if (current == null) return routePoints.toList(growable: false);
-    final count = routePoints.length > 1 ? routePoints.length - 1 : 1;
-    final traveled = routePoints.take(count).toList();
+    final reached = _reachedIndex.clamp(0, routePoints.length - 1);
+    final traveled = routePoints.take(reached + 1).toList();
     if (traveled.isEmpty ||
         GeoUtils.distanceMeters(traveled.last, current) >= 1) {
       traveled.add(current);
@@ -97,14 +103,14 @@ class TrackingController extends GetxController
     return traveled;
   }
 
-  /// 未行驶部分（淡灰色虚线）：车标当前位置 → 最后一次上报点。
+  /// 未行驶部分（淡灰色虚线）：车标当前位置 → 所有尚未抵达的上报点。
   List<LatLng> get untraveledRoutePoints {
     final current = currentPosition.value;
-    if (routePoints.length < 2 || current == null) return const <LatLng>[];
-    final last = routePoints.last;
-    // 车标已抵达目标点（或几乎重合）时没有未行驶路段。
-    if (GeoUtils.distanceMeters(current, last) < 1) return const <LatLng>[];
-    return <LatLng>[current, last];
+    if (current == null) return const <LatLng>[];
+    final reached = _reachedIndex.clamp(0, routePoints.length - 1);
+    // 已抵达最后一个上报点：没有未行驶路段。
+    if (reached >= routePoints.length - 1) return const <LatLng>[];
+    return <LatLng>[current, ...routePoints.skip(reached + 1)];
   }
 
   @override
@@ -114,6 +120,12 @@ class TrackingController extends GetxController
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..addListener(_animatePosition);
+    // 动画走完即视为抵达目标点，未抵达点列表随之清空（全部转为已行驶）。
+    _animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _reachedIndex = routePoints.isEmpty ? 0 : routePoints.length - 1;
+      }
+    });
     // 同步取中心：优先上游随路由传入的坐标，其次缓存；保证首帧就落在车辆位置。
     initialCenter.value =
         _routeCenter() ?? DevicePositionCache.peek(_positionCacheKey ?? '');
@@ -328,6 +340,7 @@ class TrackingController extends GetxController
       currentPosition.value = next;
       _bearing = _targetBearing;
       _appendRoutePoint(next, reset: previous == null);
+      _markArrivedAtLastPoint();
       _moveMap(next);
       _lastReceivedAt = DateTime.now();
       return;
@@ -343,6 +356,7 @@ class TrackingController extends GetxController
       currentPosition.value = next;
       _bearing = _targetBearing;
       _appendRoutePoint(next, reset: true);
+      _markArrivedAtLastPoint();
       _moveMap(next);
       _lastReceivedAt = DateTime.now();
       return;
@@ -378,6 +392,7 @@ class TrackingController extends GetxController
   void _appendRoutePoint(LatLng point, {bool reset = false}) {
     if (reset) {
       routePoints.assignAll([point]);
+      _reachedIndex = 0;
       return;
     }
     if (routePoints.isNotEmpty &&
@@ -387,7 +402,14 @@ class TrackingController extends GetxController
     routePoints.add(point);
     if (routePoints.length > 500) {
       routePoints.removeAt(0);
+      // 丢弃最旧点后，已抵达下标同步前移一位。
+      if (_reachedIndex > 0) _reachedIndex--;
     }
+  }
+
+  /// 车标直接落位到某点（首帧 / 未开启动画 / 极端跳变）：该点即视为已抵达。
+  void _markArrivedAtLastPoint() {
+    _reachedIndex = routePoints.isEmpty ? 0 : routePoints.length - 1;
   }
 
   void _moveMap(LatLng point) {

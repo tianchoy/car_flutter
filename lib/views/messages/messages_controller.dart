@@ -21,6 +21,7 @@ class MessagesController extends GetxController {
   final isLoading = false.obs;
   final isLoadingMore = false.obs;
   final isCheckingNewMessages = false.obs;
+  final isMarkingAllRead = false.obs;
   final unreadCount = 0.obs;
   final totalCount = 0.obs;
   final pageSize = 10.obs;
@@ -149,6 +150,30 @@ class MessagesController extends GetxController {
     }
   }
 
+  /// 一键已读：全部标记为已读后刷新列表（接口幂等，无未读同样返回成功）。
+  Future<void> markAllMessagesRead() async {
+    if (_isClosed || isMarkingAllRead.value) return;
+    isMarkingAllRead.value = true;
+    try {
+      final response = await _repository.markAllMessagesRead();
+      final result = ApiResponse<Object?>.fromJson(response.data);
+      if (result.isSuccess) {
+        // 暂存的新消息已被标记已读，一并清空避免提示过期。
+        _pendingNewMessages.clear();
+        newMessageCount.value = 0;
+        await refreshMessages();
+      } else {
+        AppToast.show('提示', result.message.isEmpty ? '操作失败' : result.message);
+      }
+    } catch (error, stackTrace) {
+      Log.w('一键已读失败: $error');
+      Log.d(stackTrace);
+      if (!_isClosed) AppToast.show('提示', '操作失败，请稍后重试');
+    } finally {
+      if (!_isClosed) isMarkingAllRead.value = false;
+    }
+  }
+
   Future<void> _loadUnreadCount() async {
     try {
       final response = await _repository.fetchUnreadCount();
@@ -216,6 +241,7 @@ class MessagesController extends GetxController {
           latestLoadedTime = time;
         }
       }
+
       messages.forEach(remember);
       _pendingNewMessages.forEach(remember);
 
