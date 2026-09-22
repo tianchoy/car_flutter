@@ -68,8 +68,10 @@ class MessagesView extends GetView<MessagesController> {
         child: busy
             ? const CupertinoActivityIndicator(radius: 9)
             : Icon(
-                // 打开的信封：比「勾选」更直观地表达「全部已读」。
-                CupertinoIcons.envelope_open,
+                // 有未读：主题色的合上信封（实心）；无未读：打开的信封（灰色）。
+                hasUnread
+                    ? CupertinoIcons.envelope_fill
+                    : CupertinoIcons.envelope_open,
                 size: 18,
                 color: hasUnread ? AppColors.primary : AppColors.secondaryText,
               ),
