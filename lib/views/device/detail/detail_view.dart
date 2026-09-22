@@ -81,7 +81,8 @@ class DetailView extends GetView<DetailController> {
       AppSheetAction<int>(
         label: label,
         value: seconds,
-        isDefault: controller.refreshIntervalSeconds.value == seconds,
+        // 以「实际生效的刷新间隔」比对：设备离线时定时器不运行，选中项应为「停止刷新」。
+        isDefault: controller.selectedRefreshIntervalSeconds == seconds,
       );
 
   Widget _buildMapCard() {

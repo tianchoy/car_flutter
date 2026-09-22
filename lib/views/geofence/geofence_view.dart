@@ -396,6 +396,7 @@ class GeofenceView extends GetView<GeofenceController> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // 2×2 卡片式单选：底色胶囊 + 选中描边高亮，视觉更充实。
                 Row(
                   children: [
                     Expanded(
@@ -405,7 +406,7 @@ class GeofenceView extends GetView<GeofenceController> {
                         onPressed: () => setState(() => alarmType = 0),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _AlarmTypeOption(
                         label: _alarmTypeLabels[1],
@@ -415,6 +416,7 @@ class GeofenceView extends GetView<GeofenceController> {
                     ),
                   ],
                 ),
+                // 行间距与列间距同为 8，保证 2×2 网格四个方向留白一致。
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -425,7 +427,7 @@ class GeofenceView extends GetView<GeofenceController> {
                         onPressed: () => setState(() => alarmType = 2),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _AlarmTypeOption(
                         label: _alarmTypeLabels[3],
@@ -608,7 +610,8 @@ class _DeviceManagerSheet extends StatelessWidget {
 
 const List<String> _alarmTypeLabels = ['不告警', '出入告警', '出告警', '入告警'];
 
-/// 弹框内的固定高度单选项，避免使用可滚动组件导致 CupertinoAlertDialog 无法测量尺寸。
+/// 弹框内的固定高度单选卡片：底色胶囊 + 选中主题色描边，
+/// 避免使用可滚动组件导致 CupertinoAlertDialog 无法测量尺寸。
 class _AlarmTypeOption extends StatelessWidget {
   const _AlarmTypeOption({
     required this.label,
@@ -622,35 +625,52 @@ class _AlarmTypeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 34,
+    // 高度由内容 + 纵向内边距撑起，保证文字与上下边框之间留出呼吸空间。
+    height: 46,
     child: CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.zero,
       minimumSize: Size.zero,
       onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            selected
-                ? CupertinoIcons.check_mark_circled_solid
-                : CupertinoIcons.circle,
-            color: selected ? AppColors.primary : AppColors.secondaryText,
-            size: 15,
+      child: Container(
+        // 只加纵向内边距：左右间距由内容居中获得，已合适，不再改动。
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          // 选中：淡主题色底 + 主题色描边；未选中：浅灰底 + 分隔线描边。
+          color: selected
+              ? AppColors.primary.withValues(alpha: .08)
+              : AppColors.page,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary.withValues(alpha: .45)
+                : AppColors.divider,
           ),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                color: selected ? AppColors.primary : AppColors.text,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              selected
+                  ? CupertinoIcons.check_mark_circled_solid
+                  : CupertinoIcons.circle,
+              color: selected ? AppColors.primary : AppColors.secondaryText,
+              size: 16,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: selected ? AppColors.primary : AppColors.text,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

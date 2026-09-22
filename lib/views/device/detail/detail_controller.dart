@@ -435,6 +435,12 @@ class DetailController extends GetxController {
   String get refreshIntervalLabel =>
       isAutoRefreshEnabled ? '${refreshIntervalSeconds.value} 秒刷新一次' : '已停止刷新';
 
+  /// 刷新频率弹框的选中项：与 [refreshIntervalLabel] 保持同一口径。
+  /// 设备离线时定时器不会运行，展示为「已停止刷新」，弹框也要选中「停止刷新」（0），
+  /// 否则会出现文案说已停止、弹框却勾中「每 5 秒刷新」的矛盾。
+  int get selectedRefreshIntervalSeconds =>
+      isAutoRefreshEnabled ? refreshIntervalSeconds.value : 0;
+
   void _updateRefreshTimer() {
     _refreshTimer?.cancel();
     _refreshTimer = null;

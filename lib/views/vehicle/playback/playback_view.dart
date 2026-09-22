@@ -267,7 +267,7 @@ class PlaybackView extends GetView<PlaybackController> {
                     color: playable
                         ? AppColors.primary
                         : CupertinoColors.systemGrey4,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(5),
                     boxShadow: playable
                         ? const [
                             BoxShadow(
