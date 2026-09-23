@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 import '../../models/message/msg_model.dart';
+import '../../widgets/app_confirm_dialog.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/main_scaffold.dart';
 import '../../widgets/reference_ui.dart';
 import 'message_detail_dialog.dart';
@@ -14,7 +16,7 @@ class MessagesView extends GetView<MessagesController> {
   Widget build(BuildContext context) {
     return MainScaffold(
       title: '消息',
-      actions: [_buildMarkAllReadAction()],
+      actions: [_buildMarkAllReadAction(context)],
       body: Obx(() {
         if (controller.isLoading.value && controller.messages.isEmpty) {
           return const Center(child: AppLoadingIndicator());
@@ -56,15 +58,33 @@ class MessagesView extends GetView<MessagesController> {
     );
   }
 
+  /// 一键已读：无未读时顶部轻提示；有未读时先弹框确认，确认后才请求接口。
+  Future<void> _confirmMarkAllRead(BuildContext context) async {
+    // 当前没有未读消息：无需请求接口，顶部下拉提示即可。
+    if (controller.unreadCount.value <= 0 &&
+        controller.newMessageCount.value <= 0) {
+      AppToast.show('提示', '暂无未读消息');
+      return;
+    }
+    final confirmed = await showAppConfirmDialog(
+      context: context,
+      title: '一键已读',
+      message: '确定将全部消息标记为已读吗？',
+      confirmLabel: '已读',
+    );
+    if (confirmed != true || !context.mounted) return;
+    await controller.markAllMessagesRead();
+  }
+
   /// 标题右侧「一键已读」：有未读时高亮，请求中显示 loading。
-  Widget _buildMarkAllReadAction() {
+  Widget _buildMarkAllReadAction(BuildContext context) {
     return Obx(() {
       final busy = controller.isMarkingAllRead.value;
       final hasUnread = controller.unreadCount.value > 0;
       return CupertinoButton(
         padding: EdgeInsets.zero,
         minimumSize: const Size(36, 44),
-        onPressed: busy ? null : controller.markAllMessagesRead,
+        onPressed: busy ? null : () => _confirmMarkAllRead(context),
         child: busy
             ? const CupertinoActivityIndicator(radius: 9)
             : Icon(

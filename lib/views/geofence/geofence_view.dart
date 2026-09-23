@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:car/widgets/app_confirm_dialog.dart';
 import 'package:car/widgets/map_tile.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/app_bottom_sheet.dart';
@@ -328,23 +329,12 @@ class GeofenceView extends GetView<GeofenceController> {
   Future<void> _confirmDelete(BuildContext context) async {
     final fence = controller.selectedFence.value;
     if (fence == null) return;
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('删除围栏'),
-        content: Text('确定删除“${fence.name}”吗？'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除围栏',
+      message: '确定删除“${fence.name}”吗？',
+      confirmLabel: '删除',
+      isDestructive: true,
     );
     if (confirmed == true) await controller.deleteSelectedFence();
   }

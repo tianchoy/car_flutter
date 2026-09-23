@@ -349,7 +349,8 @@ class PlaybackController extends GetxController
 
     if (deduped.isNotEmpty) {
       currentPoint.value = deduped.first;
-      currentSpeed.value = deduped.first.speed;
+      // 未开始播放：车辆处于静止状态，速度展示为 0（车标仍停在起点）。
+      currentSpeed.value = 0;
       currentTimeStr.value = deduped.first.time;
     }
 
@@ -466,7 +467,8 @@ class PlaybackController extends GetxController
     playbackProgress.value = 0;
     if (points.isNotEmpty) {
       currentPoint.value = points.first;
-      currentSpeed.value = points.first.speed;
+      // 回到起点且未播放：速度展示为 0。
+      currentSpeed.value = 0;
       currentTimeStr.value = points.first.time;
     }
   }
@@ -546,6 +548,8 @@ class PlaybackController extends GetxController
       direction: rotation,
     );
     currentPoint.value = rendered;
+    // 播放过程中展示当前片段目标点的速度。
+    currentSpeed.value = rendered.speed;
     playbackProgress.value = playbackProgressValue;
     // Follow the car every frame so the smooth glide stays on screen.
     _moveMap(rendered.latLng);
@@ -558,7 +562,8 @@ class PlaybackController extends GetxController
     currentIndex.value = points.length - 1;
     if (points.isNotEmpty) {
       currentPoint.value = points.last;
-      currentSpeed.value = points.last.speed;
+      // 回放结束：车辆已停止，速度展示为 0。
+      currentSpeed.value = 0;
       currentTimeStr.value = points.last.time;
     }
     AppToast.show('提示', '轨迹回放完成');
@@ -594,18 +599,42 @@ class PlaybackController extends GetxController
     if (points.isNotEmpty) _fitTrack();
   }
 
-  void _fitTrack() {
-    if (points.isEmpty) return;
+  /// 让整条轨迹落在地图未被遮挡的可视区内。
+  ///
+  /// 顶部有浮动标题条、底部有播放抽屉，二者都会盖住地图，因此按当前抽屉
+  /// 展开状态留出对应的 padding，否则算出的缩放会把轨迹压到被遮挡的区域。
+  void _fitTrack({bool retryOnError = true}) {
+    final track = points.toList(growable: false);
+    if (track.isEmpty) return;
     try {
+      if (track.length == 1) {
+        mapController.move(track.first.latLng, 15);
+        return;
+      }
       final fit = CameraFit.coordinates(
-        coordinates: points.map((point) => point.latLng).toList(),
-        padding: const EdgeInsets.all(48),
-        maxZoom: 16,
+        coordinates: track.map((point) => point.latLng).toList(),
+        padding: EdgeInsets.fromLTRB(
+          48,
+          // 顶部浮动标题条高度（约 56）+ 车标上方的气泡高度（含与车标的间距），
+          // 否则轨迹顶端的车标气泡会被标题条盖住。
+          130,
+          48,
+          // 底部播放抽屉：展开时占位更高，收起后仅剩把手。
+          panelExpanded.value ? 240 : 88,
+        ),
+        // CameraFit 按轨迹实际范围双向计算缩放：范围越小 zoom 越大（放大），
+        // 范围越大 zoom 越小（缩小）；上限放宽到 17，避免小范围轨迹被压制。
+        maxZoom: 17,
       );
       final cam = fit.fit(mapController.camera);
       mapController.move(cam.center, cam.zoom);
     } catch (_) {
-      // Map is not attached yet.
+      if (!retryOnError || isClosed) return;
+      // Map is not attached yet：下一帧地图挂载后再算一次。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (isClosed) return;
+        _fitTrack(retryOnError: false);
+      });
     }
   }
 

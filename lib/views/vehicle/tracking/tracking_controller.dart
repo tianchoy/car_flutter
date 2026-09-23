@@ -68,14 +68,15 @@ class TrackingController extends GetxController
     return [
       Marker(
         point: point,
-        width: 44,
-        height: 48,
+        // 容器需容纳车标旋转后的外接矩形：24 × √2 ≈ 34，故取 36。
+        width: 36,
+        height: 36,
         child: Transform.rotate(
           angle: _bearing * 3.141592653589793 / 180,
           child: Image.asset(
             deviceIconPath(online: isOnline, carType: device?.carType),
-            width: 32,
-            height: 32,
+            width: 24,
+            height: 24,
             fit: BoxFit.contain,
             // 每帧重建 marker 时保留旧图，避免图片解析间隙导致车标闪白/丢失。
             gaplessPlayback: true,

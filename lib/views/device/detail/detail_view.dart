@@ -13,6 +13,7 @@ import 'package:car/widgets/app_toast.dart';
 import 'package:car/widgets/find_car.dart';
 import 'package:car/widgets/main_scaffold.dart';
 import 'package:car/widgets/app_bottom_sheet.dart';
+import 'package:car/widgets/app_confirm_dialog.dart';
 import 'package:car/widgets/reference_ui.dart';
 import 'detail_controller.dart';
 
@@ -49,7 +50,7 @@ class DetailView extends GetView<DetailController> {
                       // 设备状态放在「展示 ID」模块下方
                       if (controller.detail.value != null)
                         _buildStatusCard(controller.detail.value!),
-                      _buildFeatureCard(),
+                      _buildFeatureCard(context),
                     ]),
                   ),
                 ),
@@ -388,7 +389,7 @@ class DetailView extends GetView<DetailController> {
         ],
       );
 
-  Widget _buildFeatureCard() => ReferenceCard(
+  Widget _buildFeatureCard(BuildContext context) => ReferenceCard(
     child: Column(
       children: [
         const SectionTitle('车辆功能'),
@@ -459,14 +460,14 @@ class DetailView extends GetView<DetailController> {
               assetName: 'power',
               title: '恢复油电',
               color: AppColors.success,
-              onTap: () => _sendPowerCommand(restore: true),
+              onTap: () => _sendPowerCommand(restore: true, context: context),
             ),
             FeatureTile(
               icon: CupertinoIcons.xmark_octagon,
               assetName: 'offpower',
               title: '断开油电',
               color: AppColors.danger,
-              onTap: () => _sendPowerCommand(restore: false),
+              onTap: () => _sendPowerCommand(restore: false, context: context),
             ),
             _feature(
               CupertinoIcons.share,
@@ -488,54 +489,23 @@ class DetailView extends GetView<DetailController> {
     ),
   );
 
-  /// 断油电 / 恢复油电：确认后调用控制器下发指令（密码可留空）。
-  Future<void> _sendPowerCommand({required bool restore}) async {
-    final rootContext = Get.context;
-    if (rootContext == null) return;
-    final passwordController = TextEditingController();
-    final confirmed = await showCupertinoDialog<bool>(
-      context: rootContext,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(restore ? '恢复油电' : '断开油电'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Text(
-              restore ? '确定恢复车辆油电吗？' : '确定断开车辆油电吗？',
-              style: const TextStyle(fontSize: 15),
-            ),
-            const SizedBox(height: 10),
-            CupertinoTextField(
-              controller: passwordController,
-              placeholder: '密码（没有可留空）',
-              obscureText: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              style: const TextStyle(fontSize: 15),
-              placeholderStyle: const TextStyle(
-                fontSize: 15,
-                color: CupertinoColors.placeholderText,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
+  /// 断油电 / 恢复油电：确认后调用控制器下发指令。
+  ///
+  /// 只做「提示 + 确定 / 取消」：之前在弹框内嵌密码输入框，iOS 上键盘弹起会与
+  /// 弹框布局反复相互触发，偶发整屏卡死（重新打包后首次运行尤为明显）。
+  Future<void> _sendPowerCommand({
+    required bool restore,
+    required BuildContext context,
+  }) async {
+    final confirmed = await showAppConfirmDialog(
+      // 用页面自身的 context：Get.context 指向根 Navigator，
+      // 根 Navigator 与当前页路由栈不一致时弹框会挂到错误的栈上。
+      context: context,
+      title: restore ? '恢复油电' : '断开油电',
+      message: restore ? '确定恢复车辆油电吗？' : '确定断开车辆油电吗？',
     );
-    final password = passwordController.text;
-    passwordController.dispose();
-    if (confirmed != true) return;
-    await controller.sendPowerCommand(restore: restore, password: password);
+    if (confirmed != true || !context.mounted) return;
+    await controller.sendPowerCommand(restore: restore);
   }
 
   Widget _feature(

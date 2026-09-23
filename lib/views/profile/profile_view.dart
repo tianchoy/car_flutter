@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../app/routes/router_instance.dart';
 import '../../services/app_links.dart';
 import '../../services/url.dart';
+import '../../widgets/app_confirm_dialog.dart';
 import '../../widgets/main_scaffold.dart';
 import '../../widgets/reference_ui.dart';
 import 'profile_controller.dart';
@@ -267,26 +268,12 @@ class ProfileView extends GetView<ProfileController> {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('退出登录'),
-        content: const Padding(
-          padding: EdgeInsets.only(top: 12),
-          child: Text('确定要退出当前账号吗？'),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('退出登录'),
-          ),
-        ],
-      ),
+      title: '退出登录',
+      message: '确定要退出当前账号吗？',
+      confirmLabel: '退出登录',
+      isDestructive: true,
     );
     if (confirmed == true) await controller.logout();
   }

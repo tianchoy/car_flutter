@@ -87,3 +87,33 @@ session-id: 20260921-0901
 - **文件**: lib/views/vehicle/tracking/tracking_controller.dart
 - **决策**: 将车辆跟踪页地图车标图片由 36×36 调整为 32×32，与首页地图车标保持一致；保留跟踪页 Marker 44×48 布局区域，避免影响定位和旋转。
 - **验证**: dart format 通过；flutter analyze 目标文件无问题；git diff --check 通过。
+
+## [当前] - Bug 修复: 设备添加页设备号必须为纯数字
+
+- **文件**: lib/views/device/add/add_device_controller.dart
+- **决策**: 设备 ID 只能为纯数字；提交前校验非纯数字直接提示“设备 ID 只能为数字”并拦截提交；扫码回填同样执行该校验；15/11 位仍按 Web 端规则规整为 12 位；移除提交时打印设备号的调试输出。
+- **验证**: dart format 通过；flutter analyze 目标文件无问题。
+
+## [当前] - Bug 修复: 首页切换设备后地图立刻居中新车标
+
+- **文件**: lib/views/home/home_controller.dart
+- **决策**: 根因是 selectDevice 从不调用 mapController.move，且 MapTile 的 initialCenter 只在首次构建生效；切换设备前 devicePosition 仍是旧设备坐标。修复为切换时先用 DeviceModel 自带经纬度（GCJ-02 转换）更新 deviceRawPosition/devicePosition 并立即 move，接口返回后按 generation 再居中一次；MapController 未挂载时下一帧补移动；已有坐标时不把状态置为 loading。
+- **验证**: dart format 通过；flutter analyze 首页控制器与视图无问题；git diff --check 通过。
+
+## [当前] - Bug 修复: 轨迹回放气泡速度在未播放/结束时归零
+
+- **文件**: lib/views/vehicle/playback/playback_controller.dart、lib/views/vehicle/playback/playback_view.dart
+- **决策**: 气泡速度改为读取 currentSpeed（展示速度）；轨迹加载后与重置到起点时置 0，播放中每帧同步当前片段目标点速度，回放结束后置 0；拖动进度条仍显示所定位点的速度。
+- **验证**: dart format 通过；flutter analyze 两个目标文件无问题；git diff --check 通过。
+
+## [当前] - UI 修复: 轨迹回放加载后自适应缩放使整条轨迹落在可视区
+
+- **文件**: lib/views/vehicle/playback/playback_controller.dart
+- **决策**: _fitTrack 按未被顶部浮动标题条（top 72）与底部播放抽屉（展开 240 / 收起 88）遮挡的区域计算 CameraFit；单点时直接 move 到 zoom 15；地图未挂载时下一帧重试，避免 fit 被静默吞掉。
+- **验证**: dart format 通过；flutter analyze 目标文件无问题；git diff --check 通过。
+
+## [当前] - UI 修复: 车标气泡不被顶部标题条遮挡且间距与首页一致
+
+- **文件**: lib/views/vehicle/playback/playback_view.dart、lib/views/vehicle/playback/playback_controller.dart、lib/views/vehicle/tracking/tracking_view.dart
+- **决策**: 气泡 Marker 改为内容底部对齐并上抬「车标半高 + 3」，与首页气泡箭头尖端到车标的 3px 间距一致（回放页车标 32 半高 16 → 19；跟踪页车标 24 半高 12 → 15）；回放页 _fitTrack 顶部 padding 由 72 提到 130，预留标题条与气泡空间。
+- **验证**: dart format 通过；flutter analyze 三个目标文件无问题；git diff --check 通过。

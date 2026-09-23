@@ -10,6 +10,7 @@ import '../../app/routes/router_instance.dart';
 import '../../services/app_links.dart';
 import '../../utils/car_icon.dart';
 import '../../utils/time_utils.dart';
+import '../../widgets/app_confirm_dialog.dart';
 import '../../widgets/app_popup.dart';
 import '../../widgets/map_marker_bubble.dart';
 import '../../widgets/map_tile.dart';
@@ -641,26 +642,12 @@ class HomeView extends GetView<HomeController> {
     final name = device.deviceName?.isNotEmpty == true
         ? device.deviceName!
         : device.plateNo ?? device.deviceId;
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('删除设备'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text('确定删除“$name”吗？删除后不可恢复。'),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除设备',
+      message: '确定删除“$name”吗？删除后不可恢复。',
+      confirmLabel: '删除',
+      isDestructive: true,
     );
     if (confirmed == true) await controller.deleteDevice(device);
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -116,13 +117,21 @@ class HomeController extends GetxController {
   }
 
   /// 把地图视角移动到当前选中设备的位置，使车标回到地图中心。
-  void _moveToDeviceLocation() {
+  ///
+  /// [retryOnError] 用于 MapController 尚未挂载到地图（首帧未渲染）时，
+  /// 在下一帧补一次移动，避免切设备/刷新后视角不跟随。
+  void _moveToDeviceLocation({bool retryOnError = true}) {
     final point = devicePosition.value;
     if (point == null) return;
     try {
       mapController.move(point, mapController.camera.zoom);
     } catch (_) {
+      if (!retryOnError || _isClosed) return;
       // MapController is not attached until the first map frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_isClosed || devicePosition.value == null) return;
+        _moveToDeviceLocation(retryOnError: false);
+      });
     }
   }
 
@@ -170,6 +179,10 @@ class HomeController extends GetxController {
         return;
       }
       await _loadSelectedDevice(device, generation: generation);
+      // 下拉刷新 / 重新拉取列表后，让地图中心回到当前设备的车标位置。
+      if (!_isClosed && generation == _loadGeneration) {
+        _moveToDeviceLocation();
+      }
     } catch (error, stackTrace) {
       if (!_isClosed && generation == _loadGeneration) {
         errorMessage.value = '获取设备列表失败，请稍后重试';
@@ -385,6 +398,10 @@ class HomeController extends GetxController {
     await setSession(SessionKeys.selectedDeviceIndex, '$index');
     final generation = ++_loadGeneration;
     await _loadSelectedDevice(device, generation: generation);
+    // 新设备位置就绪后，把地图中心移到该车标位置。
+    if (!_isClosed && generation == _loadGeneration) {
+      _moveToDeviceLocation();
+    }
   }
 
   Future<void> refreshLocation() async {

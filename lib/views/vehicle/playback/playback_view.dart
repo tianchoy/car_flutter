@@ -164,15 +164,20 @@ class PlaybackView extends GetView<PlaybackController> {
                 markers.add(
                   Marker(
                     point: point.latLng,
-                    // 顶部对齐到车辆坐标：整个气泡框落在车标上方，不遮挡车标。
+                    // 整体位于坐标点上方；内容底部再上抬「车标半高 16 + 3」，
+                    // 与首页气泡箭头尖端到车标的间距保持一致。
                     alignment: Alignment.topCenter,
                     width: 192,
-                    height: 58,
+                    height: 96,
                     child: Align(
-                      alignment: Alignment.topCenter,
-                      child: _TrackInfoBubble(
-                        speed: point.speed,
-                        distanceKm: controller.playedDistanceMeters / 1000,
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 19),
+                        child: _TrackInfoBubble(
+                          // 展示速度：未播放/播放结束为 0，播放中为对应点速度。
+                          speed: controller.currentSpeed.value,
+                          distanceKm: controller.playedDistanceMeters / 1000,
+                        ),
                       ),
                     ),
                   ),

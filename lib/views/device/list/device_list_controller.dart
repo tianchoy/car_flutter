@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
+import 'package:car/widgets/app_confirm_dialog.dart';
 import 'package:car/widgets/app_toast.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -28,10 +29,9 @@ class DeviceListController extends GetxController {
   int get offlineCount => devices.length - onlineCount;
 
   /// 当前首页选中的设备（来自 HomeController，跨页面共享），用于在列表中高亮「当前」设备。
-  DeviceModel? get selectedDevice =>
-      Get.isRegistered<HomeController>()
-          ? Get.find<HomeController>().selectedDevice.value
-          : null;
+  DeviceModel? get selectedDevice => Get.isRegistered<HomeController>()
+      ? Get.find<HomeController>().selectedDevice.value
+      : null;
   List<DeviceModel> get filteredDevices {
     if (filter.value == '在线') {
       return devices.where((device) => device.isOnline).toList();
@@ -94,25 +94,13 @@ class DeviceListController extends GetxController {
       Get.toNamed(Routes.detail, arguments: device);
 
   Future<void> unbindDevice(BuildContext context, DeviceModel device) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('解绑设备'),
-        content: Text(
+      title: '解绑设备',
+      message:
           '确定解绑“${device.plateNo ?? device.deviceName ?? device.deviceId}”吗？',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('解绑'),
-          ),
-        ],
-      ),
+      confirmLabel: '解绑',
+      isDestructive: true,
     );
     if (confirmed != true) return;
     try {

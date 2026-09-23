@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:car/widgets/app_confirm_dialog.dart';
 import 'package:car/widgets/app_toast.dart';
 
 import 'package:car/widgets/main_scaffold.dart';
@@ -402,23 +403,11 @@ class CommandsView extends GetView<CommandsController> {
     if (!controller.validateForm()) return;
     final command = controller.selectedCommand.value;
     if (command == null) return;
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAppConfirmDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('确认下发指令'),
-        content: Text('即将向设备下发“${command.name}”，请确认设备当前状态适合执行此操作。'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('确认下发'),
-          ),
-        ],
-      ),
+      title: '确认下发指令',
+      message: '即将向设备下发“${command.name}”，请确认设备当前状态适合执行此操作。',
+      confirmLabel: '确认下发',
     );
     if (confirmed == true) await controller.sendSelectedCommand();
   }

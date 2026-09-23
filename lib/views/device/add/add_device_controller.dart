@@ -35,7 +35,15 @@ class AddDeviceController extends GetxController {
   }
 
   void validateDeviceId(String value) {
-    deviceIdError.value = value.trim().isEmpty ? '请输入设备 ID / 设备号' : '';
+    final text = value.trim();
+    if (text.isEmpty) {
+      deviceIdError.value = '请输入设备 ID / 设备号';
+    } else if (!RegExp(r'^\d+$').hasMatch(text)) {
+      // 设备 ID 为纯数字，含字母/其它字符时不允许提交（与后端 ID 规则一致）。
+      deviceIdError.value = '设备 ID 只能为数字';
+    } else {
+      deviceIdError.value = '';
+    }
   }
 
   void validateCarType() {
@@ -56,8 +64,10 @@ class AddDeviceController extends GetxController {
     // 而注册的 GetPageRoute 是 dynamic，会抛类型异常导致点击无反应。
     final result = await Get.toNamed(Routes.scanCode);
     if (result is String && result.trim().isNotEmpty) {
-      deviceIdController.text = result.trim();
-      deviceIdError.value = '';
+      final scanned = result.trim();
+      deviceIdController.text = scanned;
+      // 扫码回填后同样按纯数字规则校验，含字母的二维码不直接放过。
+      validateDeviceId(scanned);
     }
   }
 
@@ -76,7 +86,6 @@ class AddDeviceController extends GetxController {
       final name = nameController.text.trim();
       // 提交时规整设备 ID（与 Web 端规则一致，见 _normalizeDeviceId）。
       final deviceId = _normalizeDeviceId(deviceIdController.text);
-      print('deviceId: $deviceId');
       final response = await _repository.addDevice(<String, dynamic>{
         // 名称非必填：留空时不提交该字段，避免后端校验空字符串而报错。
         if (name.isNotEmpty) 'deviceName': name,

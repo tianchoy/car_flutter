@@ -144,13 +144,17 @@ class TrackingView extends GetView<TrackingController> {
       ...carMarkers,
       Marker(
         point: point,
-        // 顶部对齐到车辆坐标：整个气泡框落在车标上方，不遮挡车标。
+        // 整体位于车辆坐标上方；内容底部上抬「车标半高 12 + 3」，
+        // 与首页气泡箭头尖端到车标的间距保持一致。
         alignment: Alignment.topCenter,
         width: 140,
-        height: 54,
+        height: 96,
         child: Align(
-          alignment: Alignment.topCenter,
-          child: _SpeedBubble(speed: controller.speed.value),
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 15),
+            child: _SpeedBubble(speed: controller.speed.value),
+          ),
         ),
       ),
     ];
