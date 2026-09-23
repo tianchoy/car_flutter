@@ -99,7 +99,7 @@ class MileageController extends GetxController {
   }) async {
     final selected = await showReferenceDateTimePicker(
       context: context,
-      initialDate: start ? startTime.value : endTime.value,
+      initialDate: start ? startTime.value : DateTime.now(),
     );
     if (selected == null) return;
     if (start) {

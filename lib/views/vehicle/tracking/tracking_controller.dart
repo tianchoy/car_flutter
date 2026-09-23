@@ -74,8 +74,8 @@ class TrackingController extends GetxController
           angle: _bearing * 3.141592653589793 / 180,
           child: Image.asset(
             deviceIconPath(online: isOnline, carType: device?.carType),
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             fit: BoxFit.contain,
             // 每帧重建 marker 时保留旧图，避免图片解析间隙导致车标闪白/丢失。
             gaplessPlayback: true,

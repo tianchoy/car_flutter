@@ -123,8 +123,8 @@ class DetailView extends GetView<DetailController> {
                             errMsg: controller.errorMessage.value,
                             markers: [
                               Marker(
-                                width: 38,
-                                height: 38,
+                                width: 32,
+                                height: 32,
                                 point: point,
                                 child: Image.asset(
                                   deviceIconPath(

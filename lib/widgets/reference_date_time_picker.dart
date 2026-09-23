@@ -22,6 +22,25 @@ DateTime _sixMonthsAgo(DateTime value) {
   );
 }
 
+DateTime _withoutSubseconds(DateTime value) => DateTime(
+  value.year,
+  value.month,
+  value.day,
+  value.hour,
+  value.minute,
+  value.second,
+);
+
+DateTime _clampDateTime(
+  DateTime value, {
+  required DateTime minimum,
+  required DateTime maximum,
+}) {
+  if (value.isBefore(minimum)) return minimum;
+  if (value.isAfter(maximum)) return maximum;
+  return value;
+}
+
 /// Shows the shared date-and-time picker with the app's supported bounds.
 ///
 /// Uses `flutter_cupertino_datetime_picker`, which is a Cupertino-native picker
@@ -33,15 +52,17 @@ Future<DateTime?> showReferenceDateTimePicker({
   bool allowFuture = false,
 }) {
   final now = DateTime.now();
-  final minimumDate = allowFuture ? now : _sixMonthsAgo(now);
+  final minimumDate = _withoutSubseconds(
+    allowFuture ? now : _sixMonthsAgo(now),
+  );
   final maximumDate = allowFuture
       ? DateTime(now.year + 100, now.month, now.day, 23, 59, 59)
-      : now;
-  final clampedInitial = initialDate.isBefore(minimumDate)
-      ? minimumDate
-      : initialDate.isAfter(maximumDate)
-          ? maximumDate
-          : initialDate;
+      : _withoutSubseconds(now);
+  final clampedInitial = _clampDateTime(
+    _withoutSubseconds(initialDate),
+    minimum: minimumDate,
+    maximum: maximumDate,
+  );
 
   final completer = Completer<DateTime?>();
   // Guards against double completion (confirm/cancel also trigger onClose).
@@ -73,7 +94,9 @@ Future<DateTime?> showReferenceDateTimePicker({
       titleHeight: 44.0,
     ),
     onCancel: () => settle(null),
-    onConfirm: (dateTime, _) => settle(dateTime),
+    onConfirm: (dateTime, _) => settle(
+      _clampDateTime(dateTime, minimum: minimumDate, maximum: maximumDate),
+    ),
     onClose: () => settle(null),
   );
 

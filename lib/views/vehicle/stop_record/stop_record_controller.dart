@@ -22,6 +22,7 @@ class StopRecordController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final records = <StopRecord>[].obs;
+
   /// 正在解析中文地址的记录 key（避免重复点击、用于显示「解析中…」）。
   final parsingKeys = <String>{}.obs;
 
@@ -125,7 +126,7 @@ class StopRecordController extends GetxController {
   }) async {
     final selected = await showReferenceDateTimePicker(
       context: context,
-      initialDate: start ? startTime.value : endTime.value,
+      initialDate: start ? startTime.value : DateTime.now(),
     );
     if (selected == null) return;
     if (start) {
@@ -135,5 +136,4 @@ class StopRecordController extends GetxController {
     }
     await load();
   }
-
 }

@@ -70,3 +70,20 @@ session-id: 20260921-0901
 - **文件**: lib/views/vehicle/playback/playback_view.dart
 - **决策**: 移除进度条两侧的当前时间、结束时间和说明文字，进度块改为单行“进度 + 滑块 + 百分比”；隐藏面板标题状态行，时间范围不显示秒；播放按钮、倍速滑块和倍速标签压缩为同一行；速度与里程保留为紧凑指标行，减少地图路线和车标遮挡。
 - **验证**: dart format 通过；git diff --check 通过；flutter analyze 目标文件通过；flutter test 全量通过（30 个测试）。
+## [当前] - Bug 修复: 结束时间选择器禁止超过当前时间
+
+- **文件**: lib/widgets/reference_date_time_picker.dart、third_party/flutter_cupertino_datetime_picker/lib/src/widget/datetime_picker_widget.dart、pubspec.yaml、pubspec.lock、analysis_options.yaml
+- **决策**: 默认非未来模式将最大时间统一截断到打开选择器时的当前秒；确认结果再次做上下限保护；本地依赖修正最大分钟和最大秒边界错误，避免滚轮放行当前时间之后的几秒。设备分享的 `allowFuture: true` 保持原有未来日期能力。
+- **验证**: dart format 通过；flutter pub get 成功；目标文件静态检查无 error/warning；项目级 `flutter analyze` 仅剩原有 6 条 info；git diff --check 通过。
+
+## [当前] - Bug 修复: 结束时间选择器初始值对齐打开时刻
+
+- **文件**: lib/views/vehicle/mileage/mileage_controller.dart、lib/views/vehicle/stop_record/stop_record_controller.dart、lib/views/vehicle/playback/playback_controller.dart
+- **决策**: 秒列“多出的秒”是页面加载时记录的旧 endTime 与选择器打开时刻（真正上限）之间的过去秒，并非未来时间；将结束时间选择器打开时的初始值改为打开那一刻的 DateTime.now()，使秒滚轮最后一项就是当前秒。开始时间仍用已存值初始化。
+- **验证**: dart format 通过；flutter analyze 三个目标文件无问题。
+
+## [当前] - UI 修复: 统一车辆跟踪页与首页地图车标尺寸
+
+- **文件**: lib/views/vehicle/tracking/tracking_controller.dart
+- **决策**: 将车辆跟踪页地图车标图片由 36×36 调整为 32×32，与首页地图车标保持一致；保留跟踪页 Marker 44×48 布局区域，避免影响定位和旋转。
+- **验证**: dart format 通过；flutter analyze 目标文件无问题；git diff --check 通过。

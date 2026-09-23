@@ -646,8 +646,8 @@ class GeofenceController extends GetxController {
     if (point != null) {
       result.add(
         Marker(
-          width: 40,
-          height: 40,
+          width: 32,
+          height: 32,
           point: point,
           child: Image.asset(
             deviceIconPath(

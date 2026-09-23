@@ -47,7 +47,8 @@ dependencies:
   flutter_dotenv: ^6.0.1
   webview_flutter: ^4.13.0
   mobile_scanner: ^7.4.1
-  flutter_cupertino_datetime_picker: ^3.0.0
+  flutter_cupertino_datetime_picker:
+    path: third_party/flutter_cupertino_datetime_picker
   bottom_picker: ^5.0.0
   map_launcher: ^6.0.0
   flutter_localizations:

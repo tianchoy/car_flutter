@@ -180,8 +180,8 @@ class PlaybackView extends GetView<PlaybackController> {
                 markers.add(
                   Marker(
                     point: point.latLng,
-                    width: 38,
-                    height: 38,
+                    width: 32,
+                    height: 32,
                     child: Transform.rotate(
                       angle: point.rotation * pi / 180,
                       child: Image.asset(
