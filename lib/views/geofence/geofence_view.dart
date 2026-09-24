@@ -518,17 +518,6 @@ class _DeviceManagerSheet extends StatelessWidget {
                       ? const Center(child: AppLoadingIndicator())
                       : _buildDeviceList(),
                 ),
-                // 开关切换即时生效，不再需要批量按钮；此处仅保留一行操作说明。
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(
-                    '开关开启表示已绑定，关闭表示未绑定，切换后即时生效',
-                    style: TextStyle(
-                      color: AppColors.secondaryText,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -545,6 +534,9 @@ class _DeviceManagerSheet extends StatelessWidget {
     }
     return ListView.separated(
       itemCount: devices.length,
+      // 不显式指定 padding 时 ListView 会沿用 MediaQuery 顶部状态栏 inset，
+      // 在弹框内表现为分段控件下方一段空白，这里显式清零。
+      padding: EdgeInsets.zero,
       // 相邻设备之间用淡灰色横线分割，列表层次更清晰。
       separatorBuilder: (_, _) => Container(
         height: 1,
