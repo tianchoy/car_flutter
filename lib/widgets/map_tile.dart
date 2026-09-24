@@ -100,7 +100,14 @@ class MapTile extends StatelessWidget {
                   size: const Size(40, 40),
                   markers: markers,
                   maxClusterRadius: 120,
-                  disableClusteringAtZoom: 18,
+                  // 插件在 zoom <= disableClusteringAtZoom 时聚合，
+                  // 地图 maxZoom 为 18，因此需低于 18 才能在放大后散开车标。
+                  disableClusteringAtZoom: 17,
+                  // 插件默认用 opaque GestureDetector 包住整个 marker 矩形，
+                  // 会导致重叠车标中下层车标被上层的透明区域挡住无法点击。
+                  // 改为 true 后仅车标可见区域响应点击（各页面 marker
+                  // 均自带 GestureDetector）。
+                  markerChildBehavior: true,
                   builder: (context, clusteredMarkers) {
                     return _buildClusterMarker(context, clusteredMarkers);
                   },
@@ -226,10 +233,7 @@ class MapInfoHintState extends State<MapInfoHint> {
           ignoring: !_visible,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: CupertinoColors.white.withValues(alpha: .92),
                 borderRadius: BorderRadius.circular(14),
