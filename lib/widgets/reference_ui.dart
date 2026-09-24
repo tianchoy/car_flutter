@@ -14,6 +14,9 @@ abstract final class AppColors {
   static const success = Color(0xFF20B26B);
   static const warning = Color(0xFFFFA726);
   static const danger = Color(0xFFE85D5D);
+
+  /// 未读角标底色：比 [danger] 更深，保证白字在小尺寸下也够清晰。
+  static const badge = Color(0xFFE53935);
 }
 
 class ReferencePage extends StatelessWidget {

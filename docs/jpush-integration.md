@@ -49,7 +49,8 @@ Channel 不同：插件在 `setup()` 里对两端都调用 `JPushInterface.setCh
 - 注册事件回调后再 `setup`，保证 SDK 缓存的冷启动点击事件能被派发；
 - RegistrationID 为空时每 3 秒重试，最多 5 次；
 - RegistrationID 写入 `SessionKeys.pushRegistrationId`，退出登录时保留（它是设备标识，不是账号数据）；
-- 回到前台刷新 RegistrationID 并清零角标。
+- 回到前台刷新 RegistrationID 并清零角标；**清角标不受登录态与推送初始化限制**
+  （`main()` 启动时与回前台时都会调 `setBadge(0)`，避免 token 过期停在登录页时角标残留）。
 
 ### 4.2 收到推送后的行为
 
@@ -59,10 +60,16 @@ Channel 不同：插件在 `setup()` 里对两端都调用 `JPushInterface.setCh
 4. 消息页刷新列表，在第一页找到同一 `messageId` 时自动打开详情并标记已读；
 5. JPush 的 `msgId` 是通道侧消息 ID，**不作为**业务消息 ID 的兜底。
 
-### 4.3 iOS 角标策略
+### 4.3 角标策略
 
 本应用没有服务端同步的全局未读数，列表里的 `status` 只表示单条消息已读状态。
-因此 iOS 主屏幕角标固定为 `0`：启动、回到前台、处理推送事件时都会 `setBadge(0)`。
+因此主屏幕角标固定为 `0`：
+
+- iOS：启动（`main()`）、回到前台、处理推送事件时都会 `setBadge(0)`；未登录 /
+  token 过期时同样清零（插件内部会先直接改 `applicationIconBadgeNumber`）；
+- Android：极光角标接口官方仅支持华为机型（`JPushInterface.setBadgeNumber`），
+  其余 ROM 的角标跟随通知栏条数，因此在「点击通知」「进入消息页」「一键已读」时
+  调用 `clearAllNotifications()`，让角标随通知栏一起消失。
 
 后端下发 iOS 通知时必须省略 `aps.badge` 或显式发 `0`。
 
@@ -103,7 +110,8 @@ POST /app/push/bind
 - [ ] 日志出现「JPush RegistrationID 已就绪」，并成功调用 `/app/push/bind`；
 - [ ] 极光控制台按 RegistrationID 发测试：前台接收、后台系统通知、杀进程冷启动、点击进入消息中心；
 - [ ] payload 带有效 `messageId`，验证消息中心刷新与详情自动打开；
-- [ ] iOS 角标保持为 0。
+- [ ] iOS 角标保持为 0（含未登录 / token 过期停在登录页时）；
+- [ ] Android 华为机型：收到推送后角标出现，进入消息页 / 一键已读 / 点击通知后角标与通知栏一起消失。
 
 ### 6.1 厂商通道验证（需真机 + 发布签名）
 

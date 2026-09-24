@@ -24,8 +24,8 @@ class MessagesRepository {
     return _apiService.markMessageRead(messageId);
   }
 
-  Future<Response<dynamic>> fetchUnreadCount() =>
-      _apiService.getUnreadMessageCount();
+  // 未读数不再走本仓库：它由 UnreadCountService 全局维护（tabbar 角标与消息页
+  // 共用同一份数据），这里若再暴露一个入口会出现两条互相覆盖的取数路径。
 
   /// 一键已读全部消息（POST /usermessage/readAll，幂等）。
   Future<Response<dynamic>> markAllMessagesRead() =>

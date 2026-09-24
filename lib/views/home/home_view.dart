@@ -380,7 +380,7 @@ class HomeView extends GetView<HomeController> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
             child: SectionTitle(
               '车辆定位',
-              action: '刷新位置',
+              action: '刷新定位',
               onTap: () {
                 if (!_requireLogin()) return;
                 controller.refreshLocation();
@@ -436,7 +436,7 @@ class HomeView extends GetView<HomeController> {
         children: [
           SectionTitle(
             '轨迹记录',
-            action: '更多轨迹',
+            action: '查看轨迹',
             onTap: () {
               if (!_requireLogin()) return;
               if (device == null) {

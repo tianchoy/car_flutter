@@ -138,11 +138,32 @@ class PushService {
   }
 
   /// 清除角标：iOS 清系统角标与 JPush 记录值，Android 仅在支持的机型生效。
+  ///
+  /// 不依赖 [init] 与登录态：冷启动、token 过期（App 停在登录页）时也要清掉
+  /// 系统角标，否则主屏图标上的角标会一直残留。iOS 端插件会先直接改
+  /// `applicationIconBadgeNumber`，因此未初始化时调用同样有效；Android 端
+  /// 未初始化时是安全空操作。
   Future<void> clearBadge() async {
     try {
       await _jpush.setBadge(0);
     } catch (error) {
       Log.w('清除应用角标失败: $error');
+    }
+  }
+
+  /// 清空通知栏（iOS 会一并清通知中心）。
+  ///
+  /// Android 多数启动器的角标跟随通知栏条数，而极光角标接口官方仅支持华为
+  /// 机型，因此「点击通知 / 进入消息页 / 一键已读」后必须清通知栏，角标才会
+  /// 一起消失。
+  ///
+  /// 未初始化时不调用：JPush 通知只可能由初始化后的推送产生。
+  Future<void> clearNotifications() async {
+    if (!_initialized) return;
+    try {
+      await _jpush.clearAllNotifications();
+    } catch (error) {
+      Log.w('清空通知栏失败: $error');
     }
   }
 
@@ -202,6 +223,9 @@ class PushService {
 
   void _handleEvent(PushEventKind kind, Map<String, dynamic> payload) {
     unawaited(clearBadge());
+    // 用户点击通知进入 App：该通知已被消费，一并清掉通知栏，避免
+    // Android 上「角标 = 通知条数」的机型继续显示角标。
+    if (kind == PushEventKind.clicked) unawaited(clearNotifications());
     final messageId = _extractMessageId(payload);
     unawaited(_persistPushEvent(kind, messageId));
     for (final listener in List.of(_eventListeners)) {

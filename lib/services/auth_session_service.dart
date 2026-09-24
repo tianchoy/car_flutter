@@ -5,6 +5,7 @@ import '../../utils/session.dart';
 import 'api_service.dart';
 import 'push/push_binding_service.dart';
 import 'push/push_service.dart';
+import 'unread_count_service.dart';
 
 /// Owns the irreversible local part of logout.
 ///
@@ -26,6 +27,8 @@ class AuthSessionService {
     } finally {
       await PushService.to.clearSessionState();
       await clearAuthenticatedSession();
+      // 退出登录后「消息」角标必须立即消失，避免下一个账号登录前展示上一个账号的未读数。
+      UnreadCountService.to.clear();
     }
   }
 

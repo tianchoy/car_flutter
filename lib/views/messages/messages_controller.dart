@@ -7,6 +7,7 @@ import 'package:car/widgets/app_toast.dart';
 import '../../models/message/msg_model.dart';
 import '../../models/api_response.dart';
 import '../../services/push/push_service.dart';
+import '../../services/unread_count_service.dart';
 import '../../utils/logger.dart';
 import 'message_detail_dialog.dart';
 import 'messages_repository.dart';
@@ -22,7 +23,10 @@ class MessagesController extends GetxController {
   final isLoadingMore = false.obs;
   final isCheckingNewMessages = false.obs;
   final isMarkingAllRead = false.obs;
-  final unreadCount = 0.obs;
+
+  /// 未读数复用全局单例：底部 tabbar「消息」角标与页面未读横幅共用同一份数据。
+  RxInt get unreadCount => UnreadCountService.to.count;
+
   final totalCount = 0.obs;
   final pageSize = 10.obs;
   final totalPage = 1.obs;
@@ -43,6 +47,9 @@ class MessagesController extends GetxController {
 
   Future<void> _initialize() async {
     if (await checkLoginStatus()) {
+      // 进入消息页即清通知栏：Android 部分启动器的角标跟随通知条数，
+      // 不清通知栏角标会残留（极光 setBadge 官方仅华为机型支持）。
+      unawaited(PushService.to.clearNotifications());
       await refreshMessages();
       _startNewMessageCheck();
       // 进入消息页时消费推送带来的待处理消息（冷启动点击通知的场景）。
@@ -161,6 +168,10 @@ class MessagesController extends GetxController {
         // 暂存的新消息已被标记已读，一并清空避免提示过期。
         _pendingNewMessages.clear();
         newMessageCount.value = 0;
+        // 全部已读后没有未读消息：tabbar 角标与通知栏一起清掉，
+        // 随后 refreshMessages 会再拉一次未读数做校准。
+        UnreadCountService.to.clear();
+        unawaited(PushService.to.clearNotifications());
         await refreshMessages();
       } else {
         AppToast.show('提示', result.message.isEmpty ? '操作失败' : result.message);
@@ -174,15 +185,9 @@ class MessagesController extends GetxController {
     }
   }
 
-  Future<void> _loadUnreadCount() async {
-    try {
-      final response = await _repository.fetchUnreadCount();
-      final result = ApiResponse<Object?>.fromJson(response.data);
-      if (result.isSuccess) unreadCount.value = intValue(result.data);
-    } catch (_) {
-      // The list remains usable when the optional badge request fails.
-    }
-  }
+  /// 未读数统一由 [UnreadCountService] 拉取：tabbar 角标与页面横幅同步更新。
+  /// 拉取失败时保留旧值，列表照常可用。
+  Future<void> _loadUnreadCount() => UnreadCountService.to.refresh();
 
   /// 启动定时检查新消息（对齐参考项目：10 秒一次）。
   void _startNewMessageCheck() {

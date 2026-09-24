@@ -7,6 +7,7 @@ import 'package:car/widgets/app_toast.dart';
 import '../../app/routes/router_instance.dart';
 import '../../models/api_response.dart';
 import '../../services/push/push_bootstrap.dart';
+import '../../services/unread_count_service.dart';
 import 'login_repository.dart';
 
 class LoginController extends GetxController {
@@ -106,7 +107,7 @@ class LoginController extends GetxController {
       await _loginRepository.login(normalizedUsername, password.value);
       _showMessage('成功', '登录成功');
       Get.offAllNamed(Routes.home);
-      _schedulePushInitialization();
+      _schedulePostLoginTasks();
     } on ApiBusinessException catch (error) {
       _showMessage('登录失败', error.message);
     } catch (_) {
@@ -131,7 +132,7 @@ class LoginController extends GetxController {
       await _loginRepository.smsLogin(phone.value, smsCode.value);
       _showMessage('成功', '登录成功');
       Get.offAllNamed(Routes.home);
-      _schedulePushInitialization();
+      _schedulePostLoginTasks();
     } on ApiBusinessException catch (error) {
       _showMessage('登录失败', error.message);
     } catch (_) {
@@ -144,9 +145,13 @@ class LoginController extends GetxController {
   void clearUsername() => usernameController.clear();
   void clearPassword() => passwordController.clear();
 
-  /// 登录成功并完成首页跳转后再初始化推送，避免与登录、首屏数据请求争抢资源。
-  void _schedulePushInitialization() {
+  /// 登录成功并完成首页跳转后的收尾动作（密码登录与短信登录共用）。
+  ///
+  /// - 延后初始化推送，避免与登录、首屏数据请求争抢资源；
+  /// - 立即同步「消息」tab 的未读角标（此时已持有有效 token）。
+  void _schedulePostLoginTasks() {
     unawaited(PushBootstrap.schedulePostLoginInitialization());
+    unawaited(UnreadCountService.to.refresh());
   }
 
   void _showMessage(String title, String message) {

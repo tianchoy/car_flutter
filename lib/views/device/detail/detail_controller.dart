@@ -44,7 +44,6 @@ class DetailController extends GetxController {
 
   Timer? _refreshTimer;
   int _requestGeneration = 0;
-  bool _didCenterMap = false;
 
   /// 在线状态：优先以最近一次详情接口返回的 connectionStatus 为准。
   ///
@@ -60,19 +59,35 @@ class DetailController extends GetxController {
     return device?.deviceStatus == 'online';
   }
 
-  LatLng? get mapPosition {
-    final rawLatitude = nullableDoubleValue(
-      position.value?['latitude'] ?? device?.latitude,
-    );
-    final rawLongitude = nullableDoubleValue(
-      position.value?['longitude'] ?? device?.longitude,
-    );
-    if (rawLatitude == null ||
-        rawLongitude == null ||
-        !isValidCoordinate(rawLongitude, rawLatitude)) {
+  /// 当前要展示在地图上的坐标（GCJ-02）。
+  ///
+  /// 优先取接口返回的位置，数据缺失或非法时依次回退到路由参数、设备列表坐标。
+  /// 不能写成 `position['latitude'] ?? device.latitude`：`??` 只挡 null，
+  /// 接口返回 0 / 空串时照样会取到非法值，车标会被甩到视野之外。
+  LatLng? get mapPosition =>
+      _toMapPoint(position.value) ?? _routeCenter() ?? _deviceCenter();
+
+  /// 把一组原始经纬度转成地图坐标；缺失或非法时返回 null。
+  LatLng? _toMapPoint(Object? source) {
+    if (source is! Map) return null;
+    final longitude = nullableDoubleValue(source['longitude']);
+    final latitude = nullableDoubleValue(source['latitude']);
+    if (longitude == null ||
+        latitude == null ||
+        !isValidCoordinate(longitude, latitude)) {
       return null;
     }
-    return transformToGCJ02(rawLongitude, rawLatitude);
+    return transformToGCJ02(longitude, latitude);
+  }
+
+  /// 路由参数里设备模型自带的坐标（设备列表接口下发）。
+  LatLng? _deviceCenter() {
+    final current = device;
+    if (current == null) return null;
+    return _toMapPoint(<String, dynamic>{
+      'latitude': current.latitude,
+      'longitude': current.longitude,
+    });
   }
 
   /// 设备与平台最近一次通信时间。
@@ -194,31 +209,34 @@ class DetailController extends GetxController {
     if (cached != null && !isClosed) initialCenter.value = cached;
   }
 
-  /// 取到（或刷新到）有效坐标：写入缓存，并在首次成功时把镜头移到车辆上。
+  /// 取到（或刷新到）有效坐标：写入缓存，并把镜头同步到车辆位置。
   void _onPositionUpdated() {
     final point = mapPosition;
     final key = _positionCacheKey;
     if (point == null || key == null) return;
     unawaited(DevicePositionCache.save(key, point));
-    _centerMapOnce(point);
+    _syncCameraTo(point);
   }
 
-  /// 只在首次拿到位置时居中一次：后续自动刷新不再移动镜头，
-  /// 避免打断用户手动拖动/缩放后的视角。
-  void _centerMapOnce(LatLng point) {
-    if (_didCenterMap) return;
+  /// 把镜头同步到车辆位置。
+  ///
+  /// 车标已经在可视范围内时不动镜头（用户拖动/缩放查看周边时不会被打断）；
+  /// 只有车标跑出视野时才移动：否则一旦「首帧坐标」与「接口返回坐标」不一致，
+  /// 或车辆移动后刷新，车标会停在屏幕外，用户再也看不到它。
+  void _syncCameraTo(LatLng point) {
     try {
-      mapController.move(point, mapController.camera.zoom);
-      _didCenterMap = true;
+      final camera = mapController.camera;
+      if (camera.visibleBounds.contains(point)) return;
+      mapController.move(point, camera.zoom);
     } catch (_) {
       // MapController 尚未挂载（首帧），等 onMapReady 再补一次。
     }
   }
 
-  /// 地图就绪回调：补做一次居中，覆盖「首帧时控制器未挂载」的情况。
+  /// 地图就绪回调：补做一次镜头同步，覆盖「首帧时控制器未挂载」的情况。
   void handleMapReady() {
     final point = mapPosition;
-    if (point != null) _centerMapOnce(point);
+    if (point != null) _syncCameraTo(point);
   }
 
   /// 手动解析中文地址。
@@ -304,13 +322,19 @@ class DetailController extends GetxController {
       dataParser: jsonListFrom,
     );
     final raw = result.data?.whereType<Map>().firstOrNull;
-    if (result.isSuccess && raw != null) {
-      position.value = jsonMapFrom(raw);
+    // 只在坐标合法时写入：设备未定位/定位失效时，接口会返回 0 或空串，
+    // 直接写入会让 mapPosition 取到非法值（车标被甩出视野、或地图回退成
+    // 「暂无定位」占位），而且每次自动刷新都会用同样的坏数据重复覆盖，
+    // 车标再也不会重新出现。
+    if (result.isSuccess && _toMapPoint(raw) != null) {
+      position.value = jsonMapFrom(raw!);
       _onPositionUpdated();
-    } else if (result.isSuccess) {
-      // 仅在从未获取到位置时置空；刷新空数据时保留上一次有效坐标，
-      // 避免车标在自动刷新瞬间消失。
-      if (position.value == null) errorMessage.value = '暂无设备定位数据';
+      return;
+    }
+    // 坐标无效：保留上一次有效坐标（含路由参数 / 设备列表坐标兜底）。
+    // 只有在完全没有可用坐标时才提示，避免自动刷新反复弹提示。
+    if (result.isSuccess && mapPosition == null) {
+      errorMessage.value = '暂无设备定位数据';
     }
   }
 

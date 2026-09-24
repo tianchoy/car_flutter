@@ -15,6 +15,7 @@ import '../../utils/coord_transform.dart';
 import '../../utils/logger.dart';
 import '../../utils/session.dart';
 import '../../services/push/push_bootstrap.dart';
+import '../../services/unread_count_service.dart';
 import 'home_repository.dart';
 import 'package:car/utils/time_utils.dart';
 
@@ -69,6 +70,8 @@ class HomeController extends GetxController {
     if (await _checkLoginStatus()) {
       // 已登录用户冷启动时兜底触发推送初始化（登录页路径之外的唯一入口）。
       unawaited(PushBootstrap.schedulePostLoginInitialization());
+      // 冷启动即同步「消息」tab 的未读角标。
+      unawaited(UnreadCountService.to.refresh());
       await loadDeviceList();
     }
   }

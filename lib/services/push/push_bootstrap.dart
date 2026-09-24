@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../utils/logger.dart';
 import '../../utils/session.dart';
+import '../unread_count_service.dart';
 import 'push_binding_service.dart';
 import 'push_config.dart';
 import 'push_service.dart';
@@ -42,8 +43,11 @@ class PushBootstrap {
   }
 
   /// 回到前台：刷新 RegistrationID 并清除角标。
+  ///
+  /// 清角标不依赖登录态与推送初始化：token 过期被踢回登录页时，系统角标
+  /// 同样要在回前台时消失（[PushService.refreshRegistrationId] 内部会判断
+  /// 是否已初始化，未初始化时不会发起请求）。
   static Future<void> refreshOnResume() async {
-    if (!_servicesInitialized) return;
     await PushService.to.refreshRegistrationId();
     await PushService.to.clearBadge();
   }
@@ -64,6 +68,10 @@ class PushBootstrap {
     await PushService.to.init();
     await PushService.to.clearBadge();
     await PushService.to.markAuthenticated();
+    // 推送到达/点击后刷新「消息」tab 的未读角标（消息落库滞后于推送，内部会补一次）。
+    PushService.to.addEventListener((_, _) {
+      unawaited(UnreadCountService.to.refreshAfterPush());
+    });
     Log.d('登录后的推送初始化已触发');
   }
 
