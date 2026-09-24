@@ -79,6 +79,12 @@ class GeofenceController extends GetxController {
   void toggleFenceList() => fenceListExpanded.value = !fenceListExpanded.value;
 
   void collapseFenceList() => fenceListExpanded.value = false;
+
+  /// 顶部浮动标题条遮挡高度（top 12 + 标题条约 60）。
+  static const double _mapTopObstacle = 72;
+
+  /// 底部围栏抽屉遮挡高度：展开时含工具栏与围栏列表，收起后仅剩箭头按钮。
+  double get _mapBottomObstacle => fenceListExpanded.value ? 300 : 88;
   final deviceTab = 0.obs;
   final boundDevices = <Map<String, dynamic>>[].obs;
   final unboundDevices = <Map<String, dynamic>>[].obs;
@@ -208,11 +214,26 @@ class GeofenceController extends GetxController {
   void _centerMapOnce(LatLng point) {
     if (_didCenterMap || selectedFence.value != null) return;
     try {
-      mapController.move(point, mapController.camera.zoom);
+      _moveCarToVisibleCenter(point);
       _didCenterMap = true;
     } catch (_) {
       // MapController 尚未挂载（首帧），等 onMapReady 再补一次。
     }
+  }
+
+  /// 把车标放到地图「未被顶部标题条与底部抽屉遮挡」的可视区中心。
+  ///
+  /// 直接 move 到车标只会把它放在地图几何中心；本页底部围栏抽屉占比更高，
+  /// 车标会显得偏低、甚至贴着面板。这里按上下遮挡高度之差把镜头上抬，
+  /// 使车标落在真正可视区的中心。
+  void _moveCarToVisibleCenter(LatLng point) {
+    final camera = mapController.camera;
+    // 可视区中心相对地图几何中心的偏移：底部遮挡更多时车标需要上移。
+    final delta = Offset(0, (_mapTopObstacle - _mapBottomObstacle) / 2);
+    final carOffset = camera.latLngToScreenOffset(point);
+    // 镜头中心放到「车标屏幕位置 - delta」，车标即可出现在几何中心 + delta。
+    final center = camera.screenOffsetToLatLng(carOffset - delta);
+    mapController.move(center, camera.zoom);
   }
 
   /// 地图就绪回调：补做一次居中，覆盖「首帧控制器未挂载」的情况。

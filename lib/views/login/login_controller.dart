@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:car/widgets/app_toast.dart';
 
+import '../../app/routes/route_arguments.dart';
 import '../../app/routes/router_instance.dart';
 import '../../models/api_response.dart';
 import '../../services/push/push_bootstrap.dart';
@@ -33,11 +34,15 @@ class LoginController extends GetxController {
 
   Timer? _smsTimer;
 
+  /// 发送验证码前置条件：手机号需为合法号码（与 Web 端校验一致），
+  /// 而不是仅判断长度。
   bool get canSendSmsCode =>
-      phone.value.length >= 11 && smsCountdown.value == 0 && !isLoading.value;
+      _isPhone(phone.value) && smsCountdown.value == 0 && !isLoading.value;
 
   bool get isFormValid => useSmsLogin.value
-      ? phone.value.isNotEmpty && smsCode.value.isNotEmpty && !isLoading.value
+      ? _isPhone(phone.value) &&
+            RegExp(r'^\d{6}$').hasMatch(smsCode.value) &&
+            !isLoading.value
       : username.value.isNotEmpty &&
             password.value.isNotEmpty &&
             !isLoading.value;
@@ -109,6 +114,14 @@ class LoginController extends GetxController {
       Get.offAllNamed(Routes.home);
       _schedulePostLoginTasks();
     } on ApiBusinessException catch (error) {
+      // 该手机号已注册但没设置密码：补设密码需要短信验证码，引导改用验证码登录。
+      if (requiresPasswordSetup(
+        message: error.message,
+        payload: error.payload,
+      )) {
+        _showMessage('提示', '该手机号尚未设置登录密码，请使用验证码登录后设置');
+        return;
+      }
       _showMessage('登录失败', error.message);
     } catch (_) {
       _showMessage('登录失败', '登录服务连接失败，请检查网络后重试');
@@ -118,12 +131,12 @@ class LoginController extends GetxController {
   }
 
   Future<void> _smsLogin() async {
-    if (phone.value.isEmpty) {
-      _showMessage('提示', '请输入手机号');
+    if (!_isPhone(phone.value)) {
+      _showMessage('提示', '请输入正确的手机号');
       return;
     }
-    if (smsCode.value.isEmpty) {
-      _showMessage('提示', '请输入验证码');
+    if (!RegExp(r'^\d{6}$').hasMatch(smsCode.value)) {
+      _showMessage('提示', '请输入6位短信验证码');
       return;
     }
     if (isLoading.value) return;
@@ -134,6 +147,23 @@ class LoginController extends GetxController {
       Get.offAllNamed(Routes.home);
       _schedulePostLoginTasks();
     } on ApiBusinessException catch (error) {
+      // 手机号已注册但尚未设置密码（NEED_SET_PASSWORD）、或该手机号还没注册
+      //（NEED_REGISTER）：两者都跳设置密码页补设密码，并带上手机号与本次验证码。
+      if (requiresPasswordSetup(
+        message: error.message,
+        payload: error.payload,
+      )) {
+        unawaited(
+          Get.toNamed(
+            Routes.setPassword,
+            arguments: SetPasswordArgs(
+              phonenumber: phone.value.trim(),
+              smsCode: smsCode.value.trim(),
+            ),
+          ),
+        );
+        return;
+      }
       _showMessage('登录失败', error.message);
     } catch (_) {
       _showMessage('登录失败', '登录服务连接失败，请检查网络后重试');
@@ -141,6 +171,21 @@ class LoginController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// 切换登录方式：与 Web 端 `toggleLoginMode` 一致，切回密码登录时
+  /// 清空验证码并停止倒计时，避免残留旧验证码/倒计时。
+  void setLoginMode(bool useSms) {
+    if (useSmsLogin.value == useSms) return;
+    useSmsLogin.value = useSms;
+    if (useSms) return;
+    smsCodeController.clear();
+    smsCode.value = '';
+    _smsTimer?.cancel();
+    _smsTimer = null;
+    smsCountdown.value = 0;
+  }
+
+  bool _isPhone(String value) => RegExp(r'^1[3-9]\d{9}$').hasMatch(value);
 
   void clearUsername() => usernameController.clear();
   void clearPassword() => passwordController.clear();
@@ -161,10 +206,13 @@ class LoginController extends GetxController {
   @override
   void onClose() {
     _smsTimer?.cancel();
-    usernameController.dispose();
-    passwordController.dispose();
-    phoneController.dispose();
-    smsCodeController.dispose();
+    // 刻意不 dispose 下面这些 TextEditingController：
+    // GetX 在重复进入同一路由（或绑定被重新执行）时会替换旧的控制器实例并触发
+    // onClose，而旧的登录页 widget 可能仍挂在路由栈上；一旦它的输入框在输入或
+    // 重建时访问已销毁的 controller，就会抛
+    //「A TextEditingController was used after being disposed」（输入无效 / 红屏）。
+    // TextEditingController 不持有外部资源，监听它的输入框在自身销毁时会移除监听，
+    // 因此交给 GC 回收即可；真正需要释放的是定时器（已在此取消）。
     super.onClose();
   }
 }

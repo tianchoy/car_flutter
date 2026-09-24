@@ -446,8 +446,37 @@ class PlaybackController extends GetxController
     _animateNextSegment();
   }
 
+  /// 倍速可选档位：1 倍为最慢档，其余按 5 递增，最高 50。
+  static const List<double> speedOptions = <double>[
+    1,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+  ];
+
+  /// 当前倍速对应的档位下标（供倍速滑块定位）。
+  int get speedOptionIndex {
+    final current = _snapSpeed(playbackSpeed.value);
+    final index = speedOptions.indexOf(current);
+    return index < 0 ? 0 : index;
+  }
+
+  /// 把任意速度吸附到档位：最低 1 倍，其余按 5 的整数倍，最高 50。
+  static double _snapSpeed(double speed) {
+    if (speed <= speedOptions.first) return speedOptions.first;
+    final stepped = (speed / 5).round() * 5;
+    return stepped.clamp(speedOptions.first, speedOptions.last).toDouble();
+  }
+
   void setSpeed(double speed) {
-    playbackSpeed.value = speed.clamp(1, 30).toDouble();
+    playbackSpeed.value = _snapSpeed(speed);
     // Apply immediately: restart the current segment from the rendered point.
     if (isPlaying.value) {
       _animationController.stop();

@@ -1,5 +1,6 @@
 class Routes {
   static const startup = '/startup';
+  static const privacyConsent = '/privacy-consent';
   static const home = '/';
   static const messages = '/messages';
   static const profile = '/profile';
@@ -16,6 +17,7 @@ class Routes {
   static const deviceShare = '/device-share';
   static const commands = '/commands';
   static const register = '/register';
+  static const setPassword = '/set-password';
   static const forgotPassword = '/forgot-password';
   static const userInfo = '/user-info';
   static const vehicleList = '/vehicle-list';

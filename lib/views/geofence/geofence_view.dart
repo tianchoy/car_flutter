@@ -90,7 +90,9 @@ class GeofenceView extends GetView<GeofenceController> {
       initialZoom: 12,
       mapController: controller.mapController,
       clusterMarkers: false,
-      fitToBounds: true,
+      // 以车标为地图初始中心：不按全部围栏图形自适应缩放，
+      // 否则 onMapReady 时会把车标与所有围栏一起纳入边界，导致车标偏离可视区中心。
+      fitToBounds: false,
       polygons: controller.polygons,
       circles: controller.circles,
       markers: controller.mapMarkers,

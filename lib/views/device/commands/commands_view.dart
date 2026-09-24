@@ -112,41 +112,24 @@ class CommandsView extends GetView<CommandsController> {
     );
   }
 
+  /// tab 切换沿用地理围栏页「多边形 / 圆形」的滑动分段控件。
   Widget _buildTabs() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ReferenceCard(
         margin: EdgeInsets.zero,
         padding: const EdgeInsets.all(4),
-        child: Row(children: [_tab('下发指令', 0), _tab('指令记录', 1)]),
-      ),
-    );
-  }
-
-  Widget _tab(String label, int index) {
-    final selected = controller.activeTab.value == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          controller.activeTab.value = index;
-          if (index == 1 && controller.history.isEmpty) {
-            controller.loadHistory(reset: true);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : CupertinoColors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: selected ? CupertinoColors.white : AppColors.secondaryText,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
+        child: SizedBox(
+          width: double.infinity,
+          child: CupertinoSlidingSegmentedControl<int>(
+            groupValue: controller.activeTab.value,
+            children: const {
+              0: _TabLabel(text: '下发指令'),
+              1: _TabLabel(text: '指令记录'),
+            },
+            onValueChanged: (value) {
+              if (value != null) controller.setActiveTab(value);
+            },
           ),
         ),
       ),
@@ -623,4 +606,20 @@ class CommandsView extends GetView<CommandsController> {
       ),
     );
   }
+}
+
+/// 滑动分段控件内的标签：文案样式与地理围栏页的分段项保持一致。
+class _TabLabel extends StatelessWidget {
+  const _TabLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    ),
+  );
 }

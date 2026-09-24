@@ -119,7 +119,8 @@ class RegisterController extends GetxController {
         Get.offAllNamed(Routes.home);
       } else {
         _message('成功', '注册成功，请使用新账号登录');
-        Get.offNamed(Routes.login);
+        // 与注册页「已有账号？去登录」一致：清栈回到登录页，避免重复压入登录页。
+        Get.offAllNamed(Routes.login);
       }
     } catch (_) {
       _message('注册失败', '注册失败，请检查网络后重试');

@@ -8,11 +8,15 @@ import 'package:car/views/account/forgot_password/forgot_password_binding.dart';
 import 'package:car/views/account/forgot_password/forgot_password_view.dart';
 import 'package:car/views/account/pay_devices/pay_device_list_binding.dart';
 import 'package:car/views/account/pay_devices/pay_device_list_view.dart';
+import 'package:car/views/account/privacy_consent/privacy_consent_binding.dart';
+import 'package:car/views/account/privacy_consent/privacy_consent_view.dart';
 import 'package:car/views/account/register/register_binding.dart';
 import 'package:car/views/account/register/register_view.dart';
 import 'package:car/views/account/renewal/renewal_binding.dart';
 import 'package:car/views/account/renewal/renewal_view.dart';
 import 'package:car/views/account/scan_code/scan_code_binding.dart';
+import 'package:car/views/account/set_password/set_password_binding.dart';
+import 'package:car/views/account/set_password/set_password_view.dart';
 import 'package:car/views/account/scan_code/scan_code_view.dart';
 import 'package:car/views/account/user_info/user_info_binding.dart';
 import 'package:car/views/account/user_info/user_info_view.dart';
@@ -75,6 +79,12 @@ class AppRouter {
       }),
     ),
     GetPage(
+      name: Routes.privacyConsent,
+      page: () => const PrivacyConsentView(),
+      binding: PrivacyConsentBinding(),
+      transition: Transition.noTransition,
+    ),
+    GetPage(
       name: Routes.home,
       page: () => const HomeView(),
       binding: HomeBinding(),
@@ -96,6 +106,9 @@ class AppRouter {
       name: Routes.login,
       page: () => const LoginView(),
       binding: LoginBindings(),
+      // 登录页全局只保留一个实例：重复导航时复用已有页面，
+      // 避免重新执行绑定导致旧页面的输入控制器被销毁。
+      preventDuplicates: true,
     ),
     GetPage(
       name: Routes.detail,
@@ -156,6 +169,11 @@ class AppRouter {
       name: Routes.register,
       page: () => const RegisterView(),
       binding: RegisterBinding(),
+    ),
+    GetPage(
+      name: Routes.setPassword,
+      page: () => const SetPasswordView(),
+      binding: SetPasswordBinding(),
     ),
     GetPage(
       name: Routes.forgotPassword,

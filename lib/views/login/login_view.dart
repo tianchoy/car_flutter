@@ -94,7 +94,7 @@ class LoginView extends GetView<LoginController> {
           groupValue: controller.useSmsLogin.value,
           children: const {false: Text('密码登录'), true: Text('验证码登录')},
           onValueChanged: (value) {
-            if (value != null) controller.useSmsLogin.value = value;
+            if (value != null) controller.setLoginMode(value);
           },
         ),
       ),
@@ -109,6 +109,8 @@ class LoginView extends GetView<LoginController> {
           hint: '请输入账号或手机号',
           prefix: const Icon(CupertinoIcons.person),
           textInputAction: TextInputAction.next,
+          // 账号输入不需要系统联想/自动填充，关闭以减少首次聚焦时的系统开销。
+          disableInputAssist: true,
         ),
         const SizedBox(height: 13),
         Obx(
@@ -117,6 +119,7 @@ class LoginView extends GetView<LoginController> {
             hint: '请输入密码',
             obscureText: controller.obscurePassword.value,
             onSubmitted: (_) => controller.login(),
+            disableInputAssist: true,
             prefix: const Icon(CupertinoIcons.lock),
             suffix: ReferenceIconButton(
               icon: controller.obscurePassword.value
@@ -140,6 +143,7 @@ class LoginView extends GetView<LoginController> {
           hint: '请输入手机号',
           keyboardType: TextInputType.phone,
           prefix: const Icon(CupertinoIcons.phone),
+          disableInputAssist: true,
         ),
         const SizedBox(height: 13),
         Obx(
@@ -148,6 +152,7 @@ class LoginView extends GetView<LoginController> {
             hint: '请输入验证码',
             keyboardType: TextInputType.number,
             prefix: const Icon(CupertinoIcons.chat_bubble),
+            disableInputAssist: true,
             suffix: CupertinoButton(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: Size.zero,
@@ -199,14 +204,14 @@ class LoginView extends GetView<LoginController> {
                     text: '《用户协议》',
                     style: const TextStyle(color: AppColors.primary),
                     recognizer: TapGestureRecognizer()
-                      ..onTap = () => LegalLinks.showUserAgreement(context),
+                      ..onTap = LegalLinks.openAgreement,
                   ),
                   const TextSpan(text: '和'),
                   TextSpan(
                     text: '《隐私政策》',
                     style: const TextStyle(color: AppColors.primary),
                     recognizer: TapGestureRecognizer()
-                      ..onTap = () => LegalLinks.showPrivacyPolicy(context),
+                      ..onTap = LegalLinks.openPrivacyPolicy,
                   ),
                 ],
               ),

@@ -64,6 +64,7 @@ class PlaybackRouteArgs {
   final DeviceModel device;
   final DateTime? startTime;
   final DateTime? endTime;
+
   /// 上游已知的车辆坐标（原始 WGS-84），用途同 [DeviceRouteArgs.latitude]。
   final double? latitude;
   final double? longitude;
@@ -99,15 +100,55 @@ class PlaybackRouteArgs {
   }
 }
 
+/// Arguments for the「设置登录密码」screen.
+///
+/// 登录接口返回 `NEED_SET_PASSWORD`（手机号已注册但未设置密码）时跳转本页，
+/// 需要带上本次短信登录用的手机号与验证码，设置成功后可直接完成登录。
+class SetPasswordArgs {
+  const SetPasswordArgs({required this.phonenumber, required this.smsCode});
+
+  final String phonenumber;
+  final String smsCode;
+
+  static SetPasswordArgs? parse(Object? value) {
+    if (value is SetPasswordArgs) {
+      return value.phonenumber.trim().isEmpty ? null : value;
+    }
+    if (value is Map) {
+      final rawPhone = value['phonenumber'] ?? value['phone'];
+      final phone = rawPhone?.toString().trim() ?? '';
+      if (phone.isEmpty) return null;
+      return SetPasswordArgs(
+        phonenumber: phone,
+        smsCode: stringValue(value['smsCode']).trim(),
+      );
+    }
+    return null;
+  }
+}
+
 /// Arguments for content rendered by the in-app web view.
+///
+/// 内容来源二选一：
+/// - [url]：远程地址（http/https）；
+/// - [assetPath]：随包分发的本地资源（如 `assets/legal/privacy_policy.html`）。
+///
+/// 本地资源优先，避免因服务端路由缺失或断网导致协议页无法查看。
 class WebContentRouteArgs {
-  const WebContentRouteArgs({required this.title, required this.url});
+  const WebContentRouteArgs({required this.title, this.url, this.assetPath});
 
   final String title;
-  final String url;
+  final String? url;
+  final String? assetPath;
+
+  String get trimmedAssetPath => (assetPath ?? '').trim();
+
+  bool get hasAsset => trimmedAssetPath.isNotEmpty;
 
   Uri? get uri {
-    final parsed = Uri.tryParse(url.trim());
+    final raw = (url ?? '').trim();
+    if (raw.isEmpty) return null;
+    final parsed = Uri.tryParse(raw);
     if (parsed == null ||
         (parsed.scheme != 'http' && parsed.scheme != 'https') ||
         parsed.host.isEmpty) {
@@ -121,7 +162,12 @@ class WebContentRouteArgs {
     if (value is! Map) return null;
     final title = stringValue(value['title']).trim();
     final url = stringValue(value['url']).trim();
-    if (url.isEmpty) return null;
-    return WebContentRouteArgs(title: title, url: url);
+    final assetPath = stringValue(value['assetPath']).trim();
+    if (url.isEmpty && assetPath.isEmpty) return null;
+    return WebContentRouteArgs(
+      title: title,
+      url: url.isEmpty ? null : url,
+      assetPath: assetPath.isEmpty ? null : assetPath,
+    );
   }
 }

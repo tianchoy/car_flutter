@@ -51,16 +51,8 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   errorText: controller.newPasswordError,
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 6, top: 8),
-                child: Text(
-                  '8–16 位，且必须包含数字、字母、特殊字符中的至少两种',
-                  style: TextStyle(
-                    color: AppColors.secondaryText,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
+              // 规则说明只在输入不合规时以红色错误提示展示（见各字段的 errorText），
+              // 这里不再重复一行固定的灰色说明。
               const SizedBox(height: 12),
               Obx(
                 () => _passwordField(
@@ -78,8 +70,8 @@ class ChangePasswordView extends GetView<ChangePasswordController> {
                   expand: true,
                   loading: controller.isSubmitting.value,
                   // 信息未填写完整或不符合规则时，按钮置为不可点击状态。
-                  onPressed: controller.isSubmitting.value ||
-                          !controller.canSubmit
+                  onPressed:
+                      controller.isSubmitting.value || !controller.canSubmit
                       ? null
                       : controller.submit,
                 ),

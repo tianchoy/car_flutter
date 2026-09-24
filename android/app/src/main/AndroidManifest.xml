@@ -5,12 +5,20 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- ACCESS_BACKGROUND_LOCATION：地理围栏「车辆驶入/驶出提醒」需要在 App
+         退到后台或锁屏时持续获取位置，属功能必需，请勿删除；对应用途已在
+         《隐私政策》与首次启动的同意页中明确告知。 -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- 安全配置：
+         - allowBackup=false：禁止通过 adb / 云备份导出应用私有数据；
+         - 明文流量默认禁止（详见 res/xml/network_security_config.xml）。 -->
     <application
         android:label="中导物联"
-        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"

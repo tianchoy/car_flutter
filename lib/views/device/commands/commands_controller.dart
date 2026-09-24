@@ -32,6 +32,15 @@ class CommandsController extends GetxController {
   final detailRecord = Rxn<CommandRecord>();
 
   String get deviceId => device?.deviceId ?? '';
+
+  /// 切换「下发指令 / 指令记录」：首次切到记录页时懒加载历史记录。
+  void setActiveTab(int index) {
+    if (index != 0 && index != 1) return;
+    if (activeTab.value == index) return;
+    activeTab.value = index;
+    if (index == 1 && history.isEmpty) loadHistory(reset: true);
+  }
+
   String get deviceIdentity => device?.deviceNo?.isNotEmpty == true
       ? device!.deviceNo!
       : device?.deviceName ?? deviceId;

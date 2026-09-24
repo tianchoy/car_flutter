@@ -153,7 +153,10 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 const SizedBox(height: 16),
                 CupertinoButton(
-                  onPressed: () => Get.offNamed(Routes.login),
+                  // 用 offAllNamed 清栈：offNamed 只是在栈顶再压一个登录页，
+                  // 会与栈中已有的登录页形成「两个登录页」，其中旧的会因
+                  // 重新绑定而拿到已销毁的输入控制器（输入无效 / 红屏）。
+                  onPressed: () => Get.offAllNamed(Routes.login),
                   child: const Text('已有账号？去登录'),
                 ),
               ],

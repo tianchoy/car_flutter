@@ -83,6 +83,9 @@ flutter:
     - .env
     - assets/icons/
     - assets/static/
+    # 用户协议 / 隐私政策：内置为本地 HTML，避免依赖服务端路由
+    # （原线上地址 /privacy-policy、/user-agreement 在后端并不存在）。
+    - assets/legal/
     # 车标资源（子目录资源需显式声明，否则未被跟踪/提交时不会被打包）
     - assets/static/cars/online/baby.png
     - assets/static/cars/online/bike.png

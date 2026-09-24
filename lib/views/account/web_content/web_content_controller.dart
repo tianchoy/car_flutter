@@ -11,7 +11,9 @@ class WebContentController extends GetxController {
   final isLoading = true.obs;
   final errorMessage = ''.obs;
   late final String title;
-  late final String url;
+
+  /// 本地资源路径（非空时优先加载，见 [WebContentRouteArgs.assetPath]）。
+  late final String assetPath;
   late final Uri? uri;
 
   @override
@@ -19,9 +21,9 @@ class WebContentController extends GetxController {
     super.onInit();
     final args = WebContentRouteArgs.parse(Get.arguments);
     title = args?.title ?? '';
-    url = args?.url ?? '';
+    assetPath = args?.trimmedAssetPath ?? '';
     uri = args?.uri;
-    if (uri == null) {
+    if (uri == null && assetPath.isEmpty) {
       isLoading.value = false;
       errorMessage.value = '链接无效，无法打开';
     }

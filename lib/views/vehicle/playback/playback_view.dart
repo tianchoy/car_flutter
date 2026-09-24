@@ -236,6 +236,9 @@ class PlaybackView extends GetView<PlaybackController> {
         .clamp(0.0, 1.0)
         .toDouble();
     final bottomInset = MediaQuery.of(context).padding.bottom;
+    // 倍速档位：1 倍为最慢档，之后每档 +5，最高 50。
+    final speedSteps = PlaybackController.speedOptions;
+    final speedDivisions = speedSteps.length - 1;
 
     return MapBottomDrawer(
       expanded: controller.panelExpanded.value,
@@ -332,12 +335,16 @@ class PlaybackView extends GetView<PlaybackController> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: _RectThumbSlider(
-                              value: ((controller.playbackSpeed.value - 1) / 29)
-                                  .clamp(0.0, 1.0),
-                              divisions: 29,
+                              // 按档位定位：1 倍为最慢档，之后每档 +5，最高 50。
+                              value:
+                                  (controller.speedOptionIndex / speedDivisions)
+                                      .clamp(0.0, 1.0),
+                              divisions: speedDivisions,
                               onChanged: playable
-                                  ? (value) =>
-                                        controller.setSpeed(1 + value * 29)
+                                  ? (value) => controller.setSpeed(
+                                      speedSteps[(value * speedDivisions)
+                                          .round()],
+                                    )
                                   : null,
                             ),
                           ),

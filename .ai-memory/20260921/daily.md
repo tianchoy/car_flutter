@@ -117,3 +117,9 @@ session-id: 20260921-0901
 - **文件**: lib/views/vehicle/playback/playback_view.dart、lib/views/vehicle/playback/playback_controller.dart、lib/views/vehicle/tracking/tracking_view.dart
 - **决策**: 气泡 Marker 改为内容底部对齐并上抬「车标半高 + 3」，与首页气泡箭头尖端到车标的 3px 间距一致（回放页车标 32 半高 16 → 19；跟踪页车标 24 半高 12 → 15）；回放页 _fitTrack 顶部 padding 由 72 提到 130，预留标题条与气泡空间。
 - **验证**: dart format 通过；flutter analyze 三个目标文件无问题；git diff --check 通过。
+
+## [当前] - UI 修复: 地理围栏页车标居中到可视区中心
+
+- **文件**: lib/views/geofence/geofence_view.dart、lib/views/geofence/geofence_controller.dart
+- **决策**: 两步修复。①关闭 MapTile 的 fitToBounds，避免 onMapReady 把车标与全部围栏图形一起纳入边界自适应缩放，导致车标被挤离中心。②新增 _moveCarToVisibleCenter：按顶部标题条（72）与底部抽屉（展开 300 / 收起 88）遮挡高度之差，用 camera.latLngToScreenOffset / screenOffsetToLatLng 把镜头中心放到「车标屏幕位置 - 偏移」，使车标落在未被遮挡的可视区中心，而不是地图几何中心；首次拿到车辆位置时仍只居中一次，不打断用户后续操作。
+- **验证**: dart format 通过；flutter analyze 目标文件无 error/warning；flutter test 全量通过（29 个测试）。

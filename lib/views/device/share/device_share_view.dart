@@ -203,6 +203,8 @@ class DeviceShareView extends GetView<DeviceShareController> {
           ),
           const SizedBox(height: 8),
           _detailRow('角色', stringValue(share['roleName'], fallback: 'view')),
+          // 被分享者手机号：原先放在「查看被分享者」弹窗里，现直接展示在角色下方。
+          _detailRow('手机号', stringValue(share['targetPhoneMasked'])),
           _detailRow('分享时间', controller.formatTime(share['shareTime'])),
           _detailRow(
             '到期时间',
@@ -210,16 +212,12 @@ class DeviceShareView extends GetView<DeviceShareController> {
                 ? '永久'
                 : controller.formatTime(share['expireTime']),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                onPressed: () => controller.showSharees(share),
-                child: const Text('查看被分享者'),
-              ),
-              if (active)
+          // 只有生效中的分享才提供撤销操作；非生效中不再保留空操作行。
+          if (active) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 CupertinoButton(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   onPressed: () => controller.revokeShare(share),
@@ -228,8 +226,9 @@ class DeviceShareView extends GetView<DeviceShareController> {
                     style: TextStyle(color: AppColors.danger),
                   ),
                 ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

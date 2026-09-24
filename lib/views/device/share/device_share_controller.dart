@@ -19,7 +19,6 @@ class DeviceShareController extends GetxController {
   final isSubmitting = false.obs;
   final isLoadingMore = false.obs;
   final shares = <JsonMap>[].obs;
-  final sharees = <JsonMap>[].obs;
   final errorMessage = ''.obs;
   final page = 1.obs;
   final totalCount = 0.obs;
@@ -198,37 +197,6 @@ class DeviceShareController extends GetxController {
     }
   }
 
-  Future<void> showSharees(JsonMap share) async {
-    sharees.clear();
-    final id = stringValue(share['deviceId'] ?? deviceId);
-    try {
-      final response = await _repository.fetchShares(id, <String, dynamic>{
-        'pageNum': 1,
-        'pageSize': 50,
-      });
-      final result = ApiResponse<JsonMap>.fromJson(
-        response.data,
-        dataParser: jsonMapFrom,
-      );
-      if (result.isSuccess) {
-        final raw = result.data?['list'];
-        if (raw is List) {
-          sharees.assignAll(raw.whereType<Map>().map(jsonMapFrom));
-        }
-      } else {
-        AppToast.show(
-          '提示',
-          result.message.isEmpty ? '获取被分享者失败' : result.message,
-        );
-      }
-    } catch (_) {
-      AppToast.show('提示', '获取被分享者失败，请稍后重试');
-    }
-    if (Get.context != null) {
-      await Get.dialog<void>(_ShareesDialog(items: sharees));
-    }
-  }
-
   String shareStatus(JsonMap share) {
     switch (stringValue(share['status'])) {
       case 'active':
@@ -269,72 +237,5 @@ class DeviceShareController extends GetxController {
   void onClose() {
     targetPhoneController.dispose();
     super.onClose();
-  }
-}
-
-class _ShareesDialog extends StatelessWidget {
-  const _ShareesDialog({required this.items});
-
-  final List<JsonMap> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoAlertDialog(
-      title: const Text('被分享者'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: items.isEmpty
-            ? const Text('暂无被分享者')
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: items.length,
-                itemBuilder: (_, index) {
-                  final item = items[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                stringValue(
-                                  item['targetNickName'] ??
-                                      item['targetPhoneMasked'],
-                                  fallback: '--',
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                stringValue(item['targetPhoneMasked']),
-                                style: const TextStyle(
-                                  color: CupertinoColors.systemGrey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          stringValue(item['status'], fallback: '未知'),
-                          style: const TextStyle(
-                            color: CupertinoColors.systemGrey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('关闭'),
-        ),
-      ],
-    );
   }
 }

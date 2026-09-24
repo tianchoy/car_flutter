@@ -11,7 +11,6 @@ class WebContentView extends GetView<WebContentController> {
 
   @override
   Widget build(BuildContext context) {
-    final uri = controller.uri;
     return MainScaffold(
       title: controller.title.isEmpty ? '内容详情' : controller.title,
       showBackButton: true,
@@ -20,7 +19,11 @@ class WebContentView extends GetView<WebContentController> {
         if (controller.errorMessage.value.isNotEmpty) {
           return _errorView(controller.errorMessage.value);
         }
-        if (uri == null) return _errorView('链接无效，无法打开');
+        final assetPath = controller.assetPath;
+        final uri = controller.uri;
+        if (assetPath.isEmpty && uri == null) {
+          return _errorView('链接无效，无法打开');
+        }
         final webController = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setNavigationDelegate(
@@ -29,8 +32,13 @@ class WebContentView extends GetView<WebContentController> {
               onPageFinished: (_) => controller.markLoaded(),
               onWebResourceError: (_) => controller.markError(),
             ),
-          )
-          ..loadRequest(uri);
+          );
+        // 本地资源优先：协议页随包分发，不依赖服务端与网络。
+        if (assetPath.isNotEmpty) {
+          webController.loadFlutterAsset(assetPath);
+        } else {
+          webController.loadRequest(uri!);
+        }
         return Stack(
           children: [
             WebViewWidget(controller: webController),

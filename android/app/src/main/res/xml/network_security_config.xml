@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置：默认禁止明文（HTTP）流量。
+
+  依据：业务接口 https://gpsapp.zdiot.cn 与地图瓦片
+  https://wprd0{s}.is.autonavi.com 均为 HTTPS；对已构建 APK 的 dex 扫描也未
+  发现任何明文 HTTP 端点，因此无放开必要。允许明文流量是应用商店与工信部
+  检测的常见扣分项。
+
+  如后续确实存在个别必须走 HTTP 的域名，请只在该域名上开放，切勿整体放开：
+  <domain-config cleartextTrafficPermitted="true">
+      <domain includeSubdomains="true">example.com</domain>
+  </domain-config>
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

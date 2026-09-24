@@ -683,6 +683,7 @@ class ReferenceInput extends StatelessWidget {
     this.enabled = true,
     this.errorText,
     this.autofocus = false,
+    this.disableInputAssist = false,
   });
 
   final String hint;
@@ -699,6 +700,12 @@ class ReferenceInput extends StatelessWidget {
   final String? errorText;
   final bool autofocus;
 
+  /// 关闭系统输入辅助：自动填充提示、联想、自动更正。
+  ///
+  /// 账号 / 密码 / 验证码等场景不需要联想，且在 iOS 上首次聚焦输入框时上述能力
+  /// 会触发系统侧一次性初始化，关闭后可减少这段开销。
+  final bool disableInputAssist;
+
   @override
   Widget build(BuildContext context) {
     final field = CupertinoTextField(
@@ -711,6 +718,9 @@ class ReferenceInput extends StatelessWidget {
           ? null
           : Padding(padding: const EdgeInsets.only(right: 8), child: suffix),
       obscureText: obscureText,
+      enableSuggestions: !disableInputAssist,
+      autocorrect: !disableInputAssist,
+      autofillHints: disableInputAssist ? const <String>[] : null,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
@@ -732,18 +742,24 @@ class ReferenceInput extends StatelessWidget {
         ),
       ),
     );
-    if (errorText == null || errorText!.isEmpty) return field;
+    // 结构必须保持稳定：错误提示不能靠「替换整棵树」来显隐，否则校验提示一出现，
+    // 输入框的 Element 就会被重建，焦点随之丢失（表现为焦点跳到别的输入框）。
+    // 这里固定为 Column[输入框, 提示/占位]，输入框始终是第 0 个子节点。
+    final message = errorText?.trim() ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         field,
-        Padding(
-          padding: const EdgeInsets.only(left: 12, top: 4),
-          child: Text(
-            errorText!,
-            style: const TextStyle(color: AppColors.danger, fontSize: 12),
+        if (message.isEmpty)
+          const SizedBox.shrink()
+        else
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.danger, fontSize: 12),
+            ),
           ),
-        ),
       ],
     );
   }

@@ -40,6 +40,11 @@ class MainScaffold extends StatelessWidget {
             onTap: NavigationService.navigateTo,
           )
         : null;
+    // 底栏实际占用高度（内容 + 底部留白）：正文底部留白与悬浮按钮都按它计算，
+    // 否则内容会落进底栏的留白区域（iOS/Android 都会留一点）。
+    final tabBarHeight = tabBar == null
+        ? 0.0
+        : CustomBottomNavBar.reservedHeight(context);
 
     final content = CupertinoPageScaffold(
       backgroundColor: backgroundColor,
@@ -48,9 +53,7 @@ class MainScaffold extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Padding(
-              padding: EdgeInsets.only(
-                bottom: tabBar == null ? 0 : tabBar.preferredSize.height,
-              ),
+              padding: EdgeInsets.only(bottom: tabBarHeight),
               child: body,
             ),
           ),
@@ -64,7 +67,7 @@ class MainScaffold extends StatelessWidget {
           if (floatingActionButton != null)
             Positioned(
               right: 16,
-              bottom: (tabBar?.preferredSize.height ?? 0) + 16,
+              bottom: tabBarHeight + 16,
               child: floatingActionButton!,
             ),
         ],

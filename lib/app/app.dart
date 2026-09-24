@@ -14,44 +14,33 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetCupertinoApp(
       title: '车联网',
+      // 不再显式指定 fontFamily: 'PingFang SC'：iOS 中文默认即 PingFang SC，
+      // 显式指定系统字体名会让引擎按名解析字体族（每次新建字号/字重组合都要走一次
+      // 字体查找），首次安装后的输入场景（首次弹出键盘并由输入框测量字形）尤其容易
+      // 出现一次性卡顿。去掉后 iOS 视觉不变，Android 行为也与原本的回退一致。
       theme: const CupertinoThemeData(
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.page,
         barBackgroundColor: CupertinoColors.systemBackground,
         brightness: Brightness.light,
         textTheme: CupertinoTextThemeData(
-          textStyle: TextStyle(
-            color: AppColors.text,
-            fontFamily: 'PingFang SC',
-            fontSize: 16,
-          ),
-          actionTextStyle: TextStyle(
-            color: AppColors.primary,
-            fontFamily: 'PingFang SC',
-            fontSize: 16,
-          ),
+          textStyle: TextStyle(color: AppColors.text, fontSize: 16),
+          actionTextStyle: TextStyle(color: AppColors.primary, fontSize: 16),
           navTitleTextStyle: TextStyle(
             color: AppColors.text,
-            fontFamily: 'PingFang SC',
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
           navLargeTitleTextStyle: TextStyle(
             color: AppColors.text,
-            fontFamily: 'PingFang SC',
             fontSize: 34,
             fontWeight: FontWeight.w700,
           ),
           tabLabelTextStyle: TextStyle(
             color: AppColors.secondaryText,
-            fontFamily: 'PingFang SC',
             fontSize: 10,
           ),
-          pickerTextStyle: TextStyle(
-            color: AppColors.text,
-            fontFamily: 'PingFang SC',
-            fontSize: 21,
-          ),
+          pickerTextStyle: TextStyle(color: AppColors.text, fontSize: 21),
         ),
       ),
       initialRoute: Routes.startup,
@@ -71,10 +60,7 @@ class App extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('zh', 'CN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
     );
   }
 }
